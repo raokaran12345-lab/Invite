@@ -442,6 +442,17 @@ tr:last-child td{border-bottom:none}
 .insight-row:last-child{border-bottom:none}
 .insight-row .ic{flex-shrink:0;font-weight:800}
 
+/* Subtle motion — radial gauges, shimmer */
+@keyframes shimmer{0%{background-position:-360px 0}100%{background-position:360px 0}}
+.gauge-row{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:16px}
+.gauge{width:100%;max-width:104px;height:104px;margin:0 auto;display:block}
+.g-track{fill:none;stroke:#EEF0F3;stroke-width:7}
+.g-arc{fill:none;stroke-width:7;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .85s cubic-bezier(.22,1,.36,1)}
+.gauge text.g-val{font-family:'DM Mono',monospace;font-weight:500;font-size:15px;text-anchor:middle;fill:var(--t1)}
+.gauge text.g-lbl{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:7.5px;letter-spacing:.6px;text-anchor:middle;fill:var(--t3)}
+.gauge-cell{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:8px 4px}
+.skeleton{background:linear-gradient(90deg,#EEF0F3 25%,#F7F8FA 50%,#EEF0F3 75%);background-size:720px 100%;animation:shimmer 1.4s infinite linear;border-radius:8px}
+
 /* Responsive */
 @media(max-width:900px){
   .sidebar{width:64px}
@@ -865,19 +876,19 @@ function renderDashboard(el){
     <div class="kpi-grid">
       <div class="kpi" style="border-top-color:var(--red)">
         <div class="ico" style="background:rgba(220,38,38,.1);color:var(--red)">⚠</div>
-        <div class="num">${needsAction}</div><div class="cap">Needs Action</div>
+        <div class="num" data-count="${needsAction}">0</div><div class="cap">Needs Action</div>
       </div>
       <div class="kpi" style="border-top-color:var(--brand)">
         <div class="ico" style="background:rgba(91,79,245,.1);color:var(--brand)">▦</div>
-        <div class="num">${active}</div><div class="cap">Active Deals</div>
+        <div class="num" data-count="${active}">0</div><div class="cap">Active Deals</div>
       </div>
       <div class="kpi" style="border-top-color:var(--green)">
         <div class="ico" style="background:rgba(5,150,105,.1);color:var(--green)">✓</div>
-        <div class="num">${approved}</div><div class="cap">Approved</div>
+        <div class="num" data-count="${approved}">0</div><div class="cap">Approved</div>
       </div>
       <div class="kpi" style="border-top-color:var(--t1)">
         <div class="ico" style="background:rgba(15,15,26,.08);color:var(--t1)">$</div>
-        <div class="num mono">${fmtMoney(pipeline)}</div><div class="cap">Pipeline Value</div>
+        <div class="num mono" data-count="${pipeline}" data-money="1">${m().sym}0</div><div class="cap">Pipeline Value</div>
       </div>
     </div>
     <div class="toolbar">
@@ -893,6 +904,7 @@ function renderDashboard(el){
     <div class="deal-grid" id="dealGrid"></div>
   `;
   renderDealGrid();
+  playCounts(el);
 }
 function renderDealGrid(){
   const grid = document.getElementById('dealGrid');
@@ -1141,8 +1153,8 @@ function renderServiceability(el){
       <div id="calcEditor"></div>
       <div class="calc-results" id="calcResults"></div>
     </div>`;
-  if(state.svcTab==='manual'){ renderManualEditor(); renderManualResults(); }
-  else { renderCalcEditor(); renderCalcResults(); }
+  if(state.svcTab==='manual'){ renderManualEditor(); renderManualResults(true); }
+  else { renderCalcEditor(); renderCalcResults(true); }
   updateStatusStrip();
 }
 function renderCalcEditor(){
@@ -1229,7 +1241,50 @@ function updateCalc(){
   updateStatusStrip();
 }
 
-function renderCalcResults(){
+/* ---------- Subtle motion helpers ---------- */
+function animateCount(el, to, opts){
+  if(!el) return; opts = opts||{};
+  const dur = opts.dur||750, money = opts.money, t0 = performance.now(), from = 0;
+  const fmt = v => money ? fmtMoney(v) : Math.round(v).toLocaleString();
+  (function tick(t){
+    const p = Math.min(1, (t-t0)/dur), e = 1-Math.pow(1-p,3);   // easeOutCubic
+    el.textContent = fmt(from + (to-from)*e);
+    if(p<1) requestAnimationFrame(tick); else el.textContent = fmt(to);
+  })(t0);
+}
+function playCounts(scope){
+  (scope||document).querySelectorAll('[data-count]').forEach(el=>
+    animateCount(el, parseFloat(el.getAttribute('data-count'))||0, {money: el.getAttribute('data-money')==='1'}));
+}
+function fmtK(n){ const s=m().sym, a=Math.abs(n); return (n<0?'-':'')+s+(a>=1000?(a/1000).toFixed(1)+'k':Math.round(a)); }
+const GAUGE_CIRC = 2*Math.PI*34;
+// Donut gauge. pct 0..1. `animate` starts empty then fills via CSS transition (playGauges).
+function gaugeSVG(centerText, label, pct, color, animate){
+  const clamped = Math.max(0, Math.min(1, pct)), offset = GAUGE_CIRC*(1-clamped);
+  return `<div class="gauge-cell"><svg class="gauge" viewBox="0 0 80 80">
+    <circle class="g-track" cx="40" cy="40" r="34"></circle>
+    <circle class="g-arc" cx="40" cy="40" r="34" stroke="${color}" style="stroke-dasharray:${GAUGE_CIRC.toFixed(1)};stroke-dashoffset:${(animate?GAUGE_CIRC:offset).toFixed(1)}" data-to="${offset.toFixed(1)}"></circle>
+    <text class="g-val" x="40" y="39" dominant-baseline="middle">${centerText}</text>
+    <text class="g-lbl" x="40" y="53">${label}</text>
+  </svg></div>`;
+}
+function playGauges(scope){
+  requestAnimationFrame(()=>(scope||document).querySelectorAll('.g-arc[data-to]').forEach(a=> a.style.strokeDashoffset = a.getAttribute('data-to')));
+}
+// DSR / LVR / NDI gauges from a result object.
+function resultGauges(r, dsrMax, animate){
+  const dsrCol = r.dsr < dsrMax*0.8 ? '#059669' : r.dsr < dsrMax ? '#D97706' : '#DC2626';
+  const lvrCol = r.lvr<=80 ? '#059669' : r.lvr<=90 ? '#D97706' : '#DC2626';
+  const ndiCol = r.ndi>=0 ? '#059669' : '#DC2626';
+  const inc = r.income || r.incomeMo || 1;
+  return `<div class="gauge-row">
+    ${gaugeSVG(r.dsr.toFixed(0)+'%','DSR', r.dsr/dsrMax, dsrCol, animate)}
+    ${gaugeSVG(r.lvr.toFixed(0)+'%','LVR', r.lvr/100, lvrCol, animate)}
+    ${gaugeSVG(fmtK(r.ndi),'NDI/MO', r.ndi>0?Math.min(r.ndi/(inc*0.3),1):0, ndiCol, animate)}
+  </div>`;
+}
+
+function renderCalcResults(animate){
   const box = document.getElementById('calcResults'); if(!box) return;
   const r = computeServiceability();
   const vcls = r.verdict.toLowerCase();
@@ -1244,7 +1299,7 @@ function renderCalcResults(){
     {l:'Net Surplus (NDI)', v:Math.max(r.ndi,0), c:r.ndi>=0?'#059669':'#DC2626'}
   ];
   // stress test
-  const buffer=m().buffer, nl=state.calc.newLoan;
+  const buffer=activeBuffer(), nl=state.calc.newLoan;
   let stress='';
   for(let i=0;i<=6;i++){
     const add=i*0.5;
@@ -1261,6 +1316,7 @@ function renderCalcResults(){
       <div class="v-big">${r.verdict}</div>
       <div class="v-sub">${vsub}</div>
     </div>
+    ${resultGauges(r, activeDsrMax(), animate)}
     <div class="res-grid">
       <div class="res-box"><div class="rl">DSR</div><div class="rv mono">${r.dsr.toFixed(1)}%</div></div>
       <div class="res-box"><div class="rl">NDI/mo</div><div class="rv mono" style="color:${r.ndi>=0?'var(--green)':'var(--red)'}">${fmtMoney(r.ndi)}</div></div>
@@ -1283,6 +1339,7 @@ function renderCalcResults(){
     </div>
     <button class="btn primary" style="width:100%" onclick="callAIAssessment()">✦ AI Assessment</button>
   `;
+  playGauges(box);
 }
 
 /* ============================================================
@@ -1353,7 +1410,7 @@ function renderManualEditor(){
       <div class="assessed-note" id="mAssessed">Assessed rate: ${((+x.rate)+(+x.bufferPct)).toFixed(2)}% (contract ${(+x.rate).toFixed(2)}% + ${x.bufferPct}% buffer)</div>
     </div></div>`;
 }
-function renderManualResults(){
+function renderManualResults(animate){
   const box = document.getElementById('calcResults'); if(!box) return;
   setText('mAssessed', `Assessed rate: ${((+state.manual.rate)+(+state.manual.bufferPct)).toFixed(2)}% (contract ${(+state.manual.rate).toFixed(2)}% + ${state.manual.bufferPct}% buffer)`);
   const r = computeManual();
@@ -1369,6 +1426,7 @@ function renderManualResults(){
   ];
   box.innerHTML = `
     <div class="verdict ${vcls}"><div class="v-lbl">Manual Affordability — unverified</div><div class="v-big">${r.verdict}</div><div class="v-sub">${vsub}</div></div>
+    ${resultGauges(r, r.dsrMax, animate)}
     <div class="res-grid">
       <div class="res-box"><div class="rl">DSR</div><div class="rv mono">${r.dsr.toFixed(1)}%</div></div>
       <div class="res-box"><div class="rl">NDI/mo</div><div class="rv mono" style="color:${r.ndi>=0?'var(--green)':'var(--red)'}">${fmtMoney(r.ndi)}</div></div>
@@ -1385,6 +1443,7 @@ function renderManualResults(){
       <div class="insight-row"><span class="ic" style="color:var(--${r.dti<6?'green':r.dti<9?'amber':'red'})">${r.dti<6?'✓':r.dti<9?'➜':'✕'}</span><span style="font-size:12.5px">DTI ${r.dti.toFixed(1)}x — ${r.dti<6?'within standard appetite':r.dti<9?'high (>6x needs justification)':'very high (>9x generally declined)'}.</span></div>
       <div class="insight-row"><span class="ic" style="color:var(--amber)">⚠</span><span style="font-size:12.5px">Figures are unverified — confirm with payslips, statements and a valuation before submission.</span></div>
     </div>`;
+  playGauges(box);
 }
 
 /* ============================================================
