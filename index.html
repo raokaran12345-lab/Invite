@@ -480,6 +480,20 @@ tr:last-child td{border-bottom:none}
   .plan-grid,.hero-stats{grid-template-columns:1fr 1fr}
   .form-grid{grid-template-columns:1fr}
 }
+@media print {
+  #login, .sidebar, .topbar, .status-strip, .demo-banner,
+  .page-head button, .mini-btn, .btn, .toolbar, .tabs,
+  .wiz-head, nav, .sb-user, .sb-collapse, .skip-link,
+  #toasts, #loader { display: none !important; }
+  body { background: white; font-size: 10pt; color: #1a1a2e; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .content { padding: 0; overflow: visible; }
+  .main-col { overflow: visible; }
+  .commentary-wrap { max-width: 100%; margin: 0; }
+  .comm-card { break-inside: avoid; page-break-inside: avoid; border: 1px solid #ccc; box-shadow: none; }
+  .verdict { -webkit-print-color-adjust: exact; }
+  .print-header { display: block !important; }
+}
+.print-header { display: none; }
 </style>
 </head>
 <body>
@@ -526,9 +540,9 @@ tr:last-child td{border-bottom:none}
     <nav class="nav" id="nav" aria-label="Primary"></nav>
     <div class="sb-collapse" onclick="toggleSidebar()" role="button" tabindex="0" aria-label="Collapse sidebar">⇆ Collapse</div>
     <div class="sb-user">
-      <div class="avatar">JB</div>
+      <div class="avatar" id="sbAvatar">JB</div>
       <div class="hide-collapse">
-        <div style="font-weight:700;font-size:13px">Jordan Blake</div>
+        <div style="font-weight:700;font-size:13px" id="sbUserName">Jordan Blake</div>
         <div style="font-size:11px;color:var(--t3)">Senior Broker</div>
       </div>
     </div>
@@ -574,6 +588,7 @@ tr:last-child td{border-bottom:none}
 const TODAY = new Date();
 const TODAY_STR = TODAY.toISOString().slice(0,10);
 function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; }
+const debouncedRenderDealGrid = debounce(()=>renderDealGrid(), 150);
 
 /* ---------- Markets (AU fully wired; NZ database arrives Q3) ---------- */
 const MARKETS = {
@@ -698,6 +713,7 @@ const state = {
     newLoan:{amount:785000, rate:6.24, term:30}
   },
   anthropicKey:'',       // demo only — production must proxy via backend
+  accreditedLenders:['CBA','ANZ','NAB','Westpac','Macquarie','ING','Bankwest','St George','Pepper','Liberty','Resimac','La Trobe','Firstmac','Suncorp','Bendigo'],
   panelTab:'overview',
   lendersTab:'compare',
   settingsTab:'account',
@@ -800,11 +816,12 @@ const NAV = [
   {id:'serviceability',label:'Calculate', icon:'calculator'},
   {id:'aipilot',       label:'AI Pilot',  icon:'sparkles', badge:'DEMO'},
   {id:'compare',       label:'Lenders',   icon:'landmark'},
+  {id:'compliance',    label:'Compliance AI', icon:'doc', badge:'NEW'},
   {id:'settings',      label:'Settings',  icon:'gear'}
 ];
 const PAGE_TITLES = {
   dashboard:'Pipeline', aipilot:'AI Pilot', wizard:'New Deal',
-  serviceability:'Serviceability Calculator', compare:'Lenders', settings:'Settings',
+  serviceability:'Serviceability Calculator', compare:'Lenders', compliance:'Compliance AI', settings:'Settings',
   // contextual (opened inside a deal, not top-level):
   documents:'Documents', commentary:'AI Commentary', intel:'Market Intelligence', portal:'Client Portal'
 };
@@ -828,6 +845,7 @@ function navigate(page){
   ({
     dashboard:renderDashboard, aipilot:renderAIPilot, wizard:renderWizard, documents:renderDocuments,
     serviceability:renderServiceability, commentary:renderCommentary, compare:renderLenders,
+    compliance:renderCompliance,
     intel:renderIntel, portal:renderPortal, markets:renderMarkets, billing:renderBilling, settings:renderSettings
   }[page] || renderDashboard)(target);
   updateStatusStrip();
@@ -970,7 +988,7 @@ function renderDashboard(el){
     <div class="toolbar">
       <div class="search">
         <span class="si-ico">🔍</span>
-        <input id="dealSearch" aria-label="Search deals" placeholder="Search deals or client…" value="${state.dealSearch}" oninput="state.dealSearch=this.value;renderDealGrid()">
+        <input id="dealSearch" aria-label="Search deals" placeholder="Search deals or client…" value="${state.dealSearch}" oninput="state.dealSearch=this.value;debouncedRenderDealGrid()">
       </div>
       <div class="filters">
         ${[['all','All'],['my','My Review'],['docs','Docs Needed'],['approved','Approved']].map(([k,l])=>
@@ -1105,6 +1123,8 @@ function advanceDeal(id){
   (d.activity = d.activity||[]).push({at:TODAY_STR, text:'Advanced to '+STATUS_META[d.status].label});
   toast(`${d.id} advanced to ${STATUS_META[d.status].label}`, 'ok');
   renderPanel(); renderDashboard(document.getElementById('page-dashboard'));
+  const si = document.getElementById('dealSearch');
+  if(si){ si.value = state.dealSearch; renderDealGrid(); }
 }
 
 /* ============================================================
@@ -1247,7 +1267,8 @@ function renderWizStep(){
       ${[['Lender selected', lenderName],['Deal type', d.dealType||'Owner Occupier'],['Loan amount', fmtMoney(state.calc.newLoan.amount)],['LVR', ((parseFloat(state.calc.newLoan.amount)||0)/(parseFloat(d.propValue)||1)*100).toFixed(1)+'%'],['Documents requested', lenderChecklist(d.lender,d.dealType).length+' items'],['Commentary generated','Complete']].map(r=>
         `<div class="detail-row"><span class="dl">✓ ${r[0]}</span><span class="dv">${r[1]}</span></div>`).join('')}
       ${reqs}
-      <div class="assessed-note" style="background:rgba(5,150,105,.08);color:var(--green);margin-top:16px">✓ All requirements satisfied. Ready to submit to ${lenderName}${pol?(' via '+(pol.submission_channel||'broker portal')):''}.</div>
+      <div class="assessed-note" style="background:rgba(5,150,105,.08);color:var(--green);margin:16px 0">✓ All requirements satisfied. Ready to submit to ${lenderName}${pol?(' via '+(pol.submission_channel||'broker portal')):''}.</div>
+      <button class="btn" style="width:100%;margin-bottom:10px" onclick="generateSubmissionPack()">📄 Generate AOL-Ready Submission Pack</button>
       ${wizNav()}</div>`;
   }
   c.innerHTML = html;
@@ -1296,7 +1317,7 @@ function renderServiceability(el){
     ? `<div class="card" style="padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
          <b style="font-size:13px">Assess against</b>
          <select id="svcLender" onchange="state.lender=this.value;renderServiceability(document.getElementById('page-serviceability'))" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:12px;font-weight:600">
-           ${Object.keys(lenderDB()).map(id=>`<option value="${id}" ${state.lender===id?'selected':''}>${lenderDB()[id].label||id} — ${lenderDB()[id].apra_regulated?'ADI':'Non-bank'} ${(lenderDB()[id].buffer*100).toFixed(0)}% buffer</option>`).join('')}
+           ${Object.keys(lenderDB()).filter(id=> state.accreditedLenders.length===0 || state.accreditedLenders.includes(id)).map(id=>`<option value="${id}" ${state.lender===id?'selected':''}>${lenderDB()[id].label||id} — ${lenderDB()[id].apra_regulated?'ADI':'Non-bank'} ${(lenderDB()[id].buffer*100).toFixed(0)}% buffer</option>`).join('')}
          </select>
          ${activePolicy()?`<span class="pill ${activePolicy().apra_regulated?'gray':'amber'}">${activePolicy().apra_regulated?'ADI':'Non-bank'}</span><span class="pill violet">${(activeBuffer()*100).toFixed(0)}% buffer</span><span class="pill gray">DSR &lt; ${activeDsrMax()}%</span><span class="pill gray">Max LVR ${activePolicy().max_lvr_owner_occ_pi||'—'}%</span>`:''}
        </div>` : '';
@@ -1668,6 +1689,7 @@ function renderCommentary(el){
       <div><h1>AI Commentary</h1><p>8 submission sections — edit inline or regenerate with AI</p></div>
       <div style="display:flex;gap:9px">
         <button class="btn" onclick="window.print()">⎙ Export PDF</button>
+        <button class="btn primary" onclick="generateSubmissionPack()">📄 Generate Submission Pack</button>
         <button class="btn primary" onclick="regenerateAll()">✦ Regenerate All</button>
       </div>
     </div>
@@ -1796,7 +1818,7 @@ function rankLenders(){
   let rows;
   if(state.market==='AU' && Object.keys(lenderDB()).length){
     // Each lender uses ITS OWN buffer, DSR ceiling, base rate and income shading.
-    rows = Object.keys(lenderDB()).map(id=>{
+    rows = Object.keys(lenderDB()).filter(id=> state.accreditedLenders.length===0 || state.accreditedLenders.includes(id)).map(id=>{
       const p = lenderDB()[id];
       const fig = figuresForLender(id);
       const rate = p.base_rate;
@@ -2084,7 +2106,7 @@ function renderBilling(el){
     <div class="plan-grid">
       ${[
         {n:'Starter', p:149, cur:state.market, active:false, f:['25 deals/mo','Basic AI commentary','3 markets','Email support']},
-        {n:'Professional', p:249, active:true, f:['Unlimited deals','Full AI suite','All 6 markets','Priority support','Client portal']},
+        {n:'Professional', p:249, active:true, f:['Unlimited deals','Full AI suite','AU + NZ markets','Priority support','Client portal']},
         {n:'Aggregator', p:79, active:false, f:['Per-broker pricing','White-label','API access','Dedicated manager']}
       ].map(pl=>`
         <div class="plan ${pl.active?'active':''}">
@@ -2104,7 +2126,7 @@ function renderSettings(el){
   el.innerHTML = `
     <div class="page-head"><h1>Settings</h1><p>Account, market, AI and commission defaults</p></div>
     <div class="tabs">
-      ${[['account','Account'],['market','Market'],['ai','AI'],['commission','Commission']].map(([k,l])=>
+      ${[['account','Account'],['market','Market'],['ai','AI'],['commission','Commission'],['lenders','Lenders']].map(([k,l])=>
         `<div class="tab ${settingsTab===k?'active':''}" role="button" tabindex="0" onclick="settingsTab='${k}';renderSettings(document.getElementById('page-settings'))">${l}</div>`).join('')}
     </div>
     <div class="card" style="padding:24px;max-width:720px">${settingsPane()}</div>`;
@@ -2117,7 +2139,7 @@ function settingsPane(){
       <div class="inp"><label for="setAcl">Credit licence (ACL)</label><input id="setAcl" value="389201"></div>
       <div class="inp"><label for="setAgg">Aggregator</label><input id="setAgg" value="Finsure"></div>
     </div>
-    <button class="btn primary" style="margin-top:18px" onclick="toast('Account saved','ok')">Save</button>
+    <button class="btn primary" style="margin-top:18px" onclick="saveAccount()">Save</button>
     <hr style="border:none;border-top:1px solid var(--border);margin:20px 0">
     <p style="font-size:13px;font-weight:700;margin-bottom:8px">Persistence &amp; auth</p>
     <button class="btn" onclick="toast('Supabase auth is wired but disabled in this demo','info')">Sign in with Supabase</button>
@@ -2134,13 +2156,21 @@ function settingsPane(){
       <b>Security:</b> a key embedded in the browser is visible to anyone with DevTools. In production it must be proxied through a backend (e.g. a Vercel edge function) — this field is demo-only and held in memory.
     </div>
     <p style="font-size:11px;color:var(--t3);margin-top:10px">Model: claude-sonnet-4-20250514. With a key set the topbar shows “AI Engine Live”; otherwise “DEMO MODE”.</p>`;
-  return `
+  if(settingsTab==='commission') return `
     <p style="font-size:13px;color:var(--t2);margin-bottom:12px">Defaults used to seed new deals.</p>
     <div class="form-grid">
       <div class="inp"><label for="setUp">Upfront commission (%)</label><input id="setUp" type="number" step="0.01" value="${(COMMISSION.upfront*100).toFixed(2)}" oninput="COMMISSION.upfront=(+this.value)/100"></div>
       <div class="inp"><label for="setTr">Trail commission (% per year)</label><input id="setTr" type="number" step="0.01" value="${(COMMISSION.trail*100).toFixed(2)}" oninput="COMMISSION.trail=(+this.value)/100"></div>
     </div>
     <button class="btn primary" style="margin-top:18px" onclick="toast('Commission defaults saved','ok')">Save</button>`;
+  return `
+    <p style="font-size:13px;font-weight:700;margin-bottom:6px">Accredited Lenders</p>
+    <p style="font-size:12.5px;color:var(--t3);margin-bottom:14px">Only selected lenders appear in the calculator and compare. Defaults to a typical panel. Uncheck lenders you are not accredited with.</p>
+    <div class="check-grid">
+      ${Object.keys(lenderDB()).map(id=>{ const p=lenderDB()[id]; const checked=state.accreditedLenders.includes(id);
+        return '<label class="check-item"><input type="checkbox" '+(checked?'checked':'')+' onchange="toggleAccredited(\''+id+'\',this.checked)"> <span style="width:10px;height:10px;border-radius:3px;background:'+(p.lender_color||'#ccc')+';display:inline-block;margin-right:4px;flex-shrink:0"></span>'+(p.label||id)+'</label>'; }).join('')}
+    </div>
+    <button class="btn primary" style="margin-top:18px" onclick="toast('Accredited lenders saved','ok')">Save</button>`;
 }
 function updateEnginePill(){
   const live = !!state.anthropicKey;
@@ -2148,6 +2178,22 @@ function updateEnginePill(){
   if(pill) pill.innerHTML = `<span class="dot"></span>${live?'AI Engine Live':'DEMO MODE'}`;
   const banner = document.getElementById('demoBanner');
   if(banner) banner.style.display = live ? 'none' : 'block';
+}
+function saveAccount(){
+  const nameEl = document.getElementById('setName');
+  if(nameEl && nameEl.value.trim()){
+    const name = nameEl.value.trim();
+    const initials = name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
+    const sbName = document.getElementById('sbUserName');
+    const sbAv = document.getElementById('sbAvatar');
+    if(sbName) sbName.textContent = name;
+    if(sbAv) sbAv.textContent = initials;
+  }
+  toast('Account saved', 'ok');
+}
+function toggleAccredited(id, checked){
+  if(checked && !state.accreditedLenders.includes(id)) state.accreditedLenders.push(id);
+  else if(!checked) state.accreditedLenders = state.accreditedLenders.filter(x=>x!==id);
 }
 
 /* ============================================================
@@ -2391,6 +2437,275 @@ function renderPilotResults(){
     ${state.anthropicKey ? '' : `<div style="font-size:11px;color:var(--t3);margin-top:10px;padding:10px 13px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;">
       ⚠ Demo data shown — results above use a sample profile. Connect your API key in Settings → AI to process this deal's actual documents.
     </div>`}`;
+}
+
+/* ============================================================
+   AOL-READY SUBMISSION PACK
+   ============================================================ */
+async function generateSubmissionPack(){
+  const r = computeServiceability();
+  const pol = activePolicy();
+  const deal = DEALS[0] || {};
+  const d = state.wizData;
+  const nl = state.calc.newLoan;
+  const ent = state.calc.entities[0];
+  showLoader('Generating submission pack…');
+  let bidText = (COMMENTARY[0]&&COMMENTARY[0].text) || '';
+  let servicingText = (COMMENTARY[2]&&COMMENTARY[2].text) || '';
+  if(state.anthropicKey){
+    try {
+      bidText = await callClaude(buildBIDPrompt(r, pol, d));
+      servicingText = await callClaude(buildServicingPrompt(r, pol));
+    } catch(e){ /* fall back to existing commentary */ }
+  }
+  const html = buildPackHTML(r, pol, d, nl, ent, deal, bidText, servicingText);
+  hideLoader();
+  openPackWindow(html);
+}
+function openPackWindow(html){
+  const w = window.open('', '_blank', 'width=900,height=850,scrollbars=yes,toolbar=no,menubar=no');
+  if(!w){ toast('Please allow popups for DebtIQ', 'err'); return; }
+  w.document.write(html); w.document.close();
+}
+function buildBIDPrompt(r, pol, d){
+  const lenderName = pol ? pol.label : (d.lender||'CBA');
+  return `You are a senior Australian mortgage broker writing a Requirements & Objectives statement per ASIC RG209 and the NCCP Act 2009.
+LOAN: ${fmtMoney(parseFloat(state.calc.newLoan.amount)||0)} ${d.dealType||'Owner Occupier'} loan with ${lenderName}.
+ASSESSED RATE: ${((parseFloat(state.calc.newLoan.rate)||0)+(pol?pol.buffer:0.03)*100).toFixed(2)}%
+TERM: ${state.calc.newLoan.term||30} years P&I
+PURPOSE: ${d.purpose||'Purchase — Owner Occupied'}
+LVR: ${d.propValue ? (((parseFloat(state.calc.newLoan.amount)||0)/(parseFloat(d.propValue)||1))*100).toFixed(1)+'%' : 'Not specified'}
+SERVICEABILITY: DSR ${r.dsr.toFixed(1)}% vs ceiling ${pol?pol.dsr_max:45}%
+NDI: ${fmtMoney(r.ndi)}/month
+DTI: ${r.dti.toFixed(1)}x
+VERDICT: ${r.verdict}
+${pol && pol.notes ? 'LENDER POLICY NOTES: '+pol.notes.slice(0,2).join('; ') : ''}
+Write a 120-150 word Requirements & Objectives statement. Reference specific figures; explain why the structure meets client objectives; if BORDERLINE, acknowledge with mitigants; professional, audit-ready tone; no vague language; do not fabricate.`;
+}
+function buildServicingPrompt(r, pol){
+  const lenderName = pol ? pol.label : state.lender;
+  return `Write a 100-word mortgage broker serviceability commentary for a credit assessor reviewing a file for ${lenderName}.
+DATA:
+Monthly income (assessed): ${fmtMoney(r.income)}
+Existing commitments: ${fmtMoney(r.existingDebt)}/mo
+New loan repayment: ${fmtMoney(r.newLoanMo)}/mo
+HEM: ${fmtMoney(r.HEM)}/mo
+NDI: ${fmtMoney(r.ndi)}/mo
+DSR: ${r.dsr.toFixed(1)}% vs ${pol?pol.dsr_max:45}% ceiling
+LVR: ${r.lvr.toFixed(1)}%
+DTI: ${r.dti.toFixed(1)}x
+Assessment buffer: ${pol?(pol.buffer*100).toFixed(0):3}% (${pol?pol.label:'lender policy'})
+Verdict: ${r.verdict}
+Reference the specific figures. Professional broker tone. 100 words maximum.`;
+}
+function buildPackHTML(r, pol, d, nl, ent, deal, bidText, servicingText){
+  const lenderName = pol ? pol.label : (d.lender||'CBA');
+  const lvr = d.propValue ? ((parseFloat(nl.amount)||0)/(parseFloat(d.propValue)||1)*100).toFixed(1) : '—';
+  const assessedRate = ((parseFloat(nl.rate)||0) + (pol ? pol.buffer : 0.03)*100).toFixed(2);
+  const esc = (s)=> String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>DebtIQ Submission Pack — ${esc(lenderName)}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:11pt;color:#1a1a2e;background:white;padding:24px 32px}
+.mono{font-family:'Courier New',monospace}
+.cover{border-bottom:3px solid #5B4FF5;padding-bottom:20px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end}
+.cover-brand{font-size:22pt;font-weight:800;color:#5B4FF5}
+.cover-sub{font-size:10pt;color:#6B7280;margin-top:3px}
+.cover-meta{text-align:right;font-size:10pt;color:#374151}
+.cover-meta .lender{font-size:14pt;font-weight:700;color:#1a1a2e}
+.section{margin-bottom:24px}
+.section-title{font-size:12pt;font-weight:700;color:#5B4FF5;border-bottom:1.5px solid #EEF0FF;padding-bottom:5px;margin-bottom:12px;text-transform:uppercase;letter-spacing:.04em}
+table{width:100%;border-collapse:collapse;margin-bottom:10px}
+th{background:#F4F5F7;padding:6px 9px;text-align:left;font-size:9pt;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#6B7280;border-bottom:1.5px solid #E5E7EB}
+td{padding:7px 9px;border-bottom:1px solid #F3F4F6;font-size:10.5pt;vertical-align:top}
+tr:last-child td{border-bottom:none}
+.verdict-box{padding:16px 20px;border-radius:10px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.verdict-pass{background:#ECFDF5;border:2px solid #6EE7B7}
+.verdict-borderline{background:#FFFBEB;border:2px solid #FDE68A}
+.verdict-fail{background:#FEF2F2;border:2px solid #FECACA}
+.verdict-label{font-size:9pt;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.7}
+.verdict-value{font-size:18pt;font-weight:800}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.metric{background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:10px 12px}
+.metric-label{font-size:8.5pt;color:#9CA3AF;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.metric-value{font-size:14pt;font-weight:800;font-family:'Courier New',monospace}
+.commentary{background:#F9FAFB;border-left:4px solid #5B4FF5;padding:14px 16px;border-radius:0 8px 8px 0;font-size:11pt;line-height:1.7;color:#374151;margin-bottom:12px;white-space:pre-wrap}
+.warning{background:#FFFBEB;border:1.5px solid #FDE68A;padding:10px 14px;border-radius:8px;font-size:10pt;color:#92400E;margin-bottom:12px}
+.checklist-item{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #F3F4F6;font-size:10.5pt}
+.check-box{width:14px;height:14px;border:1.5px solid #9CA3AF;border-radius:3px;flex-shrink:0;margin-top:2px}
+.footer{margin-top:32px;padding-top:14px;border-top:1px solid #E5E7EB;font-size:9pt;color:#9CA3AF;display:flex;justify-content:space-between}
+.signature-block{margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.sig-line{border-top:1.5px solid #374151;padding-top:6px;font-size:9pt;color:#6B7280}
+@media print{body{padding:12px 16px}.no-print{display:none!important}a{text-decoration:none}}
+</style></head><body>
+<div class="cover"><div><div class="cover-brand">DebtIQ</div><div class="cover-sub">Credit Submission — Generated ${new Date().toLocaleDateString('en-AU',{day:'2-digit',month:'long',year:'numeric'})}</div></div>
+<div class="cover-meta"><div class="lender">${esc(lenderName)}</div><div>${pol ? (pol.apra_regulated ? 'ADI (APRA-regulated)' : 'Non-bank lender') : ''}</div><div>${pol ? `${(pol.buffer*100).toFixed(0)}% assessment buffer · DSR ceiling ${pol.dsr_max}%` : ''}</div></div></div>
+
+<div class="section"><div class="section-title">1. Application Summary</div>
+<table>
+<tr><td style="width:35%;font-weight:600">Application Type</td><td>${esc(d.dealType||'Owner Occupier')}</td><td style="width:35%;font-weight:600">Loan Amount</td><td class="mono">${fmtMoney(parseFloat(nl.amount)||0)}</td></tr>
+<tr><td style="font-weight:600">Loan Purpose</td><td>${esc(d.purpose||'Purchase')}</td><td style="font-weight:600">Property Value</td><td class="mono">${d.propValue ? fmtMoney(parseFloat(d.propValue)) : '—'}</td></tr>
+<tr><td style="font-weight:600">LVR</td><td class="mono">${lvr}%</td><td style="font-weight:600">Loan Term</td><td>${nl.term||30} years P&I</td></tr>
+<tr><td style="font-weight:600">Interest Rate</td><td class="mono">${(parseFloat(nl.rate)||0).toFixed(2)}% p.a.</td><td style="font-weight:600">Assessed Rate</td><td class="mono">${assessedRate}% p.a.</td></tr>
+<tr><td style="font-weight:600">Lender</td><td>${esc(lenderName)}</td><td style="font-weight:600">Submission Channel</td><td>${pol ? esc(pol.submission_channel||'Broker portal') : '—'}</td></tr>
+${pol && pol.sla_conditional ? `<tr><td style="font-weight:600">Conditional SLA</td><td>${pol.sla_conditional} business days</td><td></td><td></td></tr>` : ''}
+</table></div>
+
+<div class="section"><div class="section-title">2. Employment & Income Assessment</div>
+${state.calc.entities.map((e,i)=>`<div style="margin-bottom:14px"><div style="font-weight:600;margin-bottom:8px;color:#374151">${esc(e.name||'Applicant '+(i+1))}</div>
+<table><thead><tr><th style="width:30%">Income Type</th><th>FY current</th><th>FY prior</th><th>Shade %</th><th>Assessed Annual</th></tr></thead><tbody>
+${(e.incomes||[]).map(inc=>{ const shaded=getShadedIncome(inc,state.lender); const raw=parseFloat(inc.amount_y1||inc.amount)||0; const pct=raw>0?Math.round(shaded/raw*100):100;
+  return `<tr><td>${esc(INCOME_TYPES[inc.type]||inc.type)}</td><td class="mono">${fmtMoney(inc.amount_y1||inc.amount||0)}</td><td class="mono">${inc.amount_y2?fmtMoney(inc.amount_y2):'—'}</td><td class="mono">${pct}%</td><td class="mono"><strong>${fmtMoney(shaded)}</strong></td></tr>${inc.type==='self_emp'&&(inc.addback_depreciation||inc.addback_interest||inc.addback_lease)?`<tr style="background:#F9FAFB;font-size:10pt"><td colspan="4" style="padding-left:20px;color:#6B7280">Add-backs: Dep ${fmtMoney(inc.addback_depreciation||0)} · Int ${fmtMoney(inc.addback_interest||0)} · Lease ${fmtMoney(inc.addback_lease||0)} less Bus. Loan Repayments ${fmtMoney(inc.business_loan_repayments||0)}</td><td></td></tr>`:''}`;}).join('')}
+<tr style="background:#EEF0FF;font-weight:700"><td colspan="4">Total Assessed Annual Income</td><td class="mono">${fmtMoney((e.incomes||[]).reduce((s,inc)=>s+getShadedIncome(inc,state.lender),0))}</td></tr>
+</tbody></table></div>`).join('')}</div>
+
+<div class="section"><div class="section-title">3. Existing Liabilities</div>
+${state.calc.entities.map((e,i)=>`<div style="margin-bottom:14px"><div style="font-weight:600;margin-bottom:8px;color:#374151">${esc(e.name||'Applicant '+(i+1))}</div>
+${(e.liabilities||[]).length===0?'<p style="color:#9CA3AF;font-size:10pt">No liabilities declared.</p>':`<table><thead><tr><th style="width:30%">Type</th><th>Balance / Limit</th><th>Rate</th><th>Term</th><th>Assessed Monthly</th></tr></thead><tbody>
+${(e.liabilities||[]).map(l=>{ const a=assessLiability(l,pol?pol.buffer:0.03); return `<tr><td>${esc(LIAB_TYPES[l.type]||l.type)}</td><td class="mono">${fmtMoney(l.balance||0)}</td><td class="mono">${(l.rate||0).toFixed(2)}%</td><td class="mono">${l.term||'—'} yrs</td><td class="mono"><strong>${fmtMoney(a)}/mo</strong></td></tr>`;}).join('')}
+<tr style="background:#FEF3C7;font-weight:700"><td colspan="4">Total Monthly Commitments</td><td class="mono">${fmtMoney((e.liabilities||[]).reduce((s,l)=>s+assessLiability(l,pol?pol.buffer:0.03),0))}/mo</td></tr>
+</tbody></table>`}</div>`).join('')}</div>
+
+<div class="section"><div class="section-title">4. Serviceability Assessment</div>
+<div class="verdict-box verdict-${r.verdict==='PASS'?'pass':r.verdict==='BORDERLINE'?'borderline':'fail'}"><div><div class="verdict-label">Serviceability Verdict</div><div class="verdict-value">${r.verdict}</div><div style="font-size:10pt;margin-top:3px;opacity:.8">${r.verdict==='PASS'?'Within lender appetite':r.verdict==='BORDERLINE'?'Marginal — requires justification':'Does not meet lender criteria'}</div></div>
+<div style="text-align:right"><div style="font-size:10pt;color:#6B7280">Assessment Buffer</div><div style="font-size:13pt;font-weight:700">${pol?(pol.buffer*100).toFixed(0):3}% (${esc(lenderName)})</div></div></div>
+<div class="metrics">
+<div class="metric"><div class="metric-label">DSR</div><div class="metric-value" style="color:${r.dsr<(pol?pol.dsr_max:45)*0.8?'#059669':r.dsr<(pol?pol.dsr_max:45)?'#D97706':'#DC2626'}">${r.dsr.toFixed(1)}%</div><div style="font-size:8.5pt;color:#9CA3AF;margin-top:2px">Ceiling ${pol?pol.dsr_max:45}%</div></div>
+<div class="metric"><div class="metric-label">NDI per month</div><div class="metric-value" style="color:${r.ndi>=0?'#059669':'#DC2626'}">${fmtMoney(r.ndi)}</div><div style="font-size:8.5pt;color:#9CA3AF;margin-top:2px">After debts + HEM</div></div>
+<div class="metric"><div class="metric-label">LVR</div><div class="metric-value" style="color:${r.lvr<=80?'#059669':r.lvr<=90?'#D97706':'#DC2626'}">${r.lvr.toFixed(1)}%</div><div style="font-size:8.5pt;color:#9CA3AF;margin-top:2px">Max ${pol?pol.max_lvr_owner_occ_pi||95:95}%</div></div>
+<div class="metric"><div class="metric-label">DTI</div><div class="metric-value" style="color:${r.dti<=4?'#059669':r.dti<=6?'#D97706':'#DC2626'}">${r.dti.toFixed(1)}x</div><div style="font-size:8.5pt;color:#9CA3AF;margin-top:2px">APRA cap 6x</div></div>
+</div>
+<table>
+<tr><td style="width:40%;font-weight:600">Gross Monthly Income (shaded)</td><td class="mono">${fmtMoney(r.income)}</td><td style="width:35%;font-weight:600">New Loan Repayment</td><td class="mono">${fmtMoney(r.newLoanMo)}/mo</td></tr>
+<tr><td style="font-weight:600">Existing Commitments</td><td class="mono">${fmtMoney(r.existingDebt)}/mo</td><td style="font-weight:600">HEM (living expenses floor)</td><td class="mono">${fmtMoney(r.HEM)}/mo</td></tr>
+<tr><td style="font-weight:600">Total Monthly Debt Service</td><td class="mono">${fmtMoney(r.totalDebt)}/mo</td><td style="font-weight:600">Net Disposable Income</td><td class="mono" style="font-weight:700;color:${r.ndi>=0?'#059669':'#DC2626'}">${fmtMoney(r.ndi)}/mo</td></tr>
+</table>
+${r.verdict!=='PASS'?`<div class="warning"><strong>⚠ Policy flags:</strong>${r.ndi<0?` NDI negative by ${fmtMoney(-r.ndi)}/mo.`:''}${r.dsr>=(pol?pol.dsr_max:45)?` DSR ${r.dsr.toFixed(1)}% exceeds ${pol?pol.dsr_max:45}% ceiling.`:''}${r.dti>6?` DTI ${r.dti.toFixed(1)}x exceeds APRA 6x restricted threshold.`:''}</div>`:''}</div>
+
+<div class="section"><div class="section-title">5. Requirements & Objectives</div><div class="commentary">${esc(bidText||'[Broker to complete — describe client objectives, why this loan meets their needs, and any risk factors with mitigants.]')}</div></div>
+<div class="section"><div class="section-title">6. Serviceability Commentary</div><div class="commentary">${esc(servicingText||'[Broker to complete — describe the serviceability position, any policy exceptions, and the basis for recommendation.]')}</div></div>
+
+${pol?`<div class="section"><div class="section-title">7. ${esc(lenderName)} Policy Alignment</div><table>
+<tr><td style="width:40%;font-weight:600">Assessment Buffer</td><td>${(pol.buffer*100).toFixed(0)}% (${pol.apra_regulated?'APRA-mandated':'non-bank own policy'})</td></tr>
+<tr><td style="font-weight:600">DSR Ceiling</td><td>${pol.dsr_max}%</td></tr>
+<tr><td style="font-weight:600">Max LVR (OO P&I)</td><td>${pol.max_lvr_owner_occ_pi||'—'}%</td></tr>
+<tr><td style="font-weight:600">Genuine Savings</td><td>${pol.genuine_savings_required?`Yes, above ${pol.genuine_savings_threshold_lvr||85}% LVR, ${pol.genuine_savings_months||3} months`:'Not required'}</td></tr>
+<tr><td style="font-weight:600">Submission Channel</td><td>${esc(pol.submission_channel||'—')}</td></tr>
+</table>${pol.notes&&pol.notes.length?`<div style="margin-top:10px"><div style="font-weight:600;margin-bottom:6px;font-size:10.5pt">Key policy notes:</div><ul style="padding-left:18px;font-size:10.5pt;color:#374151;line-height:1.7">${pol.notes.slice(0,4).map(n=>`<li>${esc(n)}</li>`).join('')}</ul></div>`:''}</div>`:''}
+
+<div class="section"><div class="section-title">8. Document Checklist — ${esc(lenderName)}</div><div style="font-size:10pt;color:#6B7280;margin-bottom:10px">Tick each item as verified before lodging.</div>
+${lenderChecklist(d.lender,d.dealType).map(item=>`<div class="checklist-item"><div class="check-box"></div><div>${esc(item)}</div></div>`).join('')}</div>
+
+<div class="section"><div class="section-title">9. Broker Declaration</div>
+<div style="font-size:10.5pt;color:#374151;line-height:1.8;margin-bottom:16px">I confirm that:<br>✓ I have sighted original documents detailed in this application.<br>✓ The data captured is true and correct to the best of my knowledge.<br>✓ I have verified the client's identity in person or by video conference.<br>✓ Declared living expenses have been verified against bank statements or a budget tool.<br>✓ This loan meets the client's requirements and objectives as documented above.</div>
+<div class="signature-block"><div><div style="height:40px"></div><div class="sig-line">Broker Signature / Date</div></div><div><div style="height:40px"></div><div class="sig-line">ACL Number / Aggregator</div></div></div></div>
+
+<div class="footer"><div>Generated by DebtIQ · ${new Date().toLocaleDateString('en-AU')} · ${new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})}</div><div>DebtIQ is a broker preparation tool. Always verify against ${esc(lenderName)}'s current credit policy before lodging.</div></div>
+
+<div class="no-print" style="position:fixed;bottom:20px;right:20px;display:flex;gap:10px">
+<button onclick="window.print()" style="padding:10px 20px;background:#5B4FF5;color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:0 4px 12px rgba(91,79,245,.4)">Print / Save PDF</button>
+<button onclick="window.close()" style="padding:10px 20px;background:#F4F5F7;border:1.5px solid #E5E7EB;border-radius:10px;font-weight:600;cursor:pointer;font-size:14px">Close</button></div>
+</body></html>`;
+}
+
+/* ============================================================
+   COMPLIANCE AI
+   ============================================================ */
+function renderCompliance(el){
+  const r = computeServiceability();
+  const validation = validateBIDBeforeGenerate(r);
+  el.innerHTML = `
+    <div class="page-head"><h1>Compliance AI</h1>
+      <p>Generate ASIC RG209-compliant BID documentation, HEM explanations, and responsible lending summaries.</p></div>
+    ${!state.anthropicKey ? `<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--amber);background:#FFFBEB"><b>API key required</b> — Add your Anthropic API key in Settings → AI to enable live generation. Without a key, DebtIQ generates editable template placeholders.</div>` : ''}
+    ${validation.blocked ? `<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--red);background:#FEF2F2"><b>⚠ Cannot generate compliance documents</b><br>${validation.reason}</div>` : ''}
+    ${validation.warnings && validation.warnings.length ? `<div class="card" style="padding:14px 16px;margin-bottom:16px;border-left:4px solid var(--amber)"><b>Policy flags to address in your documentation:</b><ul style="margin-top:8px;padding-left:18px;font-size:13px;color:var(--t2);line-height:1.7">${validation.warnings.map(w=>`<li>${w}</li>`).join('')}</ul></div>` : ''}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div class="card" style="padding:20px"><h3 style="font-size:15px;font-weight:700;margin-bottom:6px">Requirements & Objectives</h3>
+        <p style="font-size:12.5px;color:var(--t3);margin-bottom:14px">Per ASIC RG209. Explains why this loan meets the client's stated objectives.</p>
+        <button class="btn primary" style="width:100%" onclick="genBID()" ${validation.blocked?'disabled':''}>✦ Generate R&O</button></div>
+      <div class="card" style="padding:20px"><h3 style="font-size:15px;font-weight:700;margin-bottom:6px">HEM Explanation</h3>
+        <p style="font-size:12.5px;color:var(--t3);margin-bottom:14px">Required when declared expenses are below HEM. References specific evidence.</p>
+        <button class="btn primary" style="width:100%" onclick="genHEM()">✦ Generate HEM Explanation</button></div>
+      <div class="card" style="padding:20px"><h3 style="font-size:15px;font-weight:700;margin-bottom:6px">Serviceability Commentary</h3>
+        <p style="font-size:12.5px;color:var(--t3);margin-bottom:14px">Credit-assessor narrative with DSR, NDI, DTI and lender policy references.</p>
+        <button class="btn primary" style="width:100%" onclick="genServiceability()" ${validation.blocked?'disabled':''}>✦ Generate Commentary</button></div>
+      <div class="card" style="padding:20px;background:rgba(91,79,245,.06);border:1.5px solid var(--brand)"><h3 style="font-size:15px;font-weight:700;margin-bottom:6px">Full Submission Pack</h3>
+        <p style="font-size:12.5px;color:var(--t3);margin-bottom:14px">All documents + cover page + checklist. Print-ready AOL-format PDF.</p>
+        <button class="btn primary" style="width:100%" onclick="generateSubmissionPack()">📄 Generate Full Pack</button></div>
+    </div>
+    <div id="complianceOutput" style="display:flex;flex-direction:column;gap:12px"></div>`;
+}
+function validateBIDBeforeGenerate(r){
+  const pol = activePolicy();
+  const warnings = [];
+  if(r.verdict === 'FAIL'){
+    return { blocked:true, reason:'Loan does not service — DSR '+r.dsr.toFixed(1)+'% or NDI '+fmtMoney(r.ndi)+'/mo. Fix serviceability before generating compliance documents.' };
+  }
+  if(r.dti > 9) warnings.push('DTI '+r.dti.toFixed(1)+'x exceeds 9x — outside major bank policy. Document why non-bank / specialist lending is appropriate.');
+  else if(r.dti > 6) warnings.push('DTI '+r.dti.toFixed(1)+'x exceeds APRA 6x restricted threshold — must document justification.');
+  if(r.lvr > 90) warnings.push('LVR '+r.lvr.toFixed(1)+'% — LMI applies. Must explain LMI to client and document their acknowledgement.');
+  if(r.ndi < 500 && r.ndi >= 0) warnings.push('NDI only '+fmtMoney(r.ndi)+'/mo — very thin surplus. Document any income not captured or expenses that will reduce.');
+  if(state.calc.dependants > 0 && r.income>0 && r.HEM > r.income * 0.4) warnings.push('HEM floor is '+((r.HEM/r.income)*100).toFixed(0)+'% of income with '+state.calc.dependants+' dependant(s). Verify living expenses evidence.');
+  return { blocked:false, warnings };
+}
+async function genBID(){
+  const r = computeServiceability(); const pol = activePolicy();
+  showLoader('Generating Requirements & Objectives…');
+  const txt = await callClaude(buildBIDPrompt(r, pol, state.wizData));
+  hideLoader(); renderComplianceCard('Requirements & Objectives (RG209)', txt, 'bid', 'green');
+  if(COMMENTARY[0]) COMMENTARY[0].text = txt;
+}
+async function genHEM(){
+  const r = computeServiceability();
+  showLoader('Generating HEM explanation…');
+  const prompt = `Write a 60-80 word explanation for why a borrower's declared living expenses may be below HEM.
+Household: ${state.calc.adults||1} adult(s), ${state.calc.dependants} dependant(s).
+Income: ${fmtMoney(r.income)}/month assessed. HEM floor: ${fmtMoney(r.HEM)}/month.
+Lender: ${activePolicy()?activePolicy().label:state.lender}.
+Read by a credit assessor; reference specific evidence sources (bank statements, budget tool). Do not claim certainty where there is none. Use [EVIDENCE TYPE] placeholders for the broker to complete.`;
+  const txt = await callClaude(prompt);
+  hideLoader(); renderComplianceCard('HEM Below-Benchmark Explanation', txt, 'hem', 'amber');
+}
+async function genServiceability(){
+  const r = computeServiceability(); const pol = activePolicy();
+  showLoader('Generating serviceability commentary…');
+  const txt = await callClaude(buildServicingPrompt(r, pol));
+  hideLoader(); renderComplianceCard('Serviceability Commentary', txt, 'serv', 'violet');
+  if(COMMENTARY[2]) COMMENTARY[2].text = txt;
+}
+function renderComplianceCard(title, text, key, tone){
+  const out = document.getElementById('complianceOutput'); if(!out) return;
+  const existing = document.getElementById('cc-'+key); if(existing) existing.remove();
+  const div = document.createElement('div');
+  div.id = 'cc-'+key; div.className = 'comm-card';
+  div.innerHTML = `<div class="comm-head"><h4>${title}</h4>
+    <div style="display:flex;gap:7px;align-items:center">
+      <span class="pill ${tone}">AI generated</span>
+      <button class="mini-btn" onclick="copyText('cc-text-${key}')">Copy</button>
+      <button class="mini-btn" onclick="editCard('${key}')">Edit</button>
+    </div></div>
+    <div id="cc-text-${key}" class="comm-text">${text}</div>`;
+  out.appendChild(div);
+  div.scrollIntoView({behavior:'smooth', block:'nearest'});
+  toast(title+' generated', 'ok');
+}
+function copyText(id){
+  const el = document.getElementById(id); if(!el) return;
+  navigator.clipboard && navigator.clipboard.writeText(el.textContent);
+  toast('Copied to clipboard', 'ok');
+}
+function editCard(key){
+  const el = document.getElementById('cc-text-'+key); if(!el) return;
+  const current = el.textContent;
+  el.outerHTML = `<textarea id="cc-text-${key}" style="width:100%;min-height:100px;padding:12px;border:1.5px solid var(--brand);border-radius:10px;font-size:13.5px;line-height:1.7;font-family:inherit" onblur="saveCard('${key}',this.value)">${current}</textarea>`;
+  const ta = document.getElementById('cc-text-'+key); if(ta) ta.focus();
+}
+function saveCard(key, value){
+  const ta = document.getElementById('cc-text-'+key); if(!ta) return;
+  const div = document.createElement('div'); div.id='cc-text-'+key; div.className='comm-text'; div.textContent=value;
+  ta.replaceWith(div);
+  toast('Saved', 'ok');
 }
 
 /* ============================================================
