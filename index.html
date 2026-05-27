@@ -294,13 +294,19 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
 .entity-head{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
 .entity-head h4{font-size:15px;font-weight:700}
 .entity-body{padding:0 16px 16px}
-.row-line{display:grid;grid-template-columns:1.3fr .9fr .55fr .9fr 30px;gap:7px;align-items:center;margin-bottom:7px}
+.row-line{display:grid;grid-template-columns:1.15fr .85fr .85fr .42fr .9fr 26px;gap:7px;align-items:center;margin-bottom:7px}
 .row-line.liab{grid-template-columns:1.1fr .9fr .6fr .6fr .9fr 30px}
+.addback-row{background:rgba(91,79,245,.04);border-left:3px solid var(--brand);border-radius:0 0 8px 8px;padding:8px 10px;font-size:12px;margin:-3px 0 9px}
+.addback-row .ab-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px 12px}
+.addback-row label{display:flex;flex-direction:column;gap:3px;color:var(--t2);font-weight:600}
+.addback-row input{padding:5px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px}
+.addback-row .ab-net{margin-top:8px;font-weight:700;color:var(--brand)}
+.avg-toggle{display:flex;align-items:center;justify-content:center}
 .row-line input,.row-line select{padding:8px 9px;border:1px solid var(--border);border-radius:9px;background:#FbFbFc;font-size:12.5px;width:100%}
 .row-line input:focus,.row-line select:focus{outline:none;border-color:var(--brand);background:#fff}
 .row-line .computed{font-weight:700;font-size:12.5px;color:var(--t2);text-align:right}
 .row-x{color:var(--t3);font-size:16px;text-align:center}
-.row-head{display:grid;grid-template-columns:1.3fr .9fr .55fr .9fr 30px;gap:7px;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;padding:0 2px}
+.row-head{display:grid;grid-template-columns:1.15fr .85fr .85fr .42fr .9fr 26px;gap:7px;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;padding:0 2px}
 .row-head.liab{grid-template-columns:1.1fr .9fr .6fr .6fr .9fr 30px}
 .add-row{margin-top:6px;font-size:12px;color:var(--brand);font-weight:700;background:none}
 .subsec{font-size:12px;font-weight:700;color:var(--t2);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.5px}
@@ -565,6 +571,9 @@ tr:last-child td{border-bottom:none}
 /* ============================================================
    DEBTIQ v6 — Application Logic
    ============================================================ */
+const TODAY = new Date();
+const TODAY_STR = TODAY.toISOString().slice(0,10);
+function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; }
 
 /* ---------- Markets (AU fully wired; NZ database arrives Q3) ---------- */
 const MARKETS = {
@@ -681,7 +690,7 @@ const state = {
   calc:{
     entities:[
       {name:'Primary Borrower', open:true,
-       incomes:[{type:'salary_ft', amount:142000}],
+       incomes:[{type:'salary_ft', amount:142000, amount_y1:142000, amount_y2:138000, use_average:false, evidence_years:2}],
        liabilities:[{type:'credit_card', balance:15000, rate:21.9, term:0}]}
     ],
     dependants:0,
@@ -721,7 +730,18 @@ function activeDsrMax(id){ const p=activePolicy(id); return p ? p.dsr_max : m().
 // Lender-aware, conditional income shading. Accepts the income object so it can
 // read evidence_years / emergency-services / healthcare flags.
 function getShadedIncome(inc, id){
-  const type = inc.type, annual = parseFloat(inc.amount)||0, p = activePolicy(id);
+  const type = inc.type, p = activePolicy(id);
+  // Two-year capture: optionally assess on the 2-year average.
+  const annual = (inc.use_average && inc.amount_y2)
+    ? ((parseFloat(inc.amount_y1)||0) + (parseFloat(inc.amount_y2)||0)) / 2
+    : (parseFloat(inc.amount)||0);
+  // Self-employed add-backs (depreciation/interest/lease) less business loan repayments.
+  const addbacks = type==='self_emp'
+    ? (parseFloat(inc.addback_depreciation)||0) + (parseFloat(inc.addback_interest)||0) + (parseFloat(inc.addback_lease)||0)
+    : 0;
+  const base = type==='self_emp'
+    ? (annual + addbacks - (parseFloat(inc.business_loan_repayments)||0))
+    : annual;
   let shade;
   if(p && p.income_shading){
     const key = (type==='family' && p.income_shading.family===undefined) ? 'family_ben' : type;
@@ -732,7 +752,7 @@ function getShadedIncome(inc, id){
   if(type==='overtime' && (inc.is_emergency_services||inc.is_healthcare) && p && /Westpac/i.test(p.label||'')) shade = 1.00;
   if(type==='bonus' && ev<2) shade = 0.00;                 // bonus needs 2yr history
   if(type==='self_emp' && ev<2) shade = Math.min(shade, 0.50); // 1yr self-emp = conservative
-  return annual * shade;
+  return Math.max(0, base) * shade;
 }
 // Lender HECS rule. Uses the explicit monthly_deduction from the payslip where present.
 // 'exclude_under_20k' (NAB) · 'exclude_if_12mo' (CBA: balance repayable within 12 months).
@@ -913,7 +933,7 @@ function renderDashboard(el){
   const needsAction = DEALS.filter(d=>['BROKER_REVIEW','MORE_INFO','DOCS_PENDING'].includes(d.status)).length;
   const active = DEALS.filter(d=>!['APPROVED'].includes(d.status)).length;
   const expUpfront = DEALS.filter(d=>d.status!=='MORE_INFO').reduce((s,d)=>s+d.amount*d.upfront_commission_rate,0);
-  const settledMTD = DEALS.filter(d=>d.status==='APPROVED' && (d.closed||'').slice(0,7)==='2026-05').reduce((s,d)=>s+d.amount*d.upfront_commission_rate,0);
+  const settledMTD = DEALS.filter(d=>d.status==='APPROVED' && (d.closed||'').slice(0,7)===TODAY_STR.slice(0,7)).reduce((s,d)=>s+d.amount*d.upfront_commission_rate,0);
   if(!DEALS.length){
     el.innerHTML = `<div class="page-head"><h1>Pipeline</h1></div>
       <div class="card" style="padding:48px 32px;text-align:center;max-width:560px;margin:40px auto">
@@ -970,7 +990,7 @@ function renderDealGrid(){
   grid.innerHTML = deals.map(d=>{
     const s = STATUS_META[d.status];
     const up = d.amount*d.upfront_commission_rate, tr = d.amount*d.trail_commission_rate;
-    const nextSoon = d.next_action_date && (new Date(d.next_action_date)-new Date('2026-05-27'))/864e5 <= 3 && d.status!=='APPROVED';
+    const nextSoon = d.next_action_date && (new Date(d.next_action_date)-TODAY)/864e5 <= 3 && d.status!=='APPROVED';
     return `<div class="deal-card" onclick="openPanel('${d.id}')" role="button" tabindex="0">
       <div class="dc-top">
         <div class="dc-name">${d.name}</div>
@@ -1015,7 +1035,7 @@ function renderPanel(){
 }
 function panelOverview(el, d){
   const s = STATUS_META[d.status];
-  const nextSoon = d.next_action_date && (new Date(d.next_action_date) - new Date('2026-05-27'))/864e5 <= 3;
+  const nextSoon = d.next_action_date && (new Date(d.next_action_date) - TODAY)/864e5 <= 3;
   el.innerHTML = `
     <span class="pill ${s.cls}" style="margin-bottom:14px">${s.label}</span>
     ${nextSoon?`<div class="card" style="padding:12px 14px;margin-bottom:12px;border-left:4px solid var(--amber)">${svgIcon('clock',15)} <b>Next action ${d.next_action_date}</b> — ${d.next_action_note||'follow up'}</div>`:''}
@@ -1056,7 +1076,7 @@ function panelDocs(el, d){
     </div>`;
 }
 function panelUpload(id, files){
-  [...files].forEach(f=> DOCS.unshift({name:f.name, deal:id, type:'Unclassified', conf:0, status:'Processing', size:(f.size/1024).toFixed(0)+' KB', date:'2026-05-27'}));
+  [...files].forEach(f=> DOCS.unshift({name:f.name, deal:id, type:'Unclassified', conf:0, status:'Processing', size:(f.size/1024).toFixed(0)+' KB', date:TODAY_STR}));
   toast(files.length+' document(s) uploaded', 'ok'); renderPanel();
 }
 function panelCommentary(el, d){ renderCommentary(el); }
@@ -1081,8 +1101,8 @@ function advanceDeal(id){
   const order = ['DOCS_PENDING','AI_PROCESSING','BROKER_REVIEW','SUBMITTED','APPROVED'];
   let i = order.indexOf(d.status);
   d.status = order[Math.min(i+1, order.length-1)];
-  if(d.status==='APPROVED'){ d.progress=null; d.closed='2026-05-27'; }
-  (d.activity = d.activity||[]).push({at:'2026-05-27', text:'Advanced to '+STATUS_META[d.status].label});
+  if(d.status==='APPROVED'){ d.progress=null; d.closed=TODAY_STR; }
+  (d.activity = d.activity||[]).push({at:TODAY_STR, text:'Advanced to '+STATUS_META[d.status].label});
   toast(`${d.id} advanced to ${STATUS_META[d.status].label}`, 'ok');
   renderPanel(); renderDashboard(document.getElementById('page-dashboard'));
 }
@@ -1197,7 +1217,7 @@ function renderWizStep(){
     const pol = activePolicy(d.lender);
     html = `<div class="wiz-card active"><h3>Document Upload</h3><p class="desc">Checklist generated from ${pol?(pol.label+"’s"):'standard'} requirements${d.dealType?` for a ${d.dealType} deal`:''} — click each zone to upload.</p>
       <div style="display:flex;flex-direction:column;gap:11px">
-        ${docs.map((doc,i)=>`<div class="upload-zone" id="wizUp${i}" onclick="wizUpload(${i},this.dataset.doc)" data-doc="${doc.replace(/"/g,'&quot;')}">⬆ ${doc}</div>`).join('')}
+        ${docs.map((doc,i)=>`<div class="upload-zone" id="wizUp${i}" onclick="wizUpload(${i},this.dataset.doc,0)" data-doc="${doc.replace(/"/g,'&quot;')}">⬆ ${doc}</div>`).join('')}
       </div>${wizNav()}</div>`;
   } else if(state.wizStep===6){
     html = `<div class="wiz-card active"><h3>AI Data Extraction</h3><p class="desc">Extracted fields from uploaded documents.</p>
@@ -1232,21 +1252,25 @@ function renderWizStep(){
   }
   c.innerHTML = html;
 }
-function wizUpload(i, name){
+function wizUpload(i, name, entityIdx=0){
   const z = document.getElementById('wizUp'+i); if(!z || z.classList.contains('done')) return;
   z.innerHTML = '⟳ Reading '+name+'…';
   setTimeout(()=>{
     z.classList.add('done'); z.innerHTML = '✓ '+name+' — extracted';
-    DOCS.unshift({name:name.replace(/[^a-z0-9]+/gi,'_')+'.pdf', deal:'NEW', type:name, conf:96, status:'Verified', size:'—', date:'2026-05-27'});
-    wizExtract(name);
+    DOCS.unshift({name:name.replace(/[^a-z0-9]+/gi,'_')+'.pdf', deal:'NEW', type:name, conf:96, status:'Verified', size:'—', date:TODAY_STR});
+    wizExtract(name, entityIdx);
   }, 1100);
 }
-// Simulated OCR extraction into the shared calc state — varies by document keyword.
-function wizExtract(name){
-  const ent = state.calc.entities[0] || (state.calc.entities[0] = {name:'Applicant', open:true, incomes:[], liabilities:[]});
+// Simulated OCR extraction into the shared calc state — varies by document keyword + entity.
+function wizExtract(name, entityIdx=0){
+  const idx = entityIdx || 0;
+  if(!state.calc.entities[idx]){
+    state.calc.entities[idx] = {name:'Applicant '+(idx+1), open:true, incomes:[], liabilities:[]};
+  }
+  const ent = state.calc.entities[idx];
   const n = name.toLowerCase(); let added='';
-  if(/payslip/.test(n) && !ent.incomes.some(x=>x._payslip)){ ent.incomes.push({type:'salary_ft', amount:142000, _payslip:true}); added='salary'; }
-  else if(/tax/.test(n) && !ent.incomes.some(x=>x._tax)){ ent.incomes.push({type:'self_emp', amount:90000, evidence_years:2, _tax:true}); added='self-employed income'; }
+  if(/payslip/.test(n) && !ent.incomes.some(x=>x._payslip)){ ent.incomes.push({type:'salary_ft', amount:142000, amount_y1:142000, amount_y2:138000, use_average:false, evidence_years:2, _payslip:true}); added='salary'; }
+  else if(/tax/.test(n) && !ent.incomes.some(x=>x._tax)){ ent.incomes.push({type:'self_emp', amount:90000, amount_y1:90000, amount_y2:84000, use_average:false, evidence_years:2, _tax:true}); added='self-employed income'; }
   else if(/(liabilit|statement)/.test(n) && !ent.liabilities.some(x=>x._stmt)){ ent.liabilities.push({type:'credit_card', balance:15000, rate:21.9, term:0, _stmt:true}); added='a credit-card liability'; }
   if(added) toast('Extracted '+added+' into the calculator', 'ok');
   if(state.page==='serviceability') updateStatusStrip();
@@ -1295,6 +1319,9 @@ function renderServiceability(el){
 function renderCalcEditor(){
   const ed = document.getElementById('calcEditor'); if(!ed) return;
   const buffer = activeBuffer();
+  const _yr = TODAY.getFullYear(), _mo = TODAY.getMonth(), _ce = (_mo>=6)?_yr:_yr-1;
+  const fyCur = String(_ce-1).slice(2)+'/'+String(_ce).slice(2);   // last completed FY (e.g. 24/25)
+  const fyPri = String(_ce-2).slice(2)+'/'+String(_ce-1).slice(2); // prior FY (e.g. 23/24)
   let html = state.calc.entities.map((ent, ei)=>`
     <div class="entity-card">
       <div class="entity-head" onclick="state.calc.entities[${ei}].open=!state.calc.entities[${ei}].open;renderCalcEditor()">
@@ -1306,11 +1333,11 @@ function renderCalcEditor(){
       </div>
       ${ent.open?`<div class="entity-body">
         <div class="subsec">Income</div>
-        <div class="row-head"><span>Type</span><span>Amount/yr</span><span>Shade</span><span>Shaded $</span><span></span></div>
+        <div class="row-head"><span>Type</span><span>FY ${fyCur}</span><span>FY ${fyPri}</span><span>Avg</span><span>Assessed</span><span></span></div>
         ${ent.incomes.map((inc,ii)=>{
-          const sh = SHADE[inc.type]||1; const shaded=(parseFloat(inc.amount)||0)*sh;
+          const shaded = getShadedIncome(inc, state.lender);
           const cond = CONDITIONAL_INCOME.includes(inc.type) ? `
-            <div style="display:flex;gap:14px;align-items:center;margin:-1px 0 9px;padding-left:2px;font-size:11px;color:var(--t3)">
+            <div style="display:flex;gap:14px;align-items:center;margin:-2px 0 9px;padding-left:2px;font-size:11px;color:var(--t3)">
               <label style="display:flex;gap:5px;align-items:center">Evidence
                 <select onchange="state.calc.entities[${ei}].incomes[${ii}].evidence_years=+this.value;updateCalc()" style="padding:3px 6px;border:1px solid var(--border);border-radius:7px">
                   <option value="2" ${(inc.evidence_years||2)===2?'selected':''}>2 yr</option>
@@ -1318,13 +1345,27 @@ function renderCalcEditor(){
                 </select></label>
               ${inc.type==='overtime'?`<label style="display:flex;gap:5px;align-items:center"><input type="checkbox" ${inc.is_emergency_services?'checked':''} onchange="state.calc.entities[${ei}].incomes[${ii}].is_emergency_services=this.checked;updateCalc()"> Emergency services / healthcare</label>`:''}
             </div>` : '';
+          const seAnn = (inc.use_average&&inc.amount_y2)?(((+inc.amount_y1||0)+(+inc.amount_y2||0))/2):(parseFloat(inc.amount)||0);
+          const seNet = Math.max(0, seAnn+(+inc.addback_depreciation||0)+(+inc.addback_interest||0)+(+inc.addback_lease||0)-(+inc.business_loan_repayments||0));
+          const ab = inc.type==='self_emp' ? `
+            <div class="addback-row">
+              <div style="font-weight:700;margin-bottom:6px;color:var(--brand)">Self-employed add-backs</div>
+              <div class="ab-grid">
+                <label>Depreciation<input type="number" value="${inc.addback_depreciation||0}" oninput="state.calc.entities[${ei}].incomes[${ii}].addback_depreciation=+this.value;updateCalc()"></label>
+                <label>Interest add-back<input type="number" value="${inc.addback_interest||0}" oninput="state.calc.entities[${ei}].incomes[${ii}].addback_interest=+this.value;updateCalc()"></label>
+                <label>Lease add-back<input type="number" value="${inc.addback_lease||0}" oninput="state.calc.entities[${ei}].incomes[${ii}].addback_lease=+this.value;updateCalc()"></label>
+                <label>Less: business loan repayments<input type="number" value="${inc.business_loan_repayments||0}" oninput="state.calc.entities[${ei}].incomes[${ii}].business_loan_repayments=+this.value;updateCalc()"></label>
+              </div>
+              <div class="ab-net" id="abNet-${ei}-${ii}">Net assessable (pre-shade): ${fmtMoney(seNet)}</div>
+            </div>` : '';
           return `<div class="row-line">
             <select aria-label="Income type" onchange="state.calc.entities[${ei}].incomes[${ii}].type=this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()">${Object.entries(INCOME_TYPES).map(([k,v])=>`<option value="${k}" ${inc.type===k?'selected':''}>${v}</option>`).join('')}</select>
-            <input type="number" aria-label="Income amount" value="${inc.amount}" oninput="state.calc.entities[${ei}].incomes[${ii}].amount=+this.value;updateCalc()">
-            <span class="computed" id="incShade-${ei}-${ii}">×${sh.toFixed(2)}</span>
+            <input type="number" aria-label="FY current income" value="${inc.amount_y1!=null?inc.amount_y1:inc.amount}" oninput="var I=state.calc.entities[${ei}].incomes[${ii}];I.amount_y1=+this.value;I.amount=+this.value;updateCalc()">
+            <input type="number" aria-label="FY prior income" value="${inc.amount_y2||0}" oninput="state.calc.entities[${ei}].incomes[${ii}].amount_y2=+this.value;updateCalc()">
+            <span class="avg-toggle"><input type="checkbox" aria-label="Use 2-year average" ${inc.use_average?'checked':''} onchange="state.calc.entities[${ei}].incomes[${ii}].use_average=this.checked;updateCalc()"></span>
             <span class="computed mono" id="incShaded-${ei}-${ii}">${fmtMoney(shaded)}</span>
             <span class="row-x" onclick="removeIncome(${ei},${ii})">×</span>
-          </div>${cond}`;}).join('')}
+          </div>${cond}${ab}`;}).join('')}
         <button class="add-row" onclick="addIncome(${ei})">+ Add income</button>
         <div class="subsec">Liabilities</div>
         <div class="row-head liab"><span>Type</span><span>Balance/Limit</span><span>Rate%</span><span>Term</span><span>Assessed/mo</span><span></span></div>
@@ -1375,20 +1416,28 @@ function removeLiab(ei,li){ state.calc.entities[ei].liabilities.splice(li,1); re
 function setText(id,v){ const e=document.getElementById(id); if(e) e.textContent=v; }
 /* In-place update on keystroke/drag — never re-renders inputs, so focus and slider drag are preserved */
 function updateCalc(){
-  const buffer = m().buffer;
+  const buffer = activeBuffer();
   state.calc.entities.forEach((ent,ei)=>{
     ent.incomes.forEach((inc,ii)=>{
-      const sh = SHADE[inc.type]||1;
+      const rawAmt = parseFloat(inc.amount)||0;
+      const shadedAmt = getShadedIncome(inc, state.lender);
+      const sh = rawAmt > 0 ? shadedAmt / rawAmt : (SHADE[inc.type]||1);
       setText(`incShade-${ei}-${ii}`, '×'+sh.toFixed(2));
-      setText(`incShaded-${ei}-${ii}`, fmtMoney((parseFloat(inc.amount)||0)*sh));
+      setText(`incShaded-${ei}-${ii}`, fmtMoney(shadedAmt));
+      if(inc.type==='self_emp'){
+        const ann = (inc.use_average && inc.amount_y2) ? (((+inc.amount_y1||0)+(+inc.amount_y2||0))/2) : (parseFloat(inc.amount)||0);
+        const net = Math.max(0, ann+(+inc.addback_depreciation||0)+(+inc.addback_interest||0)+(+inc.addback_lease||0)-(+inc.business_loan_repayments||0));
+        setText(`abNet-${ei}-${ii}`, 'Net assessable (pre-shade): '+fmtMoney(net));
+      }
     });
     ent.liabilities.forEach((l,li)=> setText(`liabAss-${ei}-${li}`, fmtMoney(assessLiability(l, buffer))));
   });
   const nl = state.calc.newLoan;
+  const pol = activePolicy();
   setText('nlRateLbl', nl.rate.toFixed(2)+'%');
   setText('nlTermLbl', nl.term+' yrs');
   setText('nlDepLbl', state.calc.dependants);
-  setText('nlAssessed', `Assessed rate: ${(nl.rate+buffer*100).toFixed(2)}% (contract ${nl.rate.toFixed(2)}% + ${(buffer*100).toFixed(0)}% APRA buffer)`);
+  setText('nlAssessed', `Assessed rate: ${(nl.rate+buffer*100).toFixed(2)}% (contract ${nl.rate.toFixed(2)}% + ${(buffer*100).toFixed(0)}% ${pol?(pol.label+' '):''}buffer)`);
   renderCalcResults();
   updateStatusStrip();
 }
@@ -1707,7 +1756,7 @@ function renderDocBody(){
 }
 function uploadDocs(files){
   [...files].forEach(f=>{
-    DOCS.unshift({name:f.name, deal:'D-891', type:'Unclassified', conf:0, status:'Processing', size:(f.size/1024).toFixed(0)+' KB', date:'2026-05-27'});
+    DOCS.unshift({name:f.name, deal:'D-891', type:'Unclassified', conf:0, status:'Processing', size:(f.size/1024).toFixed(0)+' KB', date:TODAY_STR});
   });
   toast(files.length+' document(s) uploaded', 'ok');
   renderDocuments(document.getElementById('page-documents'));
@@ -2284,6 +2333,10 @@ function runPilotStep(i){
 }
 // Mock OCR result — populates the SAME state the calculator/compare/commentary read from.
 function applyExtractedProfile(){
+  if(!state.anthropicKey){
+    toast('Demo mode — connect your Anthropic API key in Settings → AI to enable live document processing', 'info');
+    return;
+  }
   state.calc.entities = [
     {name:'Sarah Mitchell (extracted)', open:true,
      incomes:[{type:'salary_ft', amount:142000},{type:'overtime', amount:9500}],
@@ -2334,7 +2387,10 @@ function renderPilotResults(){
       <button class="btn" onclick="navigate('serviceability')">Review serviceability →</button>
       <button class="btn" onclick="navigate('compare')">View lender ranking →</button>
       <button class="btn" onclick="navigate('commentary')">Open commentary →</button>
-    </div>`;
+    </div>
+    ${state.anthropicKey ? '' : `<div style="font-size:11px;color:var(--t3);margin-top:10px;padding:10px 13px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;">
+      ⚠ Demo data shown — results above use a sample profile. Connect your API key in Settings → AI to process this deal's actual documents.
+    </div>`}`;
 }
 
 /* ============================================================
