@@ -903,35 +903,54 @@ function filteredDeals(){
     return true;
   });
 }
+const KPI_TREND = { needs:{d:'-3%',dir:'down'}, active:{d:'+12%',dir:'up'}, upfront:{d:'+8%',dir:'up'}, settled:{d:'+5%',dir:'up'} };
+function trendHTML(t){
+  const col = t.dir==='up'?'var(--green)':t.dir==='down'?'var(--red)':'var(--t3)';
+  const arr = t.dir==='up'?'▲':t.dir==='down'?'▼':'─';
+  return `<div style="font-size:11px;font-weight:700;color:${col};margin-top:3px">${arr} ${t.d} vs last month</div>`;
+}
 function renderDashboard(el){
   const needsAction = DEALS.filter(d=>['BROKER_REVIEW','MORE_INFO','DOCS_PENDING'].includes(d.status)).length;
   const active = DEALS.filter(d=>!['APPROVED'].includes(d.status)).length;
-  const approved = DEALS.filter(d=>d.status==='APPROVED').length;
-  const pipeline = DEALS.reduce((s,d)=>s+d.amount,0);
+  const expUpfront = DEALS.filter(d=>d.status!=='MORE_INFO').reduce((s,d)=>s+d.amount*d.upfront_commission_rate,0);
+  const settledMTD = DEALS.filter(d=>d.status==='APPROVED' && (d.closed||'').slice(0,7)==='2026-05').reduce((s,d)=>s+d.amount*d.upfront_commission_rate,0);
+  if(!DEALS.length){
+    el.innerHTML = `<div class="page-head"><h1>Pipeline</h1></div>
+      <div class="card" style="padding:48px 32px;text-align:center;max-width:560px;margin:40px auto">
+        <div style="width:56px;height:56px;border-radius:16px;background:var(--brand-grad);margin:0 auto 18px;display:flex;align-items:center;justify-content:center;color:#fff">${svgIcon('grid',26)}</div>
+        <h2 style="font-size:20px;font-weight:800">Welcome to DebtIQ</h2>
+        <p style="color:var(--t3);margin:8px 0 20px">Start your first deal — AI will pre-populate everything from a payslip and a recent statement.</p>
+        <div style="display:flex;gap:10px;justify-content:center">
+          <button class="btn primary" onclick="navigate('wizard')">+ New Deal</button>
+          <button class="btn" onclick="toast('Walkthrough coming soon','info')">Watch 90-sec walkthrough</button>
+        </div>
+      </div>`;
+    return;
+  }
   el.innerHTML = `
-    <div class="page-head"><h1>Pipeline Overview</h1><p>${DEALS.length} active deals across your portfolio</p></div>
+    <div class="page-head"><h1>Pipeline</h1><p>${DEALS.length} active applications in your pipeline</p></div>
     <div class="kpi-grid">
       <div class="kpi" style="border-top-color:var(--red)">
         <div class="ico" style="background:rgba(220,38,38,.1);color:var(--red)">⚠</div>
-        <div class="num" data-count="${needsAction}">0</div><div class="cap">Needs Action</div>
+        <div class="num" data-count="${needsAction}">0</div><div class="cap">Needs Action</div>${trendHTML(KPI_TREND.needs)}
       </div>
       <div class="kpi" style="border-top-color:var(--brand)">
         <div class="ico" style="background:rgba(91,79,245,.1);color:var(--brand)">▦</div>
-        <div class="num" data-count="${active}">0</div><div class="cap">Active Deals</div>
+        <div class="num" data-count="${active}">0</div><div class="cap">Active Deals</div>${trendHTML(KPI_TREND.active)}
       </div>
       <div class="kpi" style="border-top-color:var(--green)">
-        <div class="ico" style="background:rgba(5,150,105,.1);color:var(--green)">✓</div>
-        <div class="num" data-count="${approved}">0</div><div class="cap">Approved</div>
+        <div class="ico" style="background:rgba(5,150,105,.1);color:var(--green)">$</div>
+        <div class="num mono" data-count="${Math.round(expUpfront)}" data-money="1">${m().sym}0</div><div class="cap">Expected Upfront</div>${trendHTML(KPI_TREND.upfront)}
       </div>
       <div class="kpi" style="border-top-color:var(--t1)">
-        <div class="ico" style="background:rgba(15,15,26,.08);color:var(--t1)">$</div>
-        <div class="num mono" data-count="${pipeline}" data-money="1">${m().sym}0</div><div class="cap">Pipeline Value</div>
+        <div class="ico" style="background:rgba(15,15,26,.08);color:var(--t1)">✓</div>
+        <div class="num mono" data-count="${Math.round(settledMTD)}" data-money="1">${m().sym}0</div><div class="cap">Settled MTD</div>${trendHTML(KPI_TREND.settled)}
       </div>
     </div>
     <div class="toolbar">
       <div class="search">
         <span class="si-ico">🔍</span>
-        <input id="dealSearch" placeholder="Search deals or client…" value="${state.dealSearch}" oninput="state.dealSearch=this.value;renderDealGrid()">
+        <input id="dealSearch" aria-label="Search deals" placeholder="Search deals or client…" value="${state.dealSearch}" oninput="state.dealSearch=this.value;renderDealGrid()">
       </div>
       <div class="filters">
         ${[['all','All'],['my','My Review'],['docs','Docs Needed'],['approved','Approved']].map(([k,l])=>
@@ -950,18 +969,22 @@ function renderDealGrid(){
   if(!deals.length){ grid.innerHTML = `<p style="color:var(--t3)">No deals match your filters.</p>`; return; }
   grid.innerHTML = deals.map(d=>{
     const s = STATUS_META[d.status];
-    return `<div class="deal-card" onclick="openPanel('${d.id}')">
+    const up = d.amount*d.upfront_commission_rate, tr = d.amount*d.trail_commission_rate;
+    const nextSoon = d.next_action_date && (new Date(d.next_action_date)-new Date('2026-05-27'))/864e5 <= 3 && d.status!=='APPROVED';
+    return `<div class="deal-card" onclick="openPanel('${d.id}')" role="button" tabindex="0">
       <div class="dc-top">
         <div class="dc-name">${d.name}</div>
         <span class="pill ${s.cls}">${s.label}</span>
       </div>
       <div class="dc-id">${d.id} · ${d.type}</div>
+      ${nextSoon?`<div class="pill amber" style="margin:2px 0 8px">⏰ Next action ${d.next_action_date}</div>`:''}
       ${d.progress!==null?`<div class="ai-bar"><div class="lbl"><span>AI Processing</span><span>${d.progress}%</span></div><div class="progress"><span style="width:${d.progress}%"></span></div></div>`:''}
       <div class="metric-row">
         <div class="metric-box"><div class="mb-lbl">Amount</div><div class="mb-val mono">${fmtMoney(d.amount)}</div></div>
-        <div class="metric-box"><div class="mb-lbl">Lender</div><div class="mb-val">${d.lender}</div></div>
+        <div class="metric-box"><div class="mb-lbl">Lender</div><div class="mb-val">${lenderLabel(d.lender)}</div></div>
         <div class="metric-box"><div class="mb-lbl">LVR</div><div class="mb-val mono">${d.lvr}%</div></div>
       </div>
+      <div style="font-size:11px;color:var(--t3);font-weight:600;margin-top:10px">Est. commission: <span class="mono" style="color:var(--green)">${fmtMoney(up)}</span> upfront + <span class="mono">${fmtMoney(tr)}/yr</span> trail</div>
     </div>`;
   }).join('');
 }
@@ -1098,12 +1121,11 @@ function wizGo(dir){
 }
 /* Update LVR badge in place so the input keeps focus while typing */
 function updateWizLVR(){
-  const d = state.wizData;
-  const lvr = d.propValue>0 ? (d.loanAmount/d.propValue*100) : 0;
+  const pv = parseFloat(state.wizData.propValue)||0, amt = parseFloat(state.calc.newLoan.amount)||0;
+  const lvr = pv>0 ? (amt/pv*100) : 0;
   const color = lvr<=80?'var(--green)':lvr<=90?'var(--amber)':'var(--red)';
   const el = document.getElementById('wizLvr');
   if(el){ el.textContent='LVR '+lvr.toFixed(1)+'%'; el.style.background=color+'1a'; el.style.color=color; }
-  updateStatusStrip();
 }
 // Checklist generator — selected lender's required docs, extended by deal type.
 function lenderChecklist(id, dealType){
@@ -1158,14 +1180,15 @@ function renderWizStep(){
       <div class="tile-grid">${['Individual','Joint','Company','Trust','SMSF','Partnership'].map(t=>`<div class="tile ${d.entity===t?'sel':''}" onclick="state.wizData.entity='${t}';renderWizStep()"><div class="tt">${t}</div></div>`).join('')}</div>
       ${wizNav()}</div>`;
   } else if(state.wizStep===4){
-    const lvr = d.propValue>0 ? (d.loanAmount/d.propValue*100) : 0;
+    const nl = state.calc.newLoan, pv = parseFloat(d.propValue)||0;
+    const lvr = pv>0 ? ((parseFloat(nl.amount)||0)/pv*100) : 0;
     const lvrColor = lvr<=80?'var(--green)':lvr<=90?'var(--amber)':'var(--red)';
-    html = `<div class="wiz-card active"><h3>Loan Structure</h3><p class="desc">Live LVR updates as you type.</p>
+    html = `<div class="wiz-card active"><h3>Loan Structure</h3><p class="desc">Writes straight into the calculator — no re-entry later.</p>
       <div class="form-grid">
-        <div class="inp"><label>Property Value</label><input type="number" value="${d.propValue}" oninput="state.wizData.propValue=+this.value;updateWizLVR()"></div>
-        <div class="inp"><label>Loan Amount</label><input type="number" value="${d.loanAmount}" oninput="state.wizData.loanAmount=+this.value;updateWizLVR()"></div>
-        <div class="inp"><label>Interest Rate (%)</label><input type="number" step="0.01" value="${d.rate}" oninput="state.wizData.rate=+this.value"></div>
-        <div class="inp"><label>Term (years)</label><input type="number" value="${d.term}" oninput="state.wizData.term=+this.value"></div>
+        <div class="inp"><label for="wzPv">Property Value</label><input id="wzPv" type="number" value="${d.propValue}" oninput="state.wizData.propValue=+this.value;updateWizLVR()"></div>
+        <div class="inp"><label for="wzLoan">Loan Amount</label><input id="wzLoan" type="number" value="${nl.amount}" oninput="state.calc.newLoan.amount=+this.value;updateWizLVR()"></div>
+        <div class="inp"><label for="wzRate">Interest Rate (%)</label><input id="wzRate" type="number" step="0.01" value="${nl.rate}" oninput="state.calc.newLoan.rate=+this.value"></div>
+        <div class="inp"><label for="wzTerm">Term (years)</label><input id="wzTerm" type="number" value="${nl.term}" oninput="state.calc.newLoan.term=+this.value"></div>
       </div>
       <div class="lvr-badge" id="wizLvr" style="background:${lvrColor}1a;color:${lvrColor}">LVR ${lvr.toFixed(1)}%</div>
       ${wizNav()}</div>`;
@@ -1201,7 +1224,7 @@ function renderWizStep(){
       <div class="detail-row"><span class="dl">Genuine savings</span><span class="dv">${pol.genuine_savings_required?('Required >'+(pol.genuine_savings_threshold_lvr||85)+'% LVR'):'Not required'}</span></div>
       <ul style="margin:10px 0 0;padding-left:18px;color:var(--t2);font-size:12.5px">${(pol.notes||[]).slice(0,3).map(n=>`<li style="margin-bottom:3px">${n}</li>`).join('')}</ul>` : '';
     html = `<div class="wiz-card active"><h3>Review & Submit</h3><p class="desc">Submission pack cover — verified against ${lenderName} policy.</p>
-      ${[['Lender selected', lenderName],['Deal type', d.dealType||'Owner Occupier'],['Loan amount', fmtMoney(d.loanAmount)],['LVR', (d.loanAmount/d.propValue*100).toFixed(1)+'%'],['Documents requested', lenderChecklist(d.lender,d.dealType).length+' items'],['Commentary generated','Complete']].map(r=>
+      ${[['Lender selected', lenderName],['Deal type', d.dealType||'Owner Occupier'],['Loan amount', fmtMoney(state.calc.newLoan.amount)],['LVR', ((parseFloat(state.calc.newLoan.amount)||0)/(parseFloat(d.propValue)||1)*100).toFixed(1)+'%'],['Documents requested', lenderChecklist(d.lender,d.dealType).length+' items'],['Commentary generated','Complete']].map(r=>
         `<div class="detail-row"><span class="dl">✓ ${r[0]}</span><span class="dv">${r[1]}</span></div>`).join('')}
       ${reqs}
       <div class="assessed-note" style="background:rgba(5,150,105,.08);color:var(--green);margin-top:16px">✓ All requirements satisfied. Ready to submit to ${lenderName}${pol?(' via '+(pol.submission_channel||'broker portal')):''}.</div>
@@ -1210,16 +1233,32 @@ function renderWizStep(){
   c.innerHTML = html;
 }
 function wizUpload(i, name){
-  const z = document.getElementById('wizUp'+i);
-  z.classList.add('done'); z.innerHTML = '✓ ' + name + ' — uploaded';
-  toast(name+' uploaded', 'ok');
+  const z = document.getElementById('wizUp'+i); if(!z || z.classList.contains('done')) return;
+  z.innerHTML = '⟳ Reading '+name+'…';
+  setTimeout(()=>{
+    z.classList.add('done'); z.innerHTML = '✓ '+name+' — extracted';
+    DOCS.unshift({name:name.replace(/[^a-z0-9]+/gi,'_')+'.pdf', deal:'NEW', type:name, conf:96, status:'Verified', size:'—', date:'2026-05-27'});
+    wizExtract(name);
+  }, 1100);
+}
+// Simulated OCR extraction into the shared calc state — varies by document keyword.
+function wizExtract(name){
+  const ent = state.calc.entities[0] || (state.calc.entities[0] = {name:'Applicant', open:true, incomes:[], liabilities:[]});
+  const n = name.toLowerCase(); let added='';
+  if(/payslip/.test(n) && !ent.incomes.some(x=>x._payslip)){ ent.incomes.push({type:'salary_ft', amount:142000, _payslip:true}); added='salary'; }
+  else if(/tax/.test(n) && !ent.incomes.some(x=>x._tax)){ ent.incomes.push({type:'self_emp', amount:90000, evidence_years:2, _tax:true}); added='self-employed income'; }
+  else if(/(liabilit|statement)/.test(n) && !ent.liabilities.some(x=>x._stmt)){ ent.liabilities.push({type:'credit_card', balance:15000, rate:21.9, term:0, _stmt:true}); added='a credit-card liability'; }
+  if(added) toast('Extracted '+added+' into the calculator', 'ok');
+  if(state.page==='serviceability') updateStatusStrip();
 }
 function submitDeal(){
   showLoader('Submitting deal to lender…');
   setTimeout(()=>{
     hideLoader();
     const id = 'D-'+(892+Math.floor(Math.random()*100));
-    DEALS.unshift({id, name:'New Application', lender:state.wizData.lender||'CBA', amount:state.wizData.loanAmount, status:'SUBMITTED', lvr:+(state.wizData.loanAmount/state.wizData.propValue*100).toFixed(1), progress:null, type:state.wizData.dealType||'Owner Occupier'});
+    const amt = parseFloat(state.calc.newLoan.amount)||0, pv = parseFloat(state.wizData.propValue)||1;
+    DEALS.unshift(mkDeal({id, name:'New Application', lender:state.wizData.lender||'CBA', amount:amt, status:'SUBMITTED', lvr:+(amt/pv*100).toFixed(1), progress:null, type:state.wizData.dealType||'Owner Occupier'}));
+    DOCS.forEach(x=>{ if(x.deal==='NEW') x.deal=id; });   // retag wizard docs to the new deal
     toast(`Deal ${id} submitted successfully!`, 'ok');
     state.wizStep=1; navigate('dashboard');
   }, 1600);
@@ -1270,26 +1309,41 @@ function renderCalcEditor(){
         <div class="row-head"><span>Type</span><span>Amount/yr</span><span>Shade</span><span>Shaded $</span><span></span></div>
         ${ent.incomes.map((inc,ii)=>{
           const sh = SHADE[inc.type]||1; const shaded=(parseFloat(inc.amount)||0)*sh;
+          const cond = CONDITIONAL_INCOME.includes(inc.type) ? `
+            <div style="display:flex;gap:14px;align-items:center;margin:-1px 0 9px;padding-left:2px;font-size:11px;color:var(--t3)">
+              <label style="display:flex;gap:5px;align-items:center">Evidence
+                <select onchange="state.calc.entities[${ei}].incomes[${ii}].evidence_years=+this.value;updateCalc()" style="padding:3px 6px;border:1px solid var(--border);border-radius:7px">
+                  <option value="2" ${(inc.evidence_years||2)===2?'selected':''}>2 yr</option>
+                  <option value="1" ${inc.evidence_years===1?'selected':''}>1 yr</option>
+                </select></label>
+              ${inc.type==='overtime'?`<label style="display:flex;gap:5px;align-items:center"><input type="checkbox" ${inc.is_emergency_services?'checked':''} onchange="state.calc.entities[${ei}].incomes[${ii}].is_emergency_services=this.checked;updateCalc()"> Emergency services / healthcare</label>`:''}
+            </div>` : '';
           return `<div class="row-line">
-            <select onchange="state.calc.entities[${ei}].incomes[${ii}].type=this.value;updateCalc()">${Object.entries(INCOME_TYPES).map(([k,v])=>`<option value="${k}" ${inc.type===k?'selected':''}>${v}</option>`).join('')}</select>
-            <input type="number" value="${inc.amount}" oninput="state.calc.entities[${ei}].incomes[${ii}].amount=+this.value;updateCalc()">
+            <select aria-label="Income type" onchange="state.calc.entities[${ei}].incomes[${ii}].type=this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()">${Object.entries(INCOME_TYPES).map(([k,v])=>`<option value="${k}" ${inc.type===k?'selected':''}>${v}</option>`).join('')}</select>
+            <input type="number" aria-label="Income amount" value="${inc.amount}" oninput="state.calc.entities[${ei}].incomes[${ii}].amount=+this.value;updateCalc()">
             <span class="computed" id="incShade-${ei}-${ii}">×${sh.toFixed(2)}</span>
             <span class="computed mono" id="incShaded-${ei}-${ii}">${fmtMoney(shaded)}</span>
             <span class="row-x" onclick="removeIncome(${ei},${ii})">×</span>
-          </div>`;}).join('')}
+          </div>${cond}`;}).join('')}
         <button class="add-row" onclick="addIncome(${ei})">+ Add income</button>
         <div class="subsec">Liabilities</div>
         <div class="row-head liab"><span>Type</span><span>Balance/Limit</span><span>Rate%</span><span>Term</span><span>Assessed/mo</span><span></span></div>
         ${ent.liabilities.map((l,li)=>{
           const assessed = assessLiability(l, buffer);
+          const noTerm = !['credit_card','hecs'].includes(l.type) && !(parseFloat(l.term)>0);
+          const extra = l.type==='hecs'
+            ? `<div style="margin:-1px 0 9px;padding-left:2px;font-size:11px;color:var(--t3);display:flex;gap:6px;align-items:center">HECS deduction/mo
+                 <input type="number" aria-label="HECS monthly deduction" value="${l.monthly_deduction||0}" oninput="state.calc.entities[${ei}].liabilities[${li}].monthly_deduction=+this.value;updateCalc()" style="width:84px;padding:4px 7px;border:1px solid var(--border);border-radius:7px" title="From the latest payslip — used for CBA's 12-month exclusion rule">
+                 <span style="opacity:.7">(from payslip)</span></div>`
+            : (noTerm ? `<div style="margin:-1px 0 9px;padding-left:2px;font-size:11px;color:var(--amber)">⚠ Term must be &gt; 0 for accurate assessment (defaulting to ${defaultTerm(l.type)}yr).</div>` : '');
           return `<div class="row-line liab">
-            <select onchange="state.calc.entities[${ei}].liabilities[${li}].type=this.value;updateCalc()">${Object.entries(LIAB_TYPES).map(([k,v])=>`<option value="${k}" ${l.type===k?'selected':''}>${v}</option>`).join('')}</select>
-            <input type="number" value="${l.balance}" oninput="state.calc.entities[${ei}].liabilities[${li}].balance=+this.value;updateCalc()">
-            <input type="number" step="0.1" value="${l.rate}" oninput="state.calc.entities[${ei}].liabilities[${li}].rate=+this.value;updateCalc()">
-            <input type="number" value="${l.term}" oninput="state.calc.entities[${ei}].liabilities[${li}].term=+this.value;updateCalc()">
+            <select aria-label="Liability type" onchange="state.calc.entities[${ei}].liabilities[${li}].type=this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()">${Object.entries(LIAB_TYPES).map(([k,v])=>`<option value="${k}" ${l.type===k?'selected':''}>${v}</option>`).join('')}</select>
+            <input type="number" aria-label="Balance or limit" value="${l.balance}" oninput="state.calc.entities[${ei}].liabilities[${li}].balance=+this.value;updateCalc()">
+            <input type="number" aria-label="Rate" step="0.1" value="${l.rate}" oninput="state.calc.entities[${ei}].liabilities[${li}].rate=+this.value;updateCalc()">
+            <input type="number" aria-label="Term" value="${l.term}" oninput="state.calc.entities[${ei}].liabilities[${li}].term=+this.value;updateCalc()">
             <span class="computed mono" id="liabAss-${ei}-${li}">${fmtMoney(assessed)}</span>
             <span class="row-x" onclick="removeLiab(${ei},${li})">×</span>
-          </div>`;}).join('')}
+          </div>${extra}`;}).join('')}
         <button class="add-row" onclick="addLiab(${ei})">+ Add liability</button>
       </div>`:''}
     </div>`).join('');
@@ -1302,9 +1356,11 @@ function renderCalcEditor(){
       <input type="range" min="3" max="12" step="0.01" value="${nl.rate}" oninput="state.calc.newLoan.rate=+this.value;updateCalc()"></div>
     <div class="slider-row"><label><span>Term</span><span class="mono" id="nlTermLbl">${nl.term} yrs</span></label>
       <input type="range" min="5" max="30" step="1" value="${nl.term}" oninput="state.calc.newLoan.term=+this.value;updateCalc()"></div>
+    <div class="slider-row"><label><span>Adults</span><span class="mono" id="nlAdLbl">${state.calc.adults||1}</span></label>
+      <input type="range" min="1" max="2" step="1" value="${state.calc.adults||1}" oninput="state.calc.adults=+this.value;setText('nlAdLbl',this.value);updateCalc()"></div>
     <div class="slider-row"><label><span>Dependants</span><span class="mono" id="nlDepLbl">${state.calc.dependants}</span></label>
       <input type="range" min="0" max="6" step="1" value="${state.calc.dependants}" oninput="state.calc.dependants=+this.value;updateCalc()"></div>
-    <div class="assessed-note" id="nlAssessed">Assessed rate: ${(nl.rate+buffer*100).toFixed(2)}% (contract ${nl.rate.toFixed(2)}% + ${(buffer*100).toFixed(0)}% APRA buffer)</div>
+    <div class="assessed-note" id="nlAssessed">Assessed rate: ${(nl.rate+buffer*100).toFixed(2)}% (contract ${nl.rate.toFixed(2)}% + ${(buffer*100).toFixed(0)}% ${activePolicy()?(activePolicy().label+' '):''}buffer)</div>
   </div></div>
   <button class="btn ghost" style="margin-top:4px" onclick="addEntity()">+ Add Entity</button>`;
   ed.innerHTML = html;
@@ -1430,8 +1486,10 @@ function renderCalcResults(animate){
       <table><thead><tr><th>Shock</th><th>Rate</th><th>Repay/mo</th><th>NDI</th><th>DSR</th></tr></thead><tbody>${stress}</tbody></table>
     </div>
     <div class="card" style="padding:16px;margin-bottom:16px">
-      <h4 style="font-size:13px;font-weight:700;margin-bottom:6px">✦ Why & how to PASS</h4>
-      ${serviceabilityInsights(r).map(x=>`<div class="insight-row"><span class="ic" style="color:var(--${x.tone})">${x.tone==='green'?'✓':x.tone==='amber'?'➜':'✕'}</span><span style="font-size:12.5px;font-weight:500">${x.t}</span></div>`).join('')}
+      <h4 style="font-size:13px;font-weight:700;margin-bottom:6px">${r.verdict==='PASS'?'✦ Why it works':'✦ Why this isn\'t working — what to change'}</h4>
+      ${serviceabilityInsights(r).map(x=>`<div class="insight-row"><span class="ic" style="color:var(--${x.tone})">${x.head?'•':x.tone==='green'?'✓':x.tone==='amber'?'➜':'✕'}</span>
+        <span style="font-size:12.5px;font-weight:${x.head?'700':'500'};flex:1">${x.t}</span>
+        ${x.apply?`<button class="mini-btn" style="flex-shrink:0" onclick="applyLever('${x.apply}')">Apply</button>`:''}</div>`).join('')}
     </div>
     <button class="btn primary" style="width:100%" onclick="callAIAssessment()">✦ AI Assessment</button>
   `;
@@ -1702,9 +1760,19 @@ function rankLenders(){
       const totalCost = pmt*term*12;
       const serviceable = ndi>0 && dsr<p.dsr_max;
       const maxLvr = p.max_lvr_owner_occ_pi || p.max_lvr_owner_occ || 0;
+      // Borrowing capacity for THIS borrower under this lender's policy.
+      const serv = (amt)=>{ const pm=PMT(amt,(rate+p.buffer*100)/100,term); const td=fig.existingDebt+pm; const n=fig.income-td-fig.HEM; const dd=fig.income>0?td/fig.income*100:0; return n>0&&dd<p.dsr_max; };
+      let capacity=0; if(serv(0)){ let lo=0,hi=Math.max(loan,1)*2+500000; for(let k=0;k<36;k++){const mid=(lo+hi)/2; serv(mid)?lo=mid:hi=mid;} capacity=Math.floor(lo/1000)*1000; }
+      const hecsLiab = state.calc.entities.some(e=>e.liabilities.some(l=>l.type==='hecs'));
+      let edge;
+      if(p.income_shading && p.income_shading.hecs && hecsLiab) edge = (p.income_shading.hecs==='exclude_under_20k') ? 'Ignores HECS under $20k' : 'May exclude HECS (12-mo rule)';
+      else if(p.buffer<=0.02) edge = `${(p.buffer*100).toFixed(0)}% buffer — more capacity than 3% majors`;
+      else edge = `${p.dsr_max}% DSR ceiling, ${(p.buffer*100).toFixed(0)}% buffer`;
       return {l:id, label:p.label||id, type:p.type, isAdi:p.apra_regulated, buffer:p.buffer,
-        color:p.lender_color, maxLvr, rate, aRate, pmt, aPmt, dsr, ndi, totalCost, serviceable};
+        color:p.lender_color, maxLvr, rate, aRate, pmt, aPmt, dsr, ndi, totalCost, serviceable, capacity, edge};
     });
+    rows.sort((a,b)=> (b.serviceable-a.serviceable) || (b.capacity-a.capacity) || (a.rate-b.rate));
+    return rows;
   } else {
     // Non-AU markets: keep the original indicative-rate behaviour.
     const r = computeServiceability(), buffer = m().buffer;
@@ -1748,27 +1816,29 @@ function renderCompare(el){
     ? `<div class="card" style="padding:14px 16px;margin-bottom:16px;font-size:12.5px;color:var(--t2)">Each lender is assessed on <b>its own APRA/non-bank buffer, DSR ceiling and income shading</b>. Note how non-banks (1–2% buffer) can service the same client that the 3% majors decline.</div>`
     : '';
   el.innerHTML = `
-    <div class="page-head"><h1>Lender Comparison</h1><p>${m().flag} ${m().label} — ${rows.length} lenders ranked by approvability for ${fmtMoney(loan)} over ${term} years</p></div>
-    ${recommended?`<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--brand)"><span class="pill violet">★ AI Recommended</span> <b style="margin-left:8px">${recommended.label}</b> <span class="pill ${recommended.isAdi?'gray':'amber'}" style="margin-left:6px">${recommended.isAdi?'ADI':'Non-bank'} · ${(recommended.buffer*100).toFixed(0)}% buffer</span> — serviceable at <span class="mono">${recommended.rate.toFixed(2)}%</span>, NDI <span class="mono">${fmtMoney(recommended.ndi)}/mo</span>.</div>`:`<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--red)">No lender services this loan as structured — see the Serviceability page for the levers to fix it.</div>`}
+    <div class="page-head"><h1>Lender Comparison</h1><p>${m().flag} ${m().label} — ${rows.length} lenders, will-they-approve THIS deal for ${fmtMoney(loan)} over ${term} years</p></div>
+    ${recommended?`<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--brand)"><span class="pill violet">★ AI Recommended</span> <b style="margin-left:8px">${recommended.label}</b> <span class="pill ${recommended.isAdi?'gray':'amber'}" style="margin-left:6px">${recommended.isAdi?'ADI':'Non-bank'} · ${(recommended.buffer*100).toFixed(0)}% buffer</span> — capacity <span class="mono">${fmtMoney(recommended.capacity||0)}</span>, NDI <span class="mono">${fmtMoney(recommended.ndi)}/mo</span>.</div>`:`<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--red)">No lender services this loan as structured — see the Calculator for the levers to fix it.</div>`}
     ${auNote}
     <div class="table-card">
-      <table><thead><tr><th>Rank</th><th>Lender</th><th>Type</th><th>Buffer</th><th>Max LVR</th><th>Rate</th><th>Assessed</th><th>Assessed/mo</th><th>DSR</th><th>NDI</th><th>Serviceable</th></tr></thead>
-      <tbody>${rows.map((x,i)=>`
+      <table><thead><tr><th>Lender</th><th>Type</th><th>Buffer</th><th>Capacity</th><th>Verdict</th><th>Policy edge for this deal</th><th></th></tr></thead>
+      <tbody>${rows.map((x)=>`
         <tr class="${x===recommended?'best-row':''}">
-          <td style="font-weight:700">${i+1}</td>
-          <td style="font-weight:700"><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${x.color};margin-right:7px"></span>${x.label}${x===recommended?' ★':x.rate===bestRate?' 🏆':''}</td>
+          <td style="font-weight:700"><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${x.color};margin-right:7px"></span>${x.label}${x===recommended?' ★':''}</td>
           <td><span class="pill ${x.isAdi?'gray':'amber'}">${x.isAdi?'ADI':'Non-bank'}</span></td>
           <td class="mono">${(x.buffer*100).toFixed(0)}%</td>
-          <td class="mono">${x.maxLvr?x.maxLvr+'%':'—'}</td>
-          <td class="mono">${x.rate.toFixed(2)}%</td>
-          <td class="mono">${x.aRate.toFixed(2)}%</td>
-          <td class="mono">${fmtMoney(x.aPmt)}</td>
-          <td class="mono">${x.dsr.toFixed(1)}%</td>
-          <td class="mono" style="color:${x.ndi>=0?'var(--green)':'var(--red)'}">${fmtMoney(x.ndi)}</td>
-          <td><span class="pill ${x.serviceable?'green':'red'}">${x.serviceable?'Yes':'No'}</span></td>
+          <td class="mono">${x.capacity!=null?fmtMoney(x.capacity):'—'}</td>
+          <td><span class="pill ${x.serviceable?'green':'red'}">${x.serviceable?'SERVICEABLE':'FAIL'}</span></td>
+          <td style="font-size:12px;color:var(--t2)">${x.edge||'—'}</td>
+          <td><button class="mini-btn" onclick="useLender('${x.l}')">Use</button></td>
         </tr>`).join('')}
       </tbody></table>
     </div>`;
+}
+function useLender(id){
+  if(lenderDB()[id]) state.lender = id;
+  state.svcTab = 'detailed';
+  navigate('serviceability');
+  toast('Now assessing against '+lenderLabel(id), 'ok');
 }
 
 /* ============================================================
@@ -2127,32 +2197,40 @@ function serviceabilityInsights(r){
     if(r.dsr < dsrMax) out.push({tone:'green', t:`DSR ${r.dsr.toFixed(1)}% sits under the ${dsrMax}% ${ceilingName} ceiling.`});
     return out;
   }
-  // Not a clean pass — surface concrete levers with $ impact.
+  // Binding constraint headline (§5 "why this isn't working").
+  const gaps = [];
+  if(r.ndi <= 0) gaps.push(`NDI is ${fmtMoney(r.ndi)}/mo — you're ${fmtMoney(-r.ndi)} short`);
+  if(r.dsr >= dsrMax) gaps.push(`DSR ${r.dsr.toFixed(1)}% over the ${dsrMax}% ${ceilingName} ceiling`);
+  if(r.dti > 6) gaps.push(`DTI ${r.dti.toFixed(1)}x ${r.dti>9?'(outside major-bank policy)':'(>6x restricted)'}`);
+  out.push({tone:'red', head:true, t: gaps.length ? ('Binding constraint: '+gaps.join('; ')+'.') : 'Marginal — review the assumptions carefully.'});
+  // Ranked levers, smallest change first, each Applyable.
   const maxLoan = maxServiceableLoan();
   if(maxLoan > 0 && maxLoan < loan){
-    out.push({tone:'amber', t:`Reduce the loan to ${fmtMoney(maxLoan)} (−${fmtMoney(loan-maxLoan)}) to service at ${nl.rate.toFixed(2)}%.`});
+    out.push({tone:'amber', apply:'maxloan', t:`Drop loan to ${fmtMoney(maxLoan)} (−${fmtMoney(loan-maxLoan)}) → verdict becomes SERVICEABLE.`});
+  }
+  if(state.market==='AU'){
+    const cheaper = cheapestServiceableLender();
+    if(cheaper && cheaper.l!==state.lender) out.push({tone:'amber', apply:'lender:'+cheaper.l, t:`Switch to ${cheaper.label} (${(cheaper.buffer*100).toFixed(0)}% buffer) → serviceable as structured.`});
   }
   if((parseFloat(nl.term)||30) < 30){
     const newPmt = PMT(loan, ((parseFloat(nl.rate)||0)+buffer*100)/100, 30);
     const delta = r.newLoanMo - newPmt;
-    if(delta > 0) out.push({tone:'amber', t:`Extend the term to 30 years → repayment −${fmtMoney(delta)}/mo, NDI +${fmtMoney(delta)}.`});
+    if(delta > 0) out.push({tone:'amber', apply:'term30', t:`Extend term to 30yr P&I → repayment −${fmtMoney(delta)}/mo, NDI +${fmtMoney(delta)}.`});
   }
   const cc = ccLimits();
   if(cc > 0 && r.ndi < 0){
-    const perDollar = 0.038/12;                 // assessed cost per $1 of card limit, per month
+    const perDollar = 0.038/12;
     const need = Math.min(cc, Math.ceil((-r.ndi)/perDollar/1000)*1000);
     out.push({tone:'amber', t:`Cut credit-card limits by ${fmtMoney(need)} → NDI +${fmtMoney(need*perDollar)}/mo.`});
   }
-  if(r.dsr >= dsrMax){
-    out.push({tone:'red', t:`DSR ${r.dsr.toFixed(1)}% exceeds the ${dsrMax}% ${ceilingName} ceiling — reduce debt or add income.`});
-  }
-  // Cross-lender lever: if a lower-buffer lender would service it, surface that.
-  if(state.market==='AU'){
-    const cheaper = cheapestServiceableLender();
-    if(cheaper && cheaper.l!==state.lender) out.push({tone:'amber', t:`Switch to ${cheaper.label} (${(cheaper.buffer*100).toFixed(0)}% buffer) → serviceable as structured. See Lender Compare.`});
-  }
-  if(!out.length) out.push({tone:'red', t:'Assessed income is too low for this loan — an additional applicant or a larger deposit is required.'});
   return out;
+}
+function applyLever(kind){
+  if(kind==='maxloan') state.calc.newLoan.amount = maxServiceableLoan();
+  else if(kind==='term30') state.calc.newLoan.term = 30;
+  else if(kind.indexOf('lender:')===0) state.lender = kind.slice(7);
+  renderServiceability(document.getElementById('page-serviceability'));
+  toast('Applied — recalculated', 'ok');
 }
 
 /* ============================================================
