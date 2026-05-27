@@ -1,4 +1,67 @@
-# DebtIQ v6 — Critique Fix Batch
+# DebtIQ v6 — Changelog
+
+## Round 2 — engine + compliance batch (this update)
+
+Surgical edits to `index.html`. Verified with the jsdom smoke harness (all
+checks green) and a JS syntax check. Two commits: bugs/income/extraction, then
+pack/compliance/settings.
+
+**Part 1 — critical bugs**
+- **BUG 1:** `updateCalc()` now uses `activeBuffer()` (was `m().buffer`) and the
+  inline income "shade ×" + assessed $ now come from `getShadedIncome(inc, state.lender)`,
+  so the calculator's per-row figures track the selected lender.
+- **BUG 2:** `applyExtractedProfile()` is gated behind `state.anthropicKey` (shows a
+  demo toast and returns otherwise); AI Pilot results show a "demo data" disclaimer
+  until a key is set.
+- **BUG 3:** added `TODAY`/`TODAY_STR`; replaced all 7 hardcoded `2026-05-27`
+  references (next-action comparisons, `closed`/activity dates, doc dates) and the
+  Settled-MTD month filter with live dates.
+
+**Part 2 — two-year income + add-backs**
+- Income model gains `amount_y1`/`amount_y2`/`use_average` and self-employed
+  add-backs (`addback_depreciation`/`interest`/`lease`, `business_loan_repayments`).
+- `getShadedIncome()` assesses on the 2-yr average when toggled and applies
+  self-employed add-backs (less business loan repayments) before shading.
+- Calculator income row redesigned: **Type | FY current | FY prior | Avg | Assessed | ×**,
+  with a collapsible self-employed add-backs panel (net assessable shown live).
+  Default income seeded with y1/y2.
+
+**Part 3 — multi-entity extraction**
+- `wizUpload(i, name, entityIdx)` / `wizExtract(name, entityIdx)` route extracted
+  income/liabilities to the correct entity (step 5 passes index 0 for now).
+
+**Part 4 — AOL submission pack**
+- `generateSubmissionPack()` → `buildPackHTML()` → `openPackWindow()`: a print-ready,
+  branded credit submission (cover, application summary, employment & income with
+  FY columns + add-backs, liabilities, serviceability verdict + DSR/NDI/LVR/DTI
+  metrics, R&O + servicing commentary, lender policy match, document checklist,
+  broker declaration, print/close controls). AI prompts (`buildBIDPrompt`,
+  `buildServicingPrompt`) used when a key is set; otherwise falls back to existing
+  commentary/placeholders. Buttons added in Commentary header and wizard step 8.
+
+**Part 5 — Compliance AI**
+- New nav item + page (`renderCompliance`): generate R&O (RG209), HEM explanation,
+  serviceability commentary, or the full pack. `validateBIDBeforeGenerate()` blocks
+  generation on a FAIL verdict and surfaces DTI/LVR/NDI/HEM policy warnings. Output
+  cards support copy + inline edit.
+
+**Part 6 — settings / print / polish**
+- `@media print` block for clean PDF export of the in-app commentary.
+- Settings **Account** save updates the sidebar name + avatar initials (`saveAccount`).
+- **Accredited Lenders** (Settings → Lenders): `state.accreditedLenders` filters both
+  the calculator lender dropdown and the Compare table (`toggleAccredited`).
+- Billing copy "All 6 markets" → "AU + NZ markets". Debounced deal search
+  (`debouncedRenderDealGrid`, 150ms). `advanceDeal` restores the search box value.
+
+### Deferred (unchanged from round 1)
+- Real Anthropic key via backend proxy and real Supabase auth/persistence still
+  require a backend — the AI Pilot and live generation remain demo/fallback until
+  then. Per-lender `base_rate` remains indicative. Both `index.html` + `lenders.js`
+  deploy together.
+
+---
+
+# DebtIQ v6 — Critique Fix Batch (Round 1)
 
 Applied the 24-point evidence-backed critique. Changes are surgical edits to
 `index.html` + `lenders.js` (no rewrite). Shipped in four logical commits:
