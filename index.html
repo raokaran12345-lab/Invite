@@ -173,7 +173,7 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
 
 /* Status strip */
 .status-strip{
-  flex-shrink:0;background:var(--brand-grad);color:#fff;
+  flex-shrink:0;background:#0F0F1A;color:#fff;
   display:flex;align-items:center;gap:6px;padding:9px 22px;overflow-x:auto;
   font-size:12px;
 }
@@ -441,6 +441,16 @@ tr:last-child td{border-bottom:none}
 .insight-row{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border)}
 .insight-row:last-child{border-bottom:none}
 .insight-row .ic{flex-shrink:0;font-weight:800}
+.nav-item .ico{display:flex;align-items:center;justify-content:center;width:22px}
+.nav-badge{margin-left:auto;font-size:9px;font-weight:800;letter-spacing:.5px;background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:6px}
+.demo-banner{background:#FEF3C7;color:#92400E;font-size:12px;font-weight:600;text-align:center;padding:6px 14px;border-bottom:1px solid rgba(0,0,0,.06)}
+.country-caption{margin:0 14px 14px;font-size:12px;font-weight:600;color:var(--t3);display:flex;align-items:center;gap:6px}
+.panel-tabs{display:flex;gap:4px;padding:0 22px;border-bottom:1px solid var(--border)}
+.panel-tab{padding:10px 12px;font-size:12.5px;font-weight:700;color:var(--t3);border-bottom:2px solid transparent;cursor:pointer}
+.panel-tab.active{color:var(--brand);border-bottom-color:var(--brand)}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px}
+.skip-link{position:absolute;left:-999px;top:8px;z-index:3000;background:#fff;color:var(--brand);padding:8px 14px;border-radius:10px;font-weight:700;box-shadow:var(--sh-2)}
+.skip-link:focus{left:8px}
 
 /* Subtle motion — radial gauges, shimmer */
 @keyframes shimmer{0%{background-position:-360px 0}100%{background-position:360px 0}}
@@ -467,6 +477,7 @@ tr:last-child td{border-bottom:none}
 </style>
 </head>
 <body>
+<a href="#content" class="skip-link">Skip to main content</a>
 
 <!-- ============================================================
      LOGIN
@@ -505,13 +516,8 @@ tr:last-child td{border-bottom:none}
       <div class="logo-mark">D</div>
       <span class="wordmark hide-collapse">DebtIQ</span>
     </div>
-    <div class="country-pill hide-collapse" onclick="toggleCountryDD(event)">
-      <span id="countryFlag">🇦🇺</span>
-      <span id="countryName" style="flex:1">Australia</span>
-      <span>▾</span>
-      <div class="dropdown" id="countryDD"></div>
-    </div>
-    <nav class="nav" id="nav"></nav>
+    <div class="country-caption hide-collapse" id="countryCaption">🇦🇺 Australia · <span style="opacity:.6">🇳🇿 NZ soon</span></div>
+    <nav class="nav" id="nav" aria-label="Primary"></nav>
     <div class="sb-collapse" onclick="toggleSidebar()">⇆ Collapse</div>
     <div class="sb-user">
       <div class="avatar">JB</div>
@@ -524,13 +530,14 @@ tr:last-child td{border-bottom:none}
 
   <!-- Main column -->
   <div class="main-col">
+    <div class="demo-banner" id="demoBanner">Demo mode — no data is being saved. Sign in (Settings) to enable persistence.</div>
     <div class="topbar">
-      <h2 id="pageTitle">Dashboard</h2>
-      <span class="badge-live"><span class="dot"></span>AI Engine Live</span>
-      <button class="btn-new" onclick="navigate('wizard')">+ New Deal</button>
+      <h2 id="pageTitle">Pipeline</h2>
+      <span class="badge-live" id="enginePill"><span class="dot"></span>DEMO MODE</span>
+      <button class="btn-new" onclick="navigate('wizard')" aria-label="Create new deal">+ New Deal</button>
     </div>
     <div class="status-strip" id="statusStrip"></div>
-    <div class="content" id="content"></div>
+    <div class="content" id="content" role="main"></div>
   </div>
 </div>
 </div>
@@ -683,6 +690,9 @@ const state = {
   },
   anthropicKey:'',       // demo only — production must proxy via backend
   panelTab:'overview',
+  lendersTab:'compare',
+  settingsTab:'account',
+  activeDeal:null,
   svcTab:'detailed',     // 'detailed' (verified line items) | 'manual' (unverified lump sums)
   // Manual / unverified quick calc — broker/banker/lender enters lump sums when docs aren't verified yet.
   manual:{
@@ -749,44 +759,43 @@ function lenderContext(){
 /* ============================================================
    NAVIGATION
    ============================================================ */
+/* Inline Lucide-style icons (24x24, stroke, currentColor) — no external font. */
+const ICONS = {
+  grid:'<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
+  plus:'<circle cx="12" cy="12" r="9"/><path d="M12 8v8"/><path d="M8 12h8"/>',
+  calculator:'<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><path d="M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>',
+  sparkles:'<path d="M11.5 3.5 13 8l4.5 1.5L13 11l-1.5 4.5L10 11 5.5 9.5 10 8z"/><path d="M19 14l.7 2.3L22 17l-2.3.7L19 20l-.7-2.3L16 17l2.3-.7z"/>',
+  landmark:'<line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
+  message:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  phone:'<rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'
+};
+const svgIcon = (name, sz=18)=> `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]||''}</svg>`;
+
 const NAV = [
-  {section:'Pipeline', items:[
-    {id:'dashboard', label:'Dashboard', ico:'▦'},
-    {id:'aipilot', label:'AI Pilot', ico:'✦'},
-    {id:'wizard', label:'New Deal', ico:'✚'},
-    {id:'documents', label:'Documents', ico:'🗎'}
-  ]},
-  {section:'Intelligence', items:[
-    {id:'serviceability', label:'Serviceability', ico:'📊'},
-    {id:'commentary', label:'AI Commentary', ico:'✦'},
-    {id:'compare', label:'Lender Compare', ico:'⚖'},
-    {id:'intel', label:'Market Intel', ico:'📰'}
-  ]},
-  {section:'Platform', items:[
-    {id:'portal', label:'Client Portal', ico:'📱'},
-    {id:'markets', label:'Global Markets', ico:'🌐'}
-  ]},
-  {section:'Account', items:[
-    {id:'billing', label:'Billing', ico:'💳'},
-    {id:'settings', label:'Settings', ico:'⚙'}
-  ]}
+  {id:'dashboard',     label:'Pipeline',  icon:'grid'},
+  {id:'wizard',        label:'New Deal',  icon:'plus'},
+  {id:'serviceability',label:'Calculate', icon:'calculator'},
+  {id:'aipilot',       label:'AI Pilot',  icon:'sparkles', badge:'DEMO'},
+  {id:'compare',       label:'Lenders',   icon:'landmark'},
+  {id:'settings',      label:'Settings',  icon:'gear'}
 ];
 const PAGE_TITLES = {
-  dashboard:'Dashboard', aipilot:'AI Pilot', wizard:'New Deal', documents:'Documents',
-  serviceability:'Serviceability Calculator', commentary:'AI Commentary',
-  compare:'Lender Compare', intel:'Market Intelligence', portal:'Client Portal', markets:'Global Markets',
-  billing:'Billing', settings:'Settings'
+  dashboard:'Pipeline', aipilot:'AI Pilot', wizard:'New Deal',
+  serviceability:'Serviceability Calculator', compare:'Lenders', settings:'Settings',
+  // contextual (opened inside a deal, not top-level):
+  documents:'Documents', commentary:'AI Commentary', intel:'Market Intelligence', portal:'Client Portal'
 };
+const STRIP_PAGES = ['serviceability','aipilot'];   // status strip only where it's computed
 
 function renderNav(){
-  const nav = document.getElementById('nav');
-  nav.innerHTML = NAV.map(s=>`
-    <div class="nav-section hide-collapse">${s.section}</div>
-    ${s.items.map(i=>`
-      <div class="nav-item ${state.page===i.id?'active':''}" onclick="navigate('${i.id}')">
-        <span class="ico">${i.ico}</span><span class="hide-collapse">${i.label}</span>
-      </div>`).join('')}
-  `).join('');
+  document.getElementById('nav').innerHTML = NAV.map(i=>`
+    <div class="nav-item ${state.page===i.id?'active':''}" onclick="navigate('${i.id}')" role="button" tabindex="0" aria-label="${i.label}" aria-current="${state.page===i.id?'page':'false'}">
+      <span class="ico">${svgIcon(i.icon)}</span><span class="hide-collapse">${i.label}</span>
+      ${i.badge?`<span class="nav-badge hide-collapse">${i.badge}</span>`:''}
+    </div>`).join('');
 }
 
 function navigate(page){
@@ -798,7 +807,7 @@ function navigate(page){
   const target = document.getElementById('page-'+page);
   ({
     dashboard:renderDashboard, aipilot:renderAIPilot, wizard:renderWizard, documents:renderDocuments,
-    serviceability:renderServiceability, commentary:renderCommentary, compare:renderCompare,
+    serviceability:renderServiceability, commentary:renderCommentary, compare:renderLenders,
     intel:renderIntel, portal:renderPortal, markets:renderMarkets, billing:renderBilling, settings:renderSettings
   }[page] || renderDashboard)(target);
   updateStatusStrip();
@@ -809,38 +818,35 @@ function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('c
 /* ============================================================
    COUNTRY SELECTOR
    ============================================================ */
-function renderCountryDD(){
-  document.getElementById('countryDD').innerHTML = Object.values(MARKETS).map(mk=>`
-    <div class="dd-item" onclick="setMarket('${mk.code}',event)">${mk.flag} ${mk.label}</div>`).join('');
-}
-function toggleCountryDD(e){ e.stopPropagation(); document.getElementById('countryDD').classList.toggle('show'); }
-function setMarket(code, e){
-  if(e) e.stopPropagation();
+function renderCountryDD(){ /* country picker removed — switching now lives in Settings */ }
+function setMarket(code){
   state.market = code;
   if(code==='AU' && !lenderDB()[state.lender]) state.lender = 'CBA';   // keep active lender valid for AU
   const mk = MARKETS[code];
-  document.getElementById('countryFlag').textContent = mk.flag;
-  document.getElementById('countryName').textContent = mk.label;
-  document.getElementById('countryDD').classList.remove('show');
+  const cap = document.getElementById('countryCaption');
+  if(cap) cap.innerHTML = `${mk.flag} ${mk.label}${code==='AU'?' · <span style="opacity:.6">🇳🇿 NZ soon</span>':''}`;
   toast(`Switched to ${mk.label} (${mk.cur})`, 'info');
   navigate(state.page);
 }
-document.addEventListener('click', ()=> document.getElementById('countryDD').classList.remove('show'));
 
 /* ============================================================
    STATUS STRIP (live)
    ============================================================ */
 function updateStatusStrip(){
+  const strip = document.getElementById('statusStrip');
+  if(!STRIP_PAGES.includes(state.page)){ strip.style.display='none'; return; }   // only where it's computed
+  strip.style.display='flex';
   const r = computeServiceability();
-  const verdictColor = r.verdict==='PASS'?'#A7F3D0':r.verdict==='BORDERLINE'?'#FDE68A':'#FCA5A5';
-  document.getElementById('statusStrip').innerHTML = `
+  const verdictColor = r.verdict==='PASS'?'#6EE7B7':r.verdict==='BORDERLINE'?'#FCD34D':'#FCA5A5';
+  const dtiColor = r.dti<=6?'#6EE7B7':r.dti<=9?'#FCD34D':'#FCA5A5';
+  strip.innerHTML = `
     <div class="si"><span class="dot" style="background:#fff"></span><span class="lbl">LIVE</span></div>
     <div class="si"><span class="lbl">DSR</span><span class="val mono">${r.dsr.toFixed(1)}%</span></div>
     <div class="si"><span class="lbl">NDI</span><span class="val mono">${fmtMoney(r.ndi)}/mo</span></div>
     <div class="si"><span class="lbl">LVR</span><span class="val mono">${r.lvr.toFixed(1)}%</span></div>
+    <div class="si"><span class="lbl">DTI</span><span class="val mono" style="color:${dtiColor}">${r.dti.toFixed(1)}x</span></div>
     <div class="si"><span class="lbl">Verdict</span><span class="val" style="color:${verdictColor}">${r.verdict}</span></div>
-    <div class="si"><span class="lbl">Lender</span><span class="val">${activePolicy()?(activePolicy().label||state.lender):'—'} · buffer ${(activeBuffer()*100).toFixed(0)}%</span></div>
-    <div class="si"><span class="lbl">Market</span><span class="val">${m().flag} ${m().code}</span></div>
+    <div class="si"><span class="lbl">Lender</span><span class="val">${activePolicy()?(activePolicy().label||state.lender):'—'} · ${(activeBuffer()*100).toFixed(0)}%</span></div>
   `;
 }
 
@@ -961,42 +967,101 @@ function renderDealGrid(){
 }
 
 /* ---------- Slide-over panel ---------- */
+const lenderLabel = (id)=>{ const p=lenderDB()[id]; return p?(p.label||id):id; };
+const REF_LABEL = {direct:'Direct', past_client:'Past client', aggregator:'Aggregator', partner:'Referral partner', other:'Other'};
 function openPanel(id){
   const d = DEALS.find(x=>x.id===id); if(!d) return;
-  const s = STATUS_META[d.status];
-  document.getElementById('panelName').textContent = d.name;
-  document.getElementById('panelId').textContent = d.id + ' · ' + d.type;
-  document.getElementById('panelBody').innerHTML = `
-    <span class="pill ${s.cls}" style="margin-bottom:16px">${s.label}</span>
-    <div class="detail-row"><span class="dl">Loan Amount</span><span class="dv mono">${fmtMoney(d.amount)}</span></div>
-    <div class="detail-row"><span class="dl">Lender</span><span class="dv">${d.lender}</span></div>
-    <div class="detail-row"><span class="dl">LVR</span><span class="dv mono">${d.lvr}%</span></div>
-    <div class="detail-row"><span class="dl">Deal Type</span><span class="dv">${d.type}</span></div>
-    <div class="detail-row"><span class="dl">Market</span><span class="dv">${m().flag} ${m().label}</span></div>
-    ${d.progress!==null?`<div style="margin:16px 0"><div class="ai-bar"><div class="lbl"><span>AI Processing</span><span>${d.progress}%</span></div><div class="progress"><span style="width:${d.progress}%"></span></div></div></div>`:''}
-    <h4 style="margin:20px 0 12px;font-size:14px">Quick Actions</h4>
-    <div style="display:flex;flex-direction:column;gap:9px">
-      <button class="btn primary" onclick="closePanel();navigate('serviceability')">Run Serviceability</button>
-      <button class="btn" onclick="closePanel();navigate('commentary')">Generate Commentary</button>
-      <button class="btn" onclick="advanceDeal('${d.id}')">Advance Stage</button>
-      <button class="btn" onclick="toast('Documents requested from client','info')">Request Documents</button>
-    </div>
-  `;
+  state.activeDeal = id; state.panelTab = 'overview';
   document.getElementById('overlay').classList.add('show');
-  const p = document.getElementById('panel'); p.classList.add('show');
+  document.getElementById('panel').classList.add('show');
+  renderPanel();
 }
 function closePanel(){
   document.getElementById('overlay').classList.remove('show');
   document.getElementById('panel').classList.remove('show');
+}
+function renderPanel(){
+  const d = DEALS.find(x=>x.id===state.activeDeal); if(!d) return;
+  document.getElementById('panelName').textContent = d.name;
+  document.getElementById('panelId').textContent = d.id + ' · ' + d.type;
+  const tabs = {overview:'Overview', documents:'Documents', commentary:'Commentary', portal:'Portal', activity:'Activity'};
+  const bar = `<div class="panel-tabs" style="margin:0 -22px 16px;padding:0 22px">${Object.entries(tabs).map(([t,l])=>
+    `<div class="panel-tab ${state.panelTab===t?'active':''}" role="button" tabindex="0" onclick="state.panelTab='${t}';renderPanel()">${l}</div>`).join('')}</div>`;
+  document.getElementById('panelBody').innerHTML = bar + `<div id="panelTabBody"></div>`;
+  ({overview:panelOverview, documents:panelDocs, commentary:panelCommentary, portal:panelPortal, activity:panelActivity}[state.panelTab])(document.getElementById('panelTabBody'), d);
+}
+function panelOverview(el, d){
+  const s = STATUS_META[d.status];
+  const nextSoon = d.next_action_date && (new Date(d.next_action_date) - new Date('2026-05-27'))/864e5 <= 3;
+  el.innerHTML = `
+    <span class="pill ${s.cls}" style="margin-bottom:14px">${s.label}</span>
+    ${nextSoon?`<div class="card" style="padding:12px 14px;margin-bottom:12px;border-left:4px solid var(--amber)">${svgIcon('clock',15)} <b>Next action ${d.next_action_date}</b> — ${d.next_action_note||'follow up'}</div>`:''}
+    <div class="detail-row"><span class="dl">Loan Amount</span><span class="dv mono">${fmtMoney(d.amount)}</span></div>
+    <div class="detail-row"><span class="dl">Lender</span><span class="dv">${lenderLabel(d.lender)}</span></div>
+    <div class="detail-row"><span class="dl">LVR</span><span class="dv mono">${d.lvr}%</span></div>
+    <div class="detail-row"><span class="dl">Referral source</span><span class="dv">${REF_LABEL[d.referral_source]||'—'}</span></div>
+    <div class="detail-row"><span class="dl">Est. commission</span><span class="dv mono">${fmtMoney(d.amount*d.upfront_commission_rate)} + ${fmtMoney(d.amount*d.trail_commission_rate)}/yr</span></div>
+    ${d.primary_email?`<div class="detail-row"><span class="dl">Contact</span><span class="dv">${d.primary_email}</span></div>`:''}
+    ${d.progress!==null?`<div style="margin:14px 0"><div class="ai-bar"><div class="lbl"><span>AI Processing</span><span>${d.progress}%</span></div><div class="progress"><span style="width:${d.progress}%"></span></div></div></div>`:''}
+    <h4 style="margin:18px 0 10px;font-size:14px">Quick Actions</h4>
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <button class="btn primary" onclick="loadDealIntoCalc('${d.id}')">Open in Calculator</button>
+      <button class="btn" onclick="advanceDeal('${d.id}')">Advance Stage</button>
+    </div>`;
+}
+function loadDealIntoCalc(id){
+  const d = DEALS.find(x=>x.id===id); if(!d) return;
+  if(lenderDB()[d.lender]) state.lender = d.lender;
+  state.calc.newLoan.amount = d.amount;
+  closePanel(); navigate('serviceability');
+}
+function panelDocs(el, d){
+  const docs = DOCS.filter(x=>x.deal===d.id);
+  const statusCls = {Verified:'green', Processing:'violet', Review:'amber'};
+  el.innerHTML = docs.length ? `
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${docs.map(x=>`<div class="card" style="padding:11px 13px;display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-weight:600;font-size:13px">${x.name}</div><div style="font-size:11px;color:var(--t3)">${x.type} · ${x.size}</div></div>
+        <span class="pill ${statusCls[x.status]||'gray'}">${x.status}</span></div>`).join('')}
+    </div>
+    <button class="btn" style="margin-top:12px;width:100%" onclick="document.getElementById('panelDocUp').click()">⬆ Upload more</button>
+    <input type="file" id="panelDocUp" multiple style="display:none" onchange="panelUpload('${d.id}', this.files)">`
+  : `<div style="border:2px dashed #CBD2DC;border-radius:14px;padding:26px;text-align:center;color:var(--t3)">
+      <p style="font-weight:600;margin-bottom:10px">No documents yet</p>
+      <button class="btn primary" onclick="document.getElementById('panelDocUp').click()">⬆ Upload</button>
+      <input type="file" id="panelDocUp" multiple style="display:none" onchange="panelUpload('${d.id}', this.files)">
+    </div>`;
+}
+function panelUpload(id, files){
+  [...files].forEach(f=> DOCS.unshift({name:f.name, deal:id, type:'Unclassified', conf:0, status:'Processing', size:(f.size/1024).toFixed(0)+' KB', date:'2026-05-27'}));
+  toast(files.length+' document(s) uploaded', 'ok'); renderPanel();
+}
+function panelCommentary(el, d){ renderCommentary(el); }
+function panelPortal(el, d){
+  const link = 'https://portal.debtiq.com/d/'+d.id.toLowerCase();
+  el.innerHTML = `
+    <p style="font-size:13px;color:var(--t2);margin-bottom:12px">Secure client upload link for <b>${d.name}</b>. Anything uploaded here flows into this deal — no re-keying.</p>
+    <div class="card" style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <span class="mono" style="font-size:12px;overflow:hidden;text-overflow:ellipsis">${link}</span>
+      <button class="mini-btn" onclick="navigator.clipboard&&navigator.clipboard.writeText('${link}');toast('Link copied','ok')">Copy</button>
+    </div>
+    <button class="btn primary" style="width:100%;margin-top:12px" onclick="toast('Secure link sent to client','ok')">Send to client</button>`;
+}
+function panelActivity(el, d){
+  if(!d.activity || !d.activity.length) d.activity = [{at:'2026-05-15', text:'Deal created'}];
+  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:0">
+    ${d.activity.slice().reverse().map(a=>`<div class="detail-row"><span class="dl">${a.at}</span><span class="dv" style="font-weight:600">${a.text}</span></div>`).join('')}
+  </div>`;
 }
 function advanceDeal(id){
   const d = DEALS.find(x=>x.id===id);
   const order = ['DOCS_PENDING','AI_PROCESSING','BROKER_REVIEW','SUBMITTED','APPROVED'];
   let i = order.indexOf(d.status);
   d.status = order[Math.min(i+1, order.length-1)];
-  if(d.status==='APPROVED') d.progress=null;
+  if(d.status==='APPROVED'){ d.progress=null; d.closed='2026-05-27'; }
+  (d.activity = d.activity||[]).push({at:'2026-05-27', text:'Advanced to '+STATUS_META[d.status].label});
   toast(`${d.id} advanced to ${STATUS_META[d.status].label}`, 'ok');
-  closePanel(); renderDashboard(document.getElementById('page-dashboard'));
+  renderPanel(); renderDashboard(document.getElementById('page-dashboard'));
 }
 
 /* ============================================================
@@ -1662,6 +1727,17 @@ function cheapestServiceableLender(){
   const s = rankLenders().filter(x=>x.serviceable);
   return s.length ? s[0] : null;
 }
+// Lenders page = Compare + Market Intel sub-tabs (Intel absorbed here per nav reduction).
+function renderLenders(el){
+  el.innerHTML = `
+    <div class="tabs" style="margin-bottom:16px">
+      <div class="tab ${state.lendersTab!=='intel'?'active':''}" role="button" tabindex="0" onclick="state.lendersTab='compare';renderLenders(document.getElementById('page-compare'))">Compare</div>
+      <div class="tab ${state.lendersTab==='intel'?'active':''}" role="button" tabindex="0" onclick="state.lendersTab='intel';renderLenders(document.getElementById('page-compare'))">Market Intel</div>
+    </div>
+    <div id="lendersSub"></div>`;
+  const sub = document.getElementById('lendersSub');
+  if(state.lendersTab==='intel') renderIntel(sub); else renderCompare(sub);
+}
 function renderCompare(el){
   const loan = parseFloat(state.calc.newLoan.amount)||0;
   const term = state.calc.newLoan.term;
@@ -1904,41 +1980,55 @@ function renderBilling(el){
 /* ============================================================
    PAGE: SETTINGS
    ============================================================ */
-let settingsTab = 'profile';
-let aiConfig = {autoCommentary:true, autoClassify:true, stressTest:true, riskFlags:false};
-let notifs = {emailNew:true, emailApproved:true, pushDocs:false, pushReview:true};
+let settingsTab = 'account';
 function renderSettings(el){
   el.innerHTML = `
-    <div class="page-head"><h1>Settings</h1><p>Manage your account and platform preferences</p></div>
+    <div class="page-head"><h1>Settings</h1><p>Account, market, AI and commission defaults</p></div>
     <div class="tabs">
-      ${[['profile','Profile'],['lenders','Lenders'],['ai','AI Config'],['notifs','Notifications']].map(([k,l])=>
-        `<div class="tab ${settingsTab===k?'active':''}" onclick="settingsTab='${k}';renderSettings(document.getElementById('page-settings'))">${l}</div>`).join('')}
+      ${[['account','Account'],['market','Market'],['ai','AI'],['commission','Commission']].map(([k,l])=>
+        `<div class="tab ${settingsTab===k?'active':''}" role="button" tabindex="0" onclick="settingsTab='${k}';renderSettings(document.getElementById('page-settings'))">${l}</div>`).join('')}
     </div>
-    <div class="card" style="padding:24px;max-width:760px">${settingsPane()}</div>`;
+    <div class="card" style="padding:24px;max-width:720px">${settingsPane()}</div>`;
 }
 function settingsPane(){
-  if(settingsTab==='profile'){
-    return `<div class="form-grid">
-      <div class="inp"><label>Full Name</label><input value="Jordan Blake"></div>
-      <div class="inp"><label>Email</label><input value="broker@debtiq.com"></div>
-      <div class="inp"><label>Brokerage</label><input value="Summit Mortgage Group"></div>
-      <div class="inp"><label>Credit License #</label><input value="ACL 389201"></div>
-      <div class="inp"><label>Phone</label><input value="+61 400 123 456"></div>
-      <div class="inp"><label>Default Market</label><select onchange="setMarket(this.value)">${Object.values(MARKETS).map(mk=>`<option value="${mk.code}" ${state.market===mk.code?'selected':''}>${mk.label}</option>`).join('')}</select></div>
-    </div><button class="btn primary" style="margin-top:18px" onclick="toast('Profile saved','ok')">Save Changes</button>`;
-  }
-  if(settingsTab==='lenders'){
-    return `<p style="color:var(--t3);margin-bottom:16px">Accredited lenders for ${m().flag} ${m().label}</p>
-      <div class="check-grid">${m().lenders.map((l,i)=>`<label class="check-item"><input type="checkbox" ${i<6?'checked':''}> ${l}</label>`).join('')}</div>
-      <button class="btn primary" style="margin-top:18px" onclick="toast('Accreditations updated','ok')">Save</button>`;
-  }
-  if(settingsTab==='ai'){
-    return `${Object.entries({autoCommentary:'Auto-generate commentary on deal creation',autoClassify:'Auto-classify uploaded documents',stressTest:'Run rate stress test automatically',riskFlags:'Surface AI risk flags in pipeline'}).map(([k,v])=>`
-      <div class="toggle-row"><span style="font-weight:600">${v}</span><div class="switch ${aiConfig[k]?'on':''}" onclick="aiConfig.${k}=!aiConfig.${k};this.classList.toggle('on')"></div></div>`).join('')}
-      <p style="color:var(--t3);font-size:12px;margin-top:14px">Model: claude-sonnet-4-20250514 · Powered by Anthropic</p>`;
-  }
-  return `${Object.entries({emailNew:'Email — new deal assigned',emailApproved:'Email — deal approved',pushDocs:'Push — documents received',pushReview:'Push — broker review needed'}).map(([k,v])=>`
-    <div class="toggle-row"><span style="font-weight:600">${v}</span><div class="switch ${notifs[k]?'on':''}" onclick="notifs.${k}=!notifs.${k};this.classList.toggle('on')"></div></div>`).join('')}`;
+  if(settingsTab==='account') return `
+    <div class="form-grid">
+      <div class="inp"><label for="setName">Full name</label><input id="setName" value="Jordan Blake"></div>
+      <div class="inp"><label for="setEmail">Email</label><input id="setEmail" value="broker@debtiq.com"></div>
+      <div class="inp"><label for="setAcl">Credit licence (ACL)</label><input id="setAcl" value="389201"></div>
+      <div class="inp"><label for="setAgg">Aggregator</label><input id="setAgg" value="Finsure"></div>
+    </div>
+    <button class="btn primary" style="margin-top:18px" onclick="toast('Account saved','ok')">Save</button>
+    <hr style="border:none;border-top:1px solid var(--border);margin:20px 0">
+    <p style="font-size:13px;font-weight:700;margin-bottom:8px">Persistence &amp; auth</p>
+    <button class="btn" onclick="toast('Supabase auth is wired but disabled in this demo','info')">Sign in with Supabase</button>
+    <p style="font-size:11px;color:var(--t3);margin-top:8px">Demo mode saves nothing. Production will use Supabase Auth with row-level security so each broker sees only their own deals.</p>`;
+  if(settingsTab==='market') return `
+    <p style="font-size:13px;font-weight:700;margin-bottom:12px">Active market</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      ${Object.values(MARKETS).map(mk=>`<button class="btn ${state.market===mk.code?'primary':''}" onclick="setMarket('${mk.code}')">${mk.flag} ${mk.label}</button>`).join('')}
+    </div>
+    ${state.market==='NZ'?`<div class="card" style="padding:14px 16px;margin-top:16px;border-left:4px solid var(--amber)">NZ lender database arrives Q3 2026 — Australia is fully wired with 25 lenders. NZ currently falls back to market-default buffers.</div>`:''}`;
+  if(settingsTab==='ai') return `
+    <div class="inp"><label for="setKey">Anthropic API key</label><input id="setKey" type="password" placeholder="sk-ant-…" value="${state.anthropicKey?'••••••••':''}" oninput="state.anthropicKey=this.value;updateEnginePill()"></div>
+    <div class="card" style="padding:12px 14px;margin-top:12px;border-left:4px solid var(--red);font-size:12px;color:var(--t2)">
+      <b>Security:</b> a key embedded in the browser is visible to anyone with DevTools. In production it must be proxied through a backend (e.g. a Vercel edge function) — this field is demo-only and held in memory.
+    </div>
+    <p style="font-size:11px;color:var(--t3);margin-top:10px">Model: claude-sonnet-4-20250514. With a key set the topbar shows “AI Engine Live”; otherwise “DEMO MODE”.</p>`;
+  return `
+    <p style="font-size:13px;color:var(--t2);margin-bottom:12px">Defaults used to seed new deals.</p>
+    <div class="form-grid">
+      <div class="inp"><label for="setUp">Upfront commission (%)</label><input id="setUp" type="number" step="0.01" value="${(COMMISSION.upfront*100).toFixed(2)}" oninput="COMMISSION.upfront=(+this.value)/100"></div>
+      <div class="inp"><label for="setTr">Trail commission (% per year)</label><input id="setTr" type="number" step="0.01" value="${(COMMISSION.trail*100).toFixed(2)}" oninput="COMMISSION.trail=(+this.value)/100"></div>
+    </div>
+    <button class="btn primary" style="margin-top:18px" onclick="toast('Commission defaults saved','ok')">Save</button>`;
+}
+function updateEnginePill(){
+  const live = !!state.anthropicKey;
+  const pill = document.getElementById('enginePill');
+  if(pill) pill.innerHTML = `<span class="dot"></span>${live?'AI Engine Live':'DEMO MODE'}`;
+  const banner = document.getElementById('demoBanner');
+  if(banner) banner.style.display = live ? 'none' : 'block';
 }
 
 /* ============================================================
@@ -2083,8 +2173,8 @@ let pilotResult = null;
 function renderAIPilot(el){
   el.innerHTML = `
     <div class="market-hero">
-      <h2>✦ AI Pilot</h2>
-      <p style="opacity:.9;margin-top:4px">End-to-end autopilot. One pass — extract, assess, match a lender and draft the submission, all into one shared file with zero re-keying.</p>
+      <h2>✦ AI Pilot ${state.anthropicKey?'':'<span style="font-size:11px;font-weight:800;background:#FEF3C7;color:#92400E;padding:3px 8px;border-radius:7px;vertical-align:middle;margin-left:8px">DEMO</span>'}</h2>
+      <p style="opacity:.9;margin-top:4px">End-to-end autopilot — extract, assess, match a lender and draft the submission into one shared file with zero re-keying.${state.anthropicKey?'':' <b>(Demo mode — add your Anthropic API key in Settings to enable live document processing.)</b>'}</p>
       <button class="btn" id="pilotBtn" style="margin-top:18px;background:#fff;color:var(--brand);font-weight:700" onclick="runAIPilot()">${pilotState==='done'?'▶ Re-run AI Pilot':'▶ Run AI Pilot'}</button>
     </div>
     <div id="pilotSteps" style="max-width:760px"></div>
@@ -2192,8 +2282,8 @@ document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==
 
 /* ---------- Init ---------- */
 function init(){
-  renderCountryDD();
   renderNav();
+  updateEnginePill();
   navigate('dashboard');
   // simulate live AI progress on the processing deal
   setInterval(()=>{
