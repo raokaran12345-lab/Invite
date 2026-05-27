@@ -1,6 +1,51 @@
 # DebtIQ v6 — Changelog
 
-## Round 2 — engine + compliance batch (this update)
+## Round 3 — backend (Netlify Functions + Supabase)
+
+Turns the static app into a deployable product **without breaking demo mode**.
+The app auto-detects the backend via `/api/config`; with no backend it runs
+exactly as before (mock AI, no auth, nothing saved). Full guide in `BACKEND.md`.
+
+**New files**
+- `netlify.toml` — publish `.`, functions dir, `/api/claude` + `/api/config` redirects.
+- `netlify/functions/claude.js` — **Anthropic proxy**. Key lives in `ANTHROPIC_API_KEY`
+  (server env only); verifies the caller's Supabase JWT before spending credits.
+- `netlify/functions/config.js` — returns the **public** Supabase URL + anon key
+  from env so the static page can boot the client (empty ⇒ demo mode).
+- `supabase/schema.sql` — `deals` table (per-user `jsonb`), `updated_at` trigger,
+  and row-level-security policies (each broker sees only their own rows).
+- `BACKEND.md` — Supabase + Anthropic + Netlify deploy steps and env vars.
+
+**`index.html` changes (all guarded; demo-safe)**
+- Loads `@supabase/supabase-js` (CDN). `boot()` calls `initBackend()` → fetches
+  `/api/config`; if Supabase is configured it enables auth + persistence + live AI.
+- **AI now runs through the proxy.** `callClaude()` POSTs to `/api/claude` with the
+  user's Supabase access token — **no direct browser→Anthropic call, no key in the
+  browser**. Falls back to local mock text in demo mode. (`aiLive()` =
+  backend + signed in; drives the DEMO/Live pill, AI Pilot label/gate, and the
+  Compliance "connected" notice via `syncAi()`.)
+- **Auth:** login screen does real Supabase sign-in when configured, with
+  **Create account** + **Email magic link**; `doSignOut()` in Settings → Account.
+  Demo button + credentials shown only in demo mode.
+- **Persistence:** `loadDeals()` on sign-in (empty ⇒ first-run empty state);
+  `saveDeal()` upserts on submit and on stage-advance (RLS-scoped to the user).
+- Settings **AI** tab now shows proxy connection status (no client key input);
+  **Account** tab shows signed-in identity + sign-out, or a deploy hint in demo.
+
+**Verification:** jsdom smoke harness still **all green** in demo mode (backend
+unreachable ⇒ falls back), incl. new checks that the backend functions exist,
+`aiLive()` is false offline, and `callClaude()` resolves to mock text. JS syntax
+valid; Netlify functions pass `node --check`.
+
+### Deferred / can't be done from the sandbox
+- I can't deploy to Netlify or provision your Supabase project — you run the
+  deploy and set the three env vars (see `BACKEND.md`). Until then the live path
+  is untested end-to-end (logic verified in jsdom only).
+- Real document **OCR** in the AI Pilot is still simulated.
+
+---
+
+## Round 2 — engine + compliance batch
 
 Surgical edits to `index.html`. Verified with the jsdom smoke harness (all
 checks green) and a JS syntax check. Two commits: bugs/income/extraction, then

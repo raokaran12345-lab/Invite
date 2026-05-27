@@ -516,6 +516,7 @@ tr:last-child td{border-bottom:none}
       <input id="loginPass" type="password" value="demo1234" placeholder="••••••••">
     </div>
     <button class="btn-grad" onclick="doLogin()">Sign In</button>
+    <div id="authExtra"></div>
     <div class="demo-creds">
       <b>Demo credentials</b><br>
       Email: broker@debtiq.com<br>
@@ -579,6 +580,8 @@ tr:last-child td{border-bottom:none}
 <div id="toasts"></div>
 <div id="loader"><div class="loader-card"><div class="spinner"></div><p id="loaderMsg">Working…</p></div></div>
 
+<!-- Supabase client (auth + persistence). Safe to omit — app falls back to demo mode. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- Australian lender credit-policy database (must load before the app script) -->
 <script src="lenders.js"></script>
 <script>
@@ -712,7 +715,9 @@ const state = {
     adults:1,
     newLoan:{amount:785000, rate:6.24, term:30}
   },
-  anthropicKey:'',       // demo only — production must proxy via backend
+  anthropicKey:'',       // set to a truthy flag when AI is reachable via the server proxy
+  backend:false,         // true when Supabase config loaded from /api/config
+  user:null,             // Supabase auth user when signed in
   accreditedLenders:['CBA','ANZ','NAB','Westpac','Macquarie','ING','Bankwest','St George','Pepper','Liberty','Resimac','La Trobe','Firstmac','Suncorp','Bendigo'],
   panelTab:'overview',
   lendersTab:'compare',
@@ -1121,6 +1126,7 @@ function advanceDeal(id){
   d.status = order[Math.min(i+1, order.length-1)];
   if(d.status==='APPROVED'){ d.progress=null; d.closed=TODAY_STR; }
   (d.activity = d.activity||[]).push({at:TODAY_STR, text:'Advanced to '+STATUS_META[d.status].label});
+  saveDeal(d);   // persist when signed in
   toast(`${d.id} advanced to ${STATUS_META[d.status].label}`, 'ok');
   renderPanel(); renderDashboard(document.getElementById('page-dashboard'));
   const si = document.getElementById('dealSearch');
@@ -1302,8 +1308,10 @@ function submitDeal(){
     hideLoader();
     const id = 'D-'+(892+Math.floor(Math.random()*100));
     const amt = parseFloat(state.calc.newLoan.amount)||0, pv = parseFloat(state.wizData.propValue)||1;
-    DEALS.unshift(mkDeal({id, name:'New Application', lender:state.wizData.lender||'CBA', amount:amt, status:'SUBMITTED', lvr:+(amt/pv*100).toFixed(1), progress:null, type:state.wizData.dealType||'Owner Occupier'}));
+    const newDeal = mkDeal({id, name:'New Application', lender:state.wizData.lender||'CBA', amount:amt, status:'SUBMITTED', lvr:+(amt/pv*100).toFixed(1), progress:null, type:state.wizData.dealType||'Owner Occupier'});
+    DEALS.unshift(newDeal);
     DOCS.forEach(x=>{ if(x.deal==='NEW') x.deal=id; });   // retag wizard docs to the new deal
+    saveDeal(newDeal);                                    // persist when signed in
     toast(`Deal ${id} submitted successfully!`, 'ok');
     state.wizStep=1; navigate('dashboard');
   }, 1600);
@@ -2134,16 +2142,19 @@ function renderSettings(el){
 function settingsPane(){
   if(settingsTab==='account') return `
     <div class="form-grid">
-      <div class="inp"><label for="setName">Full name</label><input id="setName" value="Jordan Blake"></div>
-      <div class="inp"><label for="setEmail">Email</label><input id="setEmail" value="broker@debtiq.com"></div>
+      <div class="inp"><label for="setName">Full name</label><input id="setName" value="${state.user?(state.user.email||'Broker'):'Jordan Blake'}"></div>
+      <div class="inp"><label for="setEmail">Email</label><input id="setEmail" value="${state.user?(state.user.email||''):'broker@debtiq.com'}"></div>
       <div class="inp"><label for="setAcl">Credit licence (ACL)</label><input id="setAcl" value="389201"></div>
       <div class="inp"><label for="setAgg">Aggregator</label><input id="setAgg" value="Finsure"></div>
     </div>
     <button class="btn primary" style="margin-top:18px" onclick="saveAccount()">Save</button>
     <hr style="border:none;border-top:1px solid var(--border);margin:20px 0">
     <p style="font-size:13px;font-weight:700;margin-bottom:8px">Persistence &amp; auth</p>
-    <button class="btn" onclick="toast('Supabase auth is wired but disabled in this demo','info')">Sign in with Supabase</button>
-    <p style="font-size:11px;color:var(--t3);margin-top:8px">Demo mode saves nothing. Production will use Supabase Auth with row-level security so each broker sees only their own deals.</p>`;
+    ${state.backend
+      ? (state.user
+          ? `<div class="card" style="padding:12px 14px;border-left:4px solid var(--green)">Signed in as <b>${state.user.email||'broker'}</b> — deals are saved to your account (Supabase, row-level security).</div><button class="btn" style="margin-top:10px" onclick="doSignOut()">Sign out</button>`
+          : `<div class="card" style="padding:12px 14px;border-left:4px solid var(--amber)">Backend connected but not signed in. Reload and sign in to enable persistence.</div>`)
+      : `<div class="card" style="padding:12px 14px;border-left:4px solid var(--amber)">Static demo mode — no data is saved. Deploy with Netlify + Supabase (see <b>BACKEND.md</b>) and set the env vars to enable accounts, persistence and live AI.</div>`}`;
   if(settingsTab==='market') return `
     <p style="font-size:13px;font-weight:700;margin-bottom:12px">Active market</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -2151,11 +2162,15 @@ function settingsPane(){
     </div>
     ${state.market==='NZ'?`<div class="card" style="padding:14px 16px;margin-top:16px;border-left:4px solid var(--amber)">NZ lender database arrives Q3 2026 — Australia is fully wired with 25 lenders. NZ currently falls back to market-default buffers.</div>`:''}`;
   if(settingsTab==='ai') return `
-    <div class="inp"><label for="setKey">Anthropic API key</label><input id="setKey" type="password" placeholder="sk-ant-…" value="${state.anthropicKey?'••••••••':''}" oninput="state.anthropicKey=this.value;updateEnginePill()"></div>
-    <div class="card" style="padding:12px 14px;margin-top:12px;border-left:4px solid var(--red);font-size:12px;color:var(--t2)">
-      <b>Security:</b> a key embedded in the browser is visible to anyone with DevTools. In production it must be proxied through a backend (e.g. a Vercel edge function) — this field is demo-only and held in memory.
+    <p style="font-size:13px;font-weight:700;margin-bottom:8px">AI engine</p>
+    <div class="card" style="padding:12px 14px;border-left:4px solid var(--${aiLive()?'green':'amber'})">
+      ${aiLive()
+        ? 'Connected — AI runs through the secure server proxy (<span class="mono">/api/claude</span>). Your Anthropic key stays on the server and is never sent to the browser.'
+        : (state.backend
+            ? 'Backend connected but not signed in — sign in to use live AI.'
+            : 'Not connected — running on local mock text. Deploy on Netlify and set <span class="mono">ANTHROPIC_API_KEY</span> (server-side) per <b>BACKEND.md</b>.')}
     </div>
-    <p style="font-size:11px;color:var(--t3);margin-top:10px">Model: claude-sonnet-4-20250514. With a key set the topbar shows “AI Engine Live”; otherwise “DEMO MODE”.</p>`;
+    <p style="font-size:11px;color:var(--t3);margin-top:10px">Model: claude-sonnet-4-20250514. The key is configured as a Netlify environment variable, not here — a browser-embedded key would be visible to anyone with DevTools.</p>`;
   if(settingsTab==='commission') return `
     <p style="font-size:13px;color:var(--t2);margin-bottom:12px">Defaults used to seed new deals.</p>
     <div class="form-grid">
@@ -2199,23 +2214,23 @@ function toggleAccredited(id, checked){
 /* ============================================================
    CLAUDE API
    ============================================================ */
+// AI runs through the server proxy (/api/claude) — the key is NEVER in the browser.
+// In static demo mode (no backend / not signed in) we return local mock text.
 async function callClaude(prompt){
+  if(!aiLive()) return mockCommentary(prompt);
   try{
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    let token = '';
+    try{ const { data } = await sbClient.auth.getSession(); token = data && data.session && data.session.access_token; }catch(e){}
+    const res = await fetch('/api/claude', {
       method:'POST',
-      headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:700,
-        messages:[{ role:'user', content:prompt }]
-      })
+      headers:{ 'content-type':'application/json', ...(token?{Authorization:'Bearer '+token}:{}) },
+      body: JSON.stringify({ prompt, model:'claude-sonnet-4-20250514', max_tokens:700 })
     });
     const data = await res.json();
-    return data?.content?.[0]?.text || mockCommentary(prompt);
-  }catch(e){
-    // Graceful fallback when platform API not reachable
-    return mockCommentary(prompt);
-  }
+    if(res.ok && data && data.text) return data.text;
+    if(data && data.error) toast('AI: '+data.error, 'err');
+  }catch(e){ /* fall back to mock */ }
+  return mockCommentary(prompt);
 }
 function mockCommentary(prompt){
   const r = computeServiceability();
@@ -2721,10 +2736,96 @@ function toast(msg, type='info'){
 function showLoader(msg){ document.getElementById('loaderMsg').textContent=msg||'Working…'; document.getElementById('loader').classList.add('show'); }
 function hideLoader(){ document.getElementById('loader').classList.remove('show'); }
 
-function doLogin(){
+/* ============================================================
+   BACKEND — Supabase auth + persistence (graceful demo fallback)
+   ============================================================ */
+let sbClient = null;
+// AI is "live" only when the server proxy is reachable (Supabase configured + signed in).
+function aiLive(){ return !!(state.backend && state.user); }
+function syncAi(){ state.anthropicKey = aiLive() ? 'server-proxy' : ''; }
+async function initBackend(){
+  try{
+    const res = await fetch('/api/config');
+    if(!res.ok) return;
+    const cfg = await res.json();
+    if(cfg.supabaseUrl && cfg.supabaseAnonKey && window.supabase && window.supabase.createClient){
+      sbClient = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+      state.backend = true;
+      const { data } = await sbClient.auth.getSession();
+      if(data && data.session){ state.user = data.session.user; }
+    }
+  }catch(e){ /* static demo mode — no functions/Supabase reachable */ }
+  syncAi();
+}
+async function loadDeals(){
+  if(!(state.backend && sbClient && state.user)) return;
+  try{
+    const { data, error } = await sbClient.from('deals').select('data').order('updated_at',{ascending:false});
+    if(error) throw error;
+    DEALS = (data||[]).map(r=>r.data);   // empty for a new user → first-run empty state
+  }catch(e){ toast('Could not load saved deals', 'err'); }
+}
+async function saveDeal(d){
+  if(!(state.backend && sbClient && state.user)) return;
+  try{ await sbClient.from('deals').upsert({ id:d.id, user_id:state.user.id, data:d }); }
+  catch(e){ /* non-fatal in demo */ }
+}
+
+/* ---------- Auth ---------- */
+async function doLogin(){
+  if(state.backend && sbClient){
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPass').value;
+    showLoader('Signing in…');
+    const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
+    hideLoader();
+    if(error){ toast(error.message, 'err'); return; }
+    state.user = data.user; syncAi(); enterApp();
+  } else {
+    enterApp();   // static demo mode
+  }
+}
+async function doSignUp(){
+  if(!(state.backend && sbClient)) return toast('Connect Supabase (Settings) to create accounts', 'info');
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPass').value;
+  showLoader('Creating account…');
+  const { data, error } = await sbClient.auth.signUp({ email, password });
+  hideLoader();
+  if(error){ toast(error.message, 'err'); return; }
+  if(data.session){ state.user = data.user; syncAi(); enterApp(); }
+  else toast('Account created — check your email to confirm, then sign in.', 'ok');
+}
+async function doMagicLink(){
+  if(!(state.backend && sbClient)) return toast('Connect Supabase for magic links', 'info');
+  const email = document.getElementById('loginEmail').value.trim();
+  if(!email) return toast('Enter your email first', 'err');
+  const { error } = await sbClient.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin } });
+  toast(error ? error.message : ('Magic link sent to '+email), error ? 'err' : 'ok');
+}
+async function doSignOut(){
+  if(sbClient) { try{ await sbClient.auth.signOut(); }catch(e){} }
+  state.user = null; syncAi(); location.reload();
+}
+function renderLoginMode(){
+  const extra = document.getElementById('authExtra');
+  const creds = document.querySelector('.demo-creds');
+  if(state.backend){
+    if(creds) creds.style.display = 'none';
+    if(extra) extra.innerHTML = `<div style="display:flex;gap:10px;margin-top:10px">
+      <button class="btn" style="flex:1" onclick="doSignUp()">Create account</button>
+      <button class="btn" style="flex:1" onclick="doMagicLink()">Email magic link</button>
+    </div><p style="font-size:11px;color:var(--t3);margin-top:10px">Secure sign-in via Supabase. Your deals are private to your account.</p>`;
+  } else {
+    if(extra) extra.innerHTML = '';
+    if(creds) creds.style.display = '';
+  }
+}
+async function enterApp(){
   document.getElementById('login').style.display='none';
   document.getElementById('app').style.display='block';
-  toast('Welcome back, Jordan!', 'ok');
+  if(aiLive()) await loadDeals();
+  toast(state.user ? ('Welcome, '+(state.user.email||'broker')+'!') : 'Welcome back, Jordan!', 'ok');
   init();
 }
 document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
@@ -2734,12 +2835,19 @@ function init(){
   renderNav();
   updateEnginePill();
   navigate('dashboard');
-  // simulate live AI progress on the processing deal
+  // simulate live AI progress on the processing deal (demo data only)
   setInterval(()=>{
     const d = DEALS.find(x=>x.status==='AI_PROCESSING');
     if(d && d.progress<99){ d.progress = Math.min(99, d.progress+1); if(state.page==='dashboard') renderDealGrid(); }
   }, 2500);
 }
+
+/* ---------- Boot ---------- */
+(async function boot(){
+  await initBackend();
+  renderLoginMode();
+  if(aiLive()) enterApp();   // already signed in → skip the login screen
+})();
 </script>
 </body>
 </html>
