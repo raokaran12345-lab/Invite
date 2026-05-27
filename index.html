@@ -518,7 +518,7 @@ tr:last-child td{border-bottom:none}
     </div>
     <div class="country-caption hide-collapse" id="countryCaption">🇦🇺 Australia · <span style="opacity:.6">🇳🇿 NZ soon</span></div>
     <nav class="nav" id="nav" aria-label="Primary"></nav>
-    <div class="sb-collapse" onclick="toggleSidebar()">⇆ Collapse</div>
+    <div class="sb-collapse" onclick="toggleSidebar()" role="button" tabindex="0" aria-label="Collapse sidebar">⇆ Collapse</div>
     <div class="sb-user">
       <div class="avatar">JB</div>
       <div class="hide-collapse">
@@ -550,7 +550,7 @@ tr:last-child td{border-bottom:none}
       <div id="panelName" style="font-weight:800;font-size:18px"></div>
       <div id="panelId" style="color:var(--t3);font-size:13px"></div>
     </div>
-    <button class="panel-x" onclick="closePanel()">×</button>
+    <button class="panel-x" onclick="closePanel()" aria-label="Close panel">×</button>
   </div>
   <div class="panel-body" id="panelBody"></div>
 </div>
