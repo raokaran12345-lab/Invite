@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DebtIQ v6 — Mortgage Broker Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DEBTIQ v6 — Design System
+   ============================================================ */
+:root{
+  --bg:#F4F5F7;
+  --surface:#FFFFFF;
+  --brand:#5B4FF5;
+  --brand-grad:linear-gradient(135deg,#5B4FF5,#8B5CF6,#A78BFA);
+  --t1:#0F0F1A;
+  --t2:#374151;
+  --t3:#6B7280;
+  --border:rgba(0,0,0,.06);
+  --green:#059669;
+  --amber:#D97706;
+  --red:#DC2626;
+  --teal:#0D9488;
+  --r-card:20px;
+  --r-input:14px;
+  --r-btn:12px;
+  --r-pill:100px;
+  --sh-1:0 1px 3px rgba(0,0,0,.06);
+  --sh-2:0 4px 12px rgba(0,0,0,.08);
+  --sh-brand:0 8px 24px rgba(91,79,245,.25);
+  --sidebar-w:240px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Plus Jakarta Sans',system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--t1);
+  font-size:14px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:'DM Mono',monospace;font-variant-numeric:tabular-nums}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,.14);border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- Animations ---------- */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.8)}}
+@keyframes glow{0%,100%{box-shadow:0 0 12px rgba(91,79,245,.5),0 8px 24px rgba(91,79,245,.3)}50%{box-shadow:0 0 28px rgba(139,92,246,.85),0 8px 32px rgba(139,92,246,.5)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes barGrow{from{width:0}}
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+#login{
+  position:fixed;inset:0;z-index:1000;
+  display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 25% 20%,#2A2350,#15122E 55%,#0B0920);
+  padding:20px;
+}
+.login-card{
+  width:420px;max-width:100%;background:var(--surface);
+  border-radius:40px;padding:48px 40px;
+  box-shadow:0 30px 80px rgba(0,0,0,.45);
+  animation:slideUp .4s cubic-bezier(.22,1,.36,1);
+  text-align:center;
+}
+.login-logo{
+  width:72px;height:72px;border-radius:22px;margin:0 auto 22px;
+  background:var(--brand-grad);
+  display:flex;align-items:center;justify-content:center;
+  font-size:36px;font-weight:800;color:#fff;
+  animation:glow 3s ease infinite;
+}
+.login-card h1{font-size:24px;font-weight:800;margin-bottom:6px}
+.login-card p.sub{color:var(--t3);margin-bottom:28px}
+.field{text-align:left;margin-bottom:16px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--t2);margin-bottom:6px}
+.field input{
+  width:100%;padding:13px 15px;border:1.5px solid var(--border);
+  border-radius:var(--r-input);background:#FbFbFc;transition:.18s;
+}
+.field input:focus{outline:none;border-color:var(--brand);background:#fff;box-shadow:0 0 0 4px rgba(91,79,245,.12)}
+.btn-grad{
+  width:100%;padding:14px;border-radius:var(--r-btn);color:#fff;font-weight:700;font-size:15px;
+  background:var(--brand-grad);box-shadow:var(--sh-brand);transition:.18s;margin-top:6px;
+}
+.btn-grad:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.demo-creds{
+  margin-top:22px;font-size:12px;color:var(--t3);
+  background:#F4F5F7;border-radius:12px;padding:12px;line-height:1.7;
+}
+.demo-creds b{color:var(--t2)}
+
+/* ============================================================
+   APP SHELL
+   ============================================================ */
+#app{display:none;height:100vh;overflow:hidden}
+.shell{display:flex;height:100%}
+
+/* Sidebar */
+.sidebar{
+  width:var(--sidebar-w);flex-shrink:0;background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;transition:width .2s ease;
+}
+.sidebar.collapsed{width:64px}
+.sb-top{padding:18px 16px;display:flex;align-items:center;gap:10px}
+.logo-mark{
+  width:36px;height:36px;border-radius:11px;flex-shrink:0;
+  background:var(--brand-grad);display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:800;font-size:19px;box-shadow:var(--sh-brand);
+}
+.wordmark{font-weight:800;font-size:18px;letter-spacing:-.4px}
+.sidebar.collapsed .hide-collapse{display:none}
+.country-pill{
+  margin:0 14px 14px;padding:9px 12px;border:1px solid var(--border);
+  border-radius:var(--r-pill);display:flex;align-items:center;gap:8px;cursor:pointer;
+  font-weight:600;font-size:13px;transition:.15s;position:relative;
+}
+.country-pill:hover{border-color:var(--brand);background:#FAFAFF}
+.nav{flex:1;overflow-y:auto;padding:4px 10px}
+.nav-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);padding:14px 10px 6px}
+.nav-item{
+  display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:10px;
+  color:var(--t2);font-weight:600;font-size:13.5px;cursor:pointer;transition:.13s;margin-bottom:2px;
+}
+.nav-item:hover{background:#F4F5F7}
+.nav-item.active{background:rgba(91,79,245,.1);color:var(--brand)}
+.nav-item .ico{width:20px;text-align:center;font-size:16px;flex-shrink:0}
+.sb-user{
+  margin:10px;padding:10px;border-radius:14px;background:#F4F5F7;
+  display:flex;align-items:center;gap:10px;cursor:pointer;
+}
+.avatar{
+  width:34px;height:34px;border-radius:10px;flex-shrink:0;
+  background:var(--brand-grad);color:#fff;font-weight:700;
+  display:flex;align-items:center;justify-content:center;font-size:13px;
+}
+.sb-collapse{
+  margin:0 10px 10px;padding:8px;border-radius:10px;color:var(--t3);
+  font-size:12px;font-weight:600;text-align:center;transition:.13s;
+}
+.sb-collapse:hover{background:#F4F5F7;color:var(--t2)}
+
+/* Main column */
+.main-col{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{
+  height:56px;flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:14px;padding:0 22px;
+}
+.topbar h2{font-size:17px;font-weight:700;flex:1}
+.badge-live{
+  display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:var(--r-pill);
+  background:rgba(13,148,136,.1);color:var(--teal);font-weight:700;font-size:12px;
+}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 2s infinite}
+.btn-new{
+  padding:9px 16px;border-radius:var(--r-btn);color:#fff;font-weight:700;font-size:13px;
+  background:var(--brand-grad);box-shadow:var(--sh-brand);transition:.15s;
+}
+.btn-new:hover{filter:brightness(1.08);transform:translateY(-1px)}
+
+/* Status strip */
+.status-strip{
+  flex-shrink:0;background:var(--brand-grad);color:#fff;
+  display:flex;align-items:center;gap:6px;padding:9px 22px;overflow-x:auto;
+  font-size:12px;
+}
+.status-strip .si{display:flex;align-items:center;gap:6px;white-space:nowrap;padding:0 14px;border-right:1px solid rgba(255,255,255,.2)}
+.status-strip .si:last-child{border-right:none}
+.status-strip .lbl{opacity:.8;font-weight:600}
+.status-strip .val{font-weight:700}
+
+/* Content */
+.content{flex:1;overflow-y:auto;padding:24px}
+.page{display:none;animation:fadeUp .35s cubic-bezier(.22,1,.36,1)}
+.page.active{display:block}
+.page-head{margin-bottom:20px}
+.page-head h1{font-size:22px;font-weight:800}
+.page-head p{color:var(--t3);margin-top:3px}
+
+/* ---------- Shared components ---------- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);box-shadow:var(--sh-1)}
+.btn{padding:9px 15px;border-radius:var(--r-btn);font-weight:700;font-size:13px;transition:.15s;border:1px solid var(--border);background:#fff;color:var(--t2)}
+.btn:hover{filter:brightness(1.03);transform:translateY(-1px);box-shadow:var(--sh-1)}
+.btn.primary{background:var(--brand-grad);color:#fff;border:none;box-shadow:var(--sh-brand)}
+.btn.ghost{background:#F4F5F7;border-color:transparent}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:var(--r-pill);font-size:11px;font-weight:700}
+.pill.green{background:rgba(5,150,105,.12);color:var(--green)}
+.pill.amber{background:rgba(217,119,6,.12);color:var(--amber)}
+.pill.red{background:rgba(220,38,38,.12);color:var(--red)}
+.pill.violet{background:rgba(91,79,245,.12);color:var(--brand)}
+.pill.gray{background:#EEF0F3;color:var(--t3)}
+.progress{height:7px;border-radius:6px;background:#EEF0F3;overflow:hidden}
+.progress>span{display:block;height:100%;background:var(--brand-grad);border-radius:6px;transition:width .7s cubic-bezier(.22,1,.36,1)}
+
+/* KPI grid */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);padding:18px;box-shadow:var(--sh-1);border-top:3px solid var(--brand);transition:.18s}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}
+.kpi .ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:12px}
+.kpi .num{font-size:26px;font-weight:800}
+.kpi .cap{color:var(--t3);font-size:12.5px;font-weight:600;margin-top:2px}
+
+/* Deal grid */
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+.search{flex:1;min-width:200px;position:relative}
+.search input{width:100%;padding:10px 14px 10px 38px;border:1.5px solid var(--border);border-radius:var(--r-input);background:#fff}
+.search input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 4px rgba(91,79,245,.1)}
+.search .si-ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--t3)}
+.filters{display:flex;gap:6px}
+.chip{padding:8px 14px;border-radius:var(--r-pill);font-weight:600;font-size:12.5px;border:1px solid var(--border);background:#fff;color:var(--t2);transition:.13s}
+.chip:hover{border-color:var(--brand)}
+.chip.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+.deal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(295px,1fr));gap:16px}
+.deal-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-card);padding:18px;cursor:pointer;transition:.18s;box-shadow:var(--sh-1)}
+.deal-card:hover{border-color:var(--brand);box-shadow:var(--sh-2);transform:translateY(-2px)}
+.deal-card .dc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+.deal-card .dc-name{font-weight:700;font-size:15px}
+.deal-card .dc-id{color:var(--t3);font-size:12px;margin-bottom:12px}
+.metric-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.metric-box{background:#F4F5F7;border-radius:11px;padding:9px 10px}
+.metric-box .mb-lbl{font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.metric-box .mb-val{font-weight:700;font-size:13.5px;margin-top:2px}
+.ai-bar{margin-top:12px}
+.ai-bar .lbl{font-size:11px;color:var(--brand);font-weight:600;margin-bottom:5px;display:flex;justify-content:space-between}
+
+/* Slide-over panel */
+.overlay{position:fixed;inset:0;background:rgba(15,15,26,.4);z-index:900;display:none}
+.overlay.show{display:block}
+.panel{
+  position:fixed;top:0;right:0;height:100%;width:440px;max-width:92vw;background:var(--surface);
+  z-index:901;box-shadow:-10px 0 40px rgba(0,0,0,.18);transform:translateX(100%);
+  display:flex;flex-direction:column;
+}
+.panel.show{animation:slideIn .25s cubic-bezier(.22,1,.36,1) forwards}
+.panel-head{padding:20px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start}
+.panel-body{flex:1;overflow-y:auto;padding:22px}
+.panel-x{font-size:22px;color:var(--t3);line-height:1;background:none}
+.detail-row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border)}
+.detail-row .dl{color:var(--t3);font-weight:600}
+.detail-row .dv{font-weight:700}
+
+/* ============================================================
+   WIZARD
+   ============================================================ */
+.wiz-head{background:var(--brand-grad);color:#fff;border-radius:var(--r-card);padding:24px;margin-bottom:20px}
+.wiz-head h1{font-size:22px;font-weight:800}
+.wiz-head p{opacity:.85;margin-top:3px}
+.wiz-steps{display:flex;gap:6px;margin-top:18px;flex-wrap:wrap}
+.wiz-step{flex:1;min-width:90px;text-align:center}
+.wiz-step .bar{height:5px;border-radius:5px;background:rgba(255,255,255,.3);transition:.4s}
+.wiz-step.done .bar,.wiz-step.cur .bar{background:#fff}
+.wiz-step .nm{font-size:11px;margin-top:6px;opacity:.8;font-weight:600}
+.wiz-step.cur .nm{opacity:1}
+.wiz-card{background:var(--surface);border:2px solid var(--border);border-radius:28px;padding:28px;box-shadow:var(--sh-1)}
+.wiz-card.active{border-color:var(--brand)}
+.wiz-card h3{font-size:18px;font-weight:700;margin-bottom:4px}
+.wiz-card .desc{color:var(--t3);margin-bottom:20px}
+.tile-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.tile{border:1.5px solid var(--border);border-radius:var(--r-input);padding:16px;text-align:center;cursor:pointer;transition:.15s;font-weight:600}
+.tile:hover{border-color:var(--brand)}
+.tile.sel{border-color:var(--brand);background:rgba(91,79,245,.06)}
+.tile .tt{font-size:14px}
+.tile .ts{font-size:11px;color:var(--t3);font-weight:500;margin-top:3px}
+.wiz-nav{display:flex;justify-content:space-between;margin-top:20px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.inp{display:flex;flex-direction:column;gap:6px}
+.inp label{font-size:12px;font-weight:600;color:var(--t2)}
+.inp input,.inp select,.inp textarea{padding:11px 13px;border:1.5px solid var(--border);border-radius:var(--r-input);background:#FbFbFc;transition:.15s}
+.inp input:focus,.inp select:focus,.inp textarea:focus{outline:none;border-color:var(--brand);background:#fff;box-shadow:0 0 0 4px rgba(91,79,245,.1)}
+.upload-zone{border:2px dashed #CBD2DC;border-radius:var(--r-input);padding:22px;text-align:center;cursor:pointer;transition:.18s;color:var(--t3);font-weight:600}
+.upload-zone:hover{border-color:var(--brand);color:var(--brand)}
+.upload-zone.done{border-style:solid;border-color:var(--green);background:rgba(5,150,105,.06);color:var(--green)}
+.lvr-badge{padding:16px;border-radius:var(--r-input);text-align:center;font-weight:800;font-size:24px;margin-top:14px}
+
+/* ============================================================
+   SERVICEABILITY CALCULATOR
+   ============================================================ */
+.calc-split{display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start}
+.calc-results{position:sticky;top:0}
+.entity-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);margin-bottom:14px;box-shadow:var(--sh-1)}
+.entity-head{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.entity-head h4{font-size:15px;font-weight:700}
+.entity-body{padding:0 16px 16px}
+.row-line{display:grid;grid-template-columns:1.3fr .9fr .55fr .9fr 30px;gap:7px;align-items:center;margin-bottom:7px}
+.row-line.liab{grid-template-columns:1.1fr .9fr .6fr .6fr .9fr 30px}
+.row-line input,.row-line select{padding:8px 9px;border:1px solid var(--border);border-radius:9px;background:#FbFbFc;font-size:12.5px;width:100%}
+.row-line input:focus,.row-line select:focus{outline:none;border-color:var(--brand);background:#fff}
+.row-line .computed{font-weight:700;font-size:12.5px;color:var(--t2);text-align:right}
+.row-x{color:var(--t3);font-size:16px;text-align:center}
+.row-head{display:grid;grid-template-columns:1.3fr .9fr .55fr .9fr 30px;gap:7px;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;padding:0 2px}
+.row-head.liab{grid-template-columns:1.1fr .9fr .6fr .6fr .9fr 30px}
+.add-row{margin-top:6px;font-size:12px;color:var(--brand);font-weight:700;background:none}
+.subsec{font-size:12px;font-weight:700;color:var(--t2);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.5px}
+.slider-row{margin-bottom:14px}
+.slider-row label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:7px}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:6px;border-radius:5px;background:#E5E8EE}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--brand);box-shadow:var(--sh-brand);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-radius:50%;background:var(--brand);box-shadow:var(--sh-brand);cursor:pointer}
+.assessed-note{background:rgba(217,119,6,.08);color:var(--amber);border-radius:11px;padding:10px 13px;font-weight:600;font-size:12.5px;margin-top:10px}
+
+/* Results panel */
+.verdict{border-radius:var(--r-card);padding:22px;text-align:center;color:#fff;margin-bottom:16px}
+.verdict.pass{background:linear-gradient(135deg,#059669,#10B981)}
+.verdict.borderline{background:linear-gradient(135deg,#D97706,#F59E0B)}
+.verdict.fail{background:linear-gradient(135deg,#DC2626,#EF4444)}
+.verdict .v-lbl{font-size:12px;font-weight:700;opacity:.85;text-transform:uppercase;letter-spacing:.6px}
+.verdict .v-big{font-size:30px;font-weight:800;margin-top:4px}
+.verdict .v-sub{font-size:12.5px;opacity:.9;margin-top:4px}
+.res-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:16px}
+.res-box{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:12px;text-align:center}
+.res-box .rl{font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.res-box .rv{font-size:18px;font-weight:800;margin-top:3px}
+.flow-chart{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);padding:16px;margin-bottom:16px}
+.flow-chart h4,.stress-table h4{font-size:13px;font-weight:700;margin-bottom:12px}
+.flow-row{margin-bottom:10px}
+.flow-row .fl{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px}
+.flow-bar{height:9px;border-radius:6px;background:#EEF0F3;overflow:hidden}
+.flow-bar>span{display:block;height:100%;border-radius:6px;transition:width .7s cubic-bezier(.22,1,.36,1)}
+.stress-table{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);padding:16px;margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;color:var(--t3);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:7px 6px;border-bottom:1px solid var(--border)}
+td{padding:9px 6px;border-bottom:1px solid var(--border);font-weight:500}
+tr:last-child td{border-bottom:none}
+
+/* ============================================================
+   COMMENTARY
+   ============================================================ */
+.commentary-wrap{max-width:820px;margin:0 auto}
+.comm-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);padding:20px;margin-bottom:14px;box-shadow:var(--sh-1)}
+.comm-card.broker{border-left:4px solid var(--amber)}
+.comm-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.comm-head h4{font-size:15px;font-weight:700}
+.comm-text{color:var(--t2);line-height:1.65;white-space:pre-wrap}
+.comm-card textarea{width:100%;min-height:110px;padding:12px;border:1.5px solid var(--brand);border-radius:12px;line-height:1.6;resize:vertical}
+.mini-btn{padding:5px 11px;border-radius:9px;font-size:11.5px;font-weight:700;border:1px solid var(--border);background:#fff;color:var(--t2);transition:.13s}
+.mini-btn:hover{border-color:var(--brand);color:var(--brand)}
+
+/* ============================================================
+   GENERIC TABLE PAGE
+   ============================================================ */
+.table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);padding:6px 20px 14px;box-shadow:var(--sh-1);overflow-x:auto}
+.conf-bar{width:80px;height:7px;border-radius:5px;background:#EEF0F3;overflow:hidden;display:inline-block;vertical-align:middle}
+.conf-bar>span{display:block;height:100%;background:var(--brand-grad)}
+
+/* Lender compare */
+.best-row td{background:rgba(5,150,105,.07)}
+
+/* Client portal */
+.portal-split{display:grid;grid-template-columns:300px 1fr;gap:24px;align-items:start}
+.phone{width:280px;height:560px;background:#0F0F1A;border-radius:38px;padding:12px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.phone-screen{width:100%;height:100%;background:#F4F5F7;border-radius:28px;overflow:hidden;display:flex;flex-direction:column}
+.phone-top{background:var(--brand-grad);color:#fff;padding:22px 18px}
+.phone-top h4{font-size:16px;font-weight:700}
+.phone-body{padding:16px;flex:1;overflow-y:auto}
+.dz{border:2px dashed #CBD2DC;border-radius:14px;padding:16px;text-align:center;margin-bottom:11px;font-size:12px;font-weight:600;color:var(--t3);cursor:pointer;transition:.18s}
+.dz.done{border-style:solid;border-color:var(--green);background:rgba(5,150,105,.07);color:var(--green)}
+.toggle-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
+.switch{width:42px;height:24px;border-radius:14px;background:#D1D5DB;position:relative;cursor:pointer;transition:.18s;flex-shrink:0}
+.switch.on{background:var(--brand)}
+.switch::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.18s}
+.switch.on::after{left:21px}
+
+/* Global markets */
+.market-hero{background:var(--brand-grad);color:#fff;border-radius:var(--r-card);padding:26px;margin-bottom:20px}
+.market-hero h2{font-size:22px;font-weight:800}
+.hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px}
+.hero-stat{background:rgba(255,255,255,.13);border-radius:14px;padding:14px}
+.hero-stat .hn{font-size:22px;font-weight:800}
+.hero-stat .hl{font-size:12px;opacity:.85}
+.market-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:22px}
+.market-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-card);padding:18px;cursor:pointer;transition:.18s;box-shadow:var(--sh-1)}
+.market-card:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}
+.market-card.active{border-color:var(--brand);background:rgba(91,79,245,.04)}
+.market-card .mc-flag{font-size:28px}
+.market-card .mc-name{font-weight:700;font-size:15px;margin-top:6px}
+
+/* Billing */
+.plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.plan{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-card);padding:22px;box-shadow:var(--sh-1)}
+.plan.active{background:var(--brand-grad);color:#fff;border:none;box-shadow:var(--sh-brand)}
+.plan .price{font-size:30px;font-weight:800;margin:10px 0}
+.plan .price small{font-size:14px;font-weight:600;opacity:.7}
+.plan ul{list-style:none;margin:16px 0;font-size:13px}
+.plan ul li{padding:6px 0;display:flex;gap:8px;align-items:center}
+.usage-bar{height:8px;border-radius:6px;background:#EEF0F3;overflow:hidden;margin-top:10px}
+.usage-bar>span{display:block;height:100%;background:var(--brand-grad);border-radius:6px}
+
+/* Settings */
+.tabs{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--border)}
+.tab{padding:11px 16px;font-weight:700;font-size:13.5px;color:var(--t3);border-bottom:2px solid transparent;cursor:pointer;transition:.13s}
+.tab.active{color:var(--brand);border-bottom-color:var(--brand)}
+.tab-pane{display:none}
+.tab-pane.active{display:block;animation:fadeUp .3s ease}
+.check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+.check-item{display:flex;align-items:center;gap:9px;padding:11px 13px;border:1px solid var(--border);border-radius:12px;cursor:pointer;font-weight:600;font-size:13px}
+.check-item input{width:17px;height:17px;accent-color:var(--brand)}
+
+/* Dropdown */
+.dropdown{position:absolute;top:calc(100% + 6px);left:0;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:var(--sh-2);padding:6px;z-index:50;min-width:190px;display:none}
+.dropdown.show{display:block;animation:fadeUp .15s ease}
+.dd-item{padding:9px 12px;border-radius:9px;cursor:pointer;font-weight:600;font-size:13px;display:flex;align-items:center;gap:9px}
+.dd-item:hover{background:#F4F5F7}
+
+/* Toast */
+#toasts{position:fixed;bottom:22px;right:22px;z-index:2000;display:flex;flex-direction:column;gap:10px}
+.toast{background:#0F0F1A;color:#fff;padding:13px 17px;border-radius:13px;font-weight:600;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.3);animation:slideUp .25s ease;display:flex;align-items:center;gap:10px;max-width:340px}
+.toast.ok{border-left:4px solid var(--green)}
+.toast.err{border-left:4px solid var(--red)}
+.toast.info{border-left:4px solid var(--brand)}
+
+/* Loading modal */
+#loader{position:fixed;inset:0;background:rgba(15,15,26,.55);z-index:1500;display:none;align-items:center;justify-content:center}
+#loader.show{display:flex}
+.loader-card{background:#fff;border-radius:24px;padding:34px 44px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.spinner{width:46px;height:46px;border:4px solid #EEF0F3;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+.loader-card p{font-weight:700;color:var(--t2)}
+
+/* Responsive */
+@media(max-width:900px){
+  .sidebar{width:64px}
+  .sidebar .hide-collapse{display:none}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .calc-split{grid-template-columns:1fr}
+  .calc-results{position:static}
+  .portal-split{grid-template-columns:1fr}
+  .plan-grid,.hero-stats{grid-template-columns:1fr 1fr}
+  .form-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     LOGIN
+     ============================================================ -->
+<div id="login">
+  <div class="login-card">
+    <div class="login-logo">D</div>
+    <h1>DebtIQ</h1>
+    <p class="sub">AI-powered mortgage broker platform</p>
+    <div class="field">
+      <label>Email</label>
+      <input id="loginEmail" type="email" value="broker@debtiq.com" placeholder="you@brokerage.com">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input id="loginPass" type="password" value="demo1234" placeholder="••••••••">
+    </div>
+    <button class="btn-grad" onclick="doLogin()">Sign In</button>
+    <div class="demo-creds">
+      <b>Demo credentials</b><br>
+      Email: broker@debtiq.com<br>
+      Password: demo1234
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     APP SHELL
+     ============================================================ -->
+<div id="app">
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-top">
+      <div class="logo-mark">D</div>
+      <span class="wordmark hide-collapse">DebtIQ</span>
+    </div>
+    <div class="country-pill hide-collapse" onclick="toggleCountryDD(event)">
+      <span id="countryFlag">🇦🇺</span>
+      <span id="countryName" style="flex:1">Australia</span>
+      <span>▾</span>
+      <div class="dropdown" id="countryDD"></div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="sb-collapse" onclick="toggleSidebar()">⇆ Collapse</div>
+    <div class="sb-user">
+      <div class="avatar">JB</div>
+      <div class="hide-collapse">
+        <div style="font-weight:700;font-size:13px">Jordan Blake</div>
+        <div style="font-size:11px;color:var(--t3)">Senior Broker</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main column -->
+  <div class="main-col">
+    <div class="topbar">
+      <h2 id="pageTitle">Dashboard</h2>
+      <span class="badge-live"><span class="dot"></span>AI Engine Live</span>
+      <button class="btn-new" onclick="navigate('wizard')">+ New Deal</button>
+    </div>
+    <div class="status-strip" id="statusStrip"></div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+</div>
+
+<!-- Slide-over panel -->
+<div class="overlay" id="overlay" onclick="closePanel()"></div>
+<div class="panel" id="panel">
+  <div class="panel-head">
+    <div>
+      <div id="panelName" style="font-weight:800;font-size:18px"></div>
+      <div id="panelId" style="color:var(--t3);font-size:13px"></div>
+    </div>
+    <button class="panel-x" onclick="closePanel()">×</button>
+  </div>
+  <div class="panel-body" id="panelBody"></div>
+</div>
+
+<!-- Toasts + loader -->
+<div id="toasts"></div>
+<div id="loader"><div class="loader-card"><div class="spinner"></div><p id="loaderMsg">Working…</p></div></div>
+
+<script>
+/* ============================================================
+   DEBTIQ v6 — Application Logic
+   ============================================================ */
+
+/* ---------- 6 Country Markets ---------- */
+const MARKETS = {
+  AU:{code:'AU',label:'Australia',flag:'🇦🇺',cur:'AUD',sym:'$',buffer:0.03,dsrMax:45,hem:2200,
+      lenders:['CBA','ANZ','NAB','Westpac','Macquarie','ING','Suncorp','St George','Pepper','Liberty']},
+  US:{code:'US',label:'United States',flag:'🇺🇸',cur:'USD',sym:'$',buffer:0.02,dsrMax:43,hem:2400,
+      lenders:['Chase','Wells Fargo','Bank of America','Rocket','United Wholesale','Pennymac','loanDepot','Caliber','Fairway','Guild']},
+  UK:{code:'UK',label:'United Kingdom',flag:'🇬🇧',cur:'GBP',sym:'£',buffer:0.03,dsrMax:40,hem:1800,
+      lenders:['Barclays','HSBC','NatWest','Lloyds','Santander','Halifax','Nationwide','Virgin Money','Metro','Accord']},
+  CA:{code:'CA',label:'Canada',flag:'🇨🇦',cur:'CAD',sym:'$',buffer:0.02,dsrMax:44,hem:2100,
+      lenders:['TD Bank','RBC','BMO','Scotiabank','CIBC','National Bank','HSBC Canada','Desjardins','Meridian','First National']},
+  NZ:{code:'NZ',label:'New Zealand',flag:'🇳🇿',cur:'NZD',sym:'$',buffer:0.03,dsrMax:40,hem:1900,
+      lenders:['ANZ NZ','ASB','BNZ','Westpac NZ','Kiwibank','SBS Bank','TSB','Co-op Bank','Pepper NZ','Resimac']},
+  IN:{code:'IN',label:'India',flag:'🇮🇳',cur:'INR',sym:'₹',buffer:0.02,dsrMax:50,hem:35000,
+      lenders:['SBI','HDFC','ICICI','Axis Bank','Kotak','LIC Housing','PNB Housing','Bajaj Housing','Indiabulls','Tata Capital']}
+};
+
+/* ---------- Income shading multipliers ---------- */
+const SHADE = {
+  salary_ft:1.00, salary_pt:1.00, self_emp:1.00, freelance:0.90, overtime:0.80,
+  rental_res:0.80, rental_com:0.75, dividends:0.75, trust_dist:0.80,
+  pension:1.00, family:1.00, foreign:0.80, boarder:0.60, interest:1.00
+};
+const INCOME_TYPES = {
+  salary_ft:'Salary (Full-time)', salary_pt:'Salary (Part-time)', self_emp:'Self-employed',
+  freelance:'Freelance', overtime:'Overtime', rental_res:'Rental (Residential)',
+  rental_com:'Rental (Commercial)', dividends:'Dividends', trust_dist:'Trust Distribution',
+  pension:'Pension', family:'Family Payments', foreign:'Foreign Income',
+  boarder:'Boarder Income', interest:'Interest Income'
+};
+const LIAB_TYPES = {
+  mortgage:'Mortgage', personal:'Personal Loan', car:'Car Loan',
+  credit_card:'Credit Card', hecs:'HECS/Student', bnpl:'BNPL', other:'Other'
+};
+
+/* ---------- Finance engine ---------- */
+function PMT(principal, annualRate, years){
+  const r = annualRate/12, n = years*12;
+  if(principal<=0) return 0;
+  if(r===0) return principal/n;
+  return (principal*r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
+}
+function assessLiability(l, buffer){
+  const bal = parseFloat(l.balance)||0;
+  const rate = (parseFloat(l.rate)||0)/100;
+  const term = parseFloat(l.term)||0;
+  switch(l.type){
+    case 'credit_card': return bal*0.038/12;           // limit * 3.8% / 12
+    case 'hecs':        return bal*0.01/12;             // balance * 1% / 12
+    default:            return PMT(bal, rate+buffer, term||25); // PMT w/ buffer
+  }
+}
+
+/* ---------- Demo deals ---------- */
+let DEALS = [
+  {id:'D-891', name:'Sarah & Tom Mitchell', lender:'CBA', amount:785000, status:'BROKER_REVIEW', lvr:78.5, progress:null, type:'Owner Occupier'},
+  {id:'D-890', name:'Chen Property Trust', lender:'ANZ', amount:2100000, status:'DOCS_PENDING', lvr:55.2, progress:null, type:'Investment'},
+  {id:'D-889', name:'James Okonkwo', lender:'NAB', amount:620000, status:'AI_PROCESSING', lvr:82.1, progress:67, type:'Owner Occupier'},
+  {id:'D-888', name:'Patel Family SMSF', lender:'Westpac', amount:1400000, status:'SUBMITTED', lvr:60.0, progress:null, type:'SMSF'},
+  {id:'D-887', name:'Amanda Torres', lender:'CBA', amount:495000, status:'APPROVED', lvr:72.3, progress:null, type:'First Home'},
+  {id:'D-886', name:'Nguyen Trading Pty', lender:'ANZ', amount:3200000, status:'MORE_INFO', lvr:48.7, progress:null, type:'Commercial'}
+];
+
+/* ---------- Demo documents ---------- */
+let DOCS = [
+  {name:'Mitchell_Payslip_01.pdf', deal:'D-891', type:'Payslip', conf:98, status:'Verified', size:'248 KB', date:'2026-05-20'},
+  {name:'Mitchell_BankStatement.pdf', deal:'D-891', type:'Bank Statement', conf:95, status:'Verified', size:'1.2 MB', date:'2026-05-20'},
+  {name:'Chen_Trust_Deed.pdf', deal:'D-890', type:'Trust Deed', conf:88, status:'Review', size:'820 KB', date:'2026-05-19'},
+  {name:'Okonkwo_Tax_Return.pdf', deal:'D-889', type:'Tax Return', conf:76, status:'Processing', size:'540 KB', date:'2026-05-22'},
+  {name:'Patel_SMSF_Statement.pdf', deal:'D-888', type:'SMSF Statement', conf:91, status:'Verified', size:'670 KB', date:'2026-05-18'},
+  {name:'Torres_ID_Verify.jpg', deal:'D-887', type:'Identity', conf:99, status:'Verified', size:'310 KB', date:'2026-05-15'}
+];
+
+const STATUS_META = {
+  BROKER_REVIEW:{label:'Broker Review', cls:'amber'},
+  DOCS_PENDING:{label:'Docs Pending', cls:'gray'},
+  AI_PROCESSING:{label:'AI Processing', cls:'violet'},
+  SUBMITTED:{label:'Submitted', cls:'violet'},
+  APPROVED:{label:'Approved', cls:'green'},
+  MORE_INFO:{label:'More Info', cls:'red'}
+};
+
+/* ---------- App state ---------- */
+const state = {
+  page:'dashboard',
+  market:'AU',
+  dealFilter:'all',
+  dealSearch:'',
+  wizStep:1,
+  wizData:{lender:null, dealType:null, propValue:1000000, loanAmount:785000, rate:6.24, term:30},
+  calc:{
+    entities:[
+      {name:'Primary Borrower', open:true,
+       incomes:[{type:'salary_ft', amount:142000}],
+       liabilities:[{type:'credit_card', balance:15000, rate:21.9, term:0}]}
+    ],
+    dependants:0,
+    newLoan:{amount:785000, rate:6.24, term:30}
+  }
+};
+const fmtMoney = (n)=> MARKETS[state.market].sym + Math.round(n).toLocaleString();
+const m = ()=> MARKETS[state.market];
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+const NAV = [
+  {section:'Pipeline', items:[
+    {id:'dashboard', label:'Dashboard', ico:'▦'},
+    {id:'wizard', label:'New Deal', ico:'✚'},
+    {id:'documents', label:'Documents', ico:'🗎'}
+  ]},
+  {section:'Intelligence', items:[
+    {id:'serviceability', label:'Serviceability', ico:'📊'},
+    {id:'commentary', label:'AI Commentary', ico:'✦'},
+    {id:'compare', label:'Lender Compare', ico:'⚖'}
+  ]},
+  {section:'Platform', items:[
+    {id:'portal', label:'Client Portal', ico:'📱'},
+    {id:'markets', label:'Global Markets', ico:'🌐'}
+  ]},
+  {section:'Account', items:[
+    {id:'billing', label:'Billing', ico:'💳'},
+    {id:'settings', label:'Settings', ico:'⚙'}
+  ]}
+];
+const PAGE_TITLES = {
+  dashboard:'Dashboard', wizard:'New Deal', documents:'Documents',
+  serviceability:'Serviceability Calculator', commentary:'AI Commentary',
+  compare:'Lender Compare', portal:'Client Portal', markets:'Global Markets',
+  billing:'Billing', settings:'Settings'
+};
+
+function renderNav(){
+  const nav = document.getElementById('nav');
+  nav.innerHTML = NAV.map(s=>`
+    <div class="nav-section hide-collapse">${s.section}</div>
+    ${s.items.map(i=>`
+      <div class="nav-item ${state.page===i.id?'active':''}" onclick="navigate('${i.id}')">
+        <span class="ico">${i.ico}</span><span class="hide-collapse">${i.label}</span>
+      </div>`).join('')}
+  `).join('');
+}
+
+function navigate(page){
+  state.page = page;
+  document.getElementById('pageTitle').textContent = PAGE_TITLES[page]||'DebtIQ';
+  renderNav();
+  const c = document.getElementById('content');
+  c.innerHTML = `<div class="page active" id="page-${page}"></div>`;
+  const target = document.getElementById('page-'+page);
+  ({
+    dashboard:renderDashboard, wizard:renderWizard, documents:renderDocuments,
+    serviceability:renderServiceability, commentary:renderCommentary, compare:renderCompare,
+    portal:renderPortal, markets:renderMarkets, billing:renderBilling, settings:renderSettings
+  }[page] || renderDashboard)(target);
+  updateStatusStrip();
+}
+
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('collapsed'); }
+
+/* ============================================================
+   COUNTRY SELECTOR
+   ============================================================ */
+function renderCountryDD(){
+  document.getElementById('countryDD').innerHTML = Object.values(MARKETS).map(mk=>`
+    <div class="dd-item" onclick="setMarket('${mk.code}',event)">${mk.flag} ${mk.label}</div>`).join('');
+}
+function toggleCountryDD(e){ e.stopPropagation(); document.getElementById('countryDD').classList.toggle('show'); }
+function setMarket(code, e){
+  if(e) e.stopPropagation();
+  state.market = code;
+  const mk = MARKETS[code];
+  document.getElementById('countryFlag').textContent = mk.flag;
+  document.getElementById('countryName').textContent = mk.label;
+  document.getElementById('countryDD').classList.remove('show');
+  toast(`Switched to ${mk.label} (${mk.cur})`, 'info');
+  navigate(state.page);
+}
+document.addEventListener('click', ()=> document.getElementById('countryDD').classList.remove('show'));
+
+/* ============================================================
+   STATUS STRIP (live)
+   ============================================================ */
+function updateStatusStrip(){
+  const r = computeServiceability();
+  const verdictColor = r.verdict==='PASS'?'#A7F3D0':r.verdict==='BORDERLINE'?'#FDE68A':'#FCA5A5';
+  document.getElementById('statusStrip').innerHTML = `
+    <div class="si"><span class="dot" style="background:#fff"></span><span class="lbl">LIVE</span></div>
+    <div class="si"><span class="lbl">DSR</span><span class="val mono">${r.dsr.toFixed(1)}%</span></div>
+    <div class="si"><span class="lbl">NDI</span><span class="val mono">${fmtMoney(r.ndi)}/mo</span></div>
+    <div class="si"><span class="lbl">LVR</span><span class="val mono">${r.lvr.toFixed(1)}%</span></div>
+    <div class="si"><span class="lbl">Verdict</span><span class="val" style="color:${verdictColor}">${r.verdict}</span></div>
+    <div class="si"><span class="lbl">Market</span><span class="val">${m().flag} ${m().code} · buffer ${(m().buffer*100).toFixed(0)}%</span></div>
+  `;
+}
+
+/* ============================================================
+   SERVICEABILITY COMPUTATION
+   ============================================================ */
+function computeServiceability(){
+  const buffer = m().buffer, mk = m();
+  let shadedAnnual = 0, totalLiab = 0, existingDebt = 0;
+  const breakdown = {};
+  state.calc.entities.forEach(ent=>{
+    ent.incomes.forEach(inc=>{
+      const amt = parseFloat(inc.amount)||0;
+      const shaded = amt * (SHADE[inc.type]||1);
+      shadedAnnual += shaded;
+      breakdown[inc.type] = (breakdown[inc.type]||0) + shaded;
+    });
+    ent.liabilities.forEach(l=>{
+      existingDebt += assessLiability(l, buffer);
+      totalLiab += parseFloat(l.balance)||0;
+    });
+  });
+  const income = shadedAnnual/12;
+  const nl = state.calc.newLoan;
+  const newLoanMo = PMT(parseFloat(nl.amount)||0, ((parseFloat(nl.rate)||0)+buffer*100)/100, parseFloat(nl.term)||30);
+  const totalDebt = existingDebt + newLoanMo;
+  const HEM = Math.max(mk.hem + state.calc.dependants*700, income*0.28);
+  const ndi = income - totalDebt - HEM;
+  const dsr = income>0 ? totalDebt/income*100 : 0;
+  // LVR: new loan + existing property debt vs property value (assets)
+  const propValue = parseFloat(state.wizData.propValue)|| (parseFloat(nl.amount)/0.8) || 1;
+  const totalAssets = propValue;
+  const totalLiabilities = (parseFloat(nl.amount)||0);
+  const lvr = totalAssets>0 ? totalLiabilities/totalAssets*100 : 0;
+
+  let verdict;
+  const pass = ndi>0 && dsr<mk.dsrMax;
+  if(pass) verdict='PASS';
+  else if(ndi>-500 || dsr<mk.dsrMax+10) verdict='BORDERLINE';
+  else verdict='FAIL';
+
+  return {income, shadedAnnual, existingDebt, newLoanMo, totalDebt, HEM, ndi, dsr, lvr, verdict, breakdown, assessedRate:(parseFloat(nl.rate)||0)+buffer*100};
+}
+
+/* ============================================================
+   PAGE: DASHBOARD
+   ============================================================ */
+function filteredDeals(){
+  return DEALS.filter(d=>{
+    if(state.dealSearch && !(d.name.toLowerCase().includes(state.dealSearch.toLowerCase())||d.id.toLowerCase().includes(state.dealSearch.toLowerCase()))) return false;
+    if(state.dealFilter==='my' && d.status!=='BROKER_REVIEW') return false;
+    if(state.dealFilter==='docs' && d.status!=='DOCS_PENDING') return false;
+    if(state.dealFilter==='approved' && d.status!=='APPROVED') return false;
+    return true;
+  });
+}
+function renderDashboard(el){
+  const needsAction = DEALS.filter(d=>['BROKER_REVIEW','MORE_INFO','DOCS_PENDING'].includes(d.status)).length;
+  const active = DEALS.filter(d=>!['APPROVED'].includes(d.status)).length;
+  const approved = DEALS.filter(d=>d.status==='APPROVED').length;
+  const pipeline = DEALS.reduce((s,d)=>s+d.amount,0);
+  el.innerHTML = `
+    <div class="page-head"><h1>Pipeline Overview</h1><p>${DEALS.length} active deals across your portfolio</p></div>
+    <div class="kpi-grid">
+      <div class="kpi" style="border-top-color:var(--red)">
+        <div class="ico" style="background:rgba(220,38,38,.1);color:var(--red)">⚠</div>
+        <div class="num">${needsAction}</div><div class="cap">Needs Action</div>
+      </div>
+      <div class="kpi" style="border-top-color:var(--brand)">
+        <div class="ico" style="background:rgba(91,79,245,.1);color:var(--brand)">▦</div>
+        <div class="num">${active}</div><div class="cap">Active Deals</div>
+      </div>
+      <div class="kpi" style="border-top-color:var(--green)">
+        <div class="ico" style="background:rgba(5,150,105,.1);color:var(--green)">✓</div>
+        <div class="num">${approved}</div><div class="cap">Approved</div>
+      </div>
+      <div class="kpi" style="border-top-color:var(--t1)">
+        <div class="ico" style="background:rgba(15,15,26,.08);color:var(--t1)">$</div>
+        <div class="num mono">${fmtMoney(pipeline)}</div><div class="cap">Pipeline Value</div>
+      </div>
+    </div>
+    <div class="toolbar">
+      <div class="search">
+        <span class="si-ico">🔍</span>
+        <input id="dealSearch" placeholder="Search deals or client…" value="${state.dealSearch}" oninput="state.dealSearch=this.value;renderDealGrid()">
+      </div>
+      <div class="filters">
+        ${[['all','All'],['my','My Review'],['docs','Docs Needed'],['approved','Approved']].map(([k,l])=>
+          `<button class="chip ${state.dealFilter===k?'active':''}" onclick="state.dealFilter='${k}';renderDashboard(document.getElementById('page-dashboard'))">${l}</button>`).join('')}
+      </div>
+    </div>
+    <div class="deal-grid" id="dealGrid"></div>
+  `;
+  renderDealGrid();
+}
+function renderDealGrid(){
+  const grid = document.getElementById('dealGrid');
+  if(!grid) return;
+  const deals = filteredDeals();
+  if(!deals.length){ grid.innerHTML = `<p style="color:var(--t3)">No deals match your filters.</p>`; return; }
+  grid.innerHTML = deals.map(d=>{
+    const s = STATUS_META[d.status];
+    return `<div class="deal-card" onclick="openPanel('${d.id}')">
+      <div class="dc-top">
+        <div class="dc-name">${d.name}</div>
+        <span class="pill ${s.cls}">${s.label}</span>
+      </div>
+      <div class="dc-id">${d.id} · ${d.type}</div>
+      ${d.progress!==null?`<div class="ai-bar"><div class="lbl"><span>AI Processing</span><span>${d.progress}%</span></div><div class="progress"><span style="width:${d.progress}%"></span></div></div>`:''}
+      <div class="metric-row">
+        <div class="metric-box"><div class="mb-lbl">Amount</div><div class="mb-val mono">${fmtMoney(d.amount)}</div></div>
+        <div class="metric-box"><div class="mb-lbl">Lender</div><div class="mb-val">${d.lender}</div></div>
+        <div class="metric-box"><div class="mb-lbl">LVR</div><div class="mb-val mono">${d.lvr}%</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- Slide-over panel ---------- */
+function openPanel(id){
+  const d = DEALS.find(x=>x.id===id); if(!d) return;
+  const s = STATUS_META[d.status];
+  document.getElementById('panelName').textContent = d.name;
+  document.getElementById('panelId').textContent = d.id + ' · ' + d.type;
+  document.getElementById('panelBody').innerHTML = `
+    <span class="pill ${s.cls}" style="margin-bottom:16px">${s.label}</span>
+    <div class="detail-row"><span class="dl">Loan Amount</span><span class="dv mono">${fmtMoney(d.amount)}</span></div>
+    <div class="detail-row"><span class="dl">Lender</span><span class="dv">${d.lender}</span></div>
+    <div class="detail-row"><span class="dl">LVR</span><span class="dv mono">${d.lvr}%</span></div>
+    <div class="detail-row"><span class="dl">Deal Type</span><span class="dv">${d.type}</span></div>
+    <div class="detail-row"><span class="dl">Market</span><span class="dv">${m().flag} ${m().label}</span></div>
+    ${d.progress!==null?`<div style="margin:16px 0"><div class="ai-bar"><div class="lbl"><span>AI Processing</span><span>${d.progress}%</span></div><div class="progress"><span style="width:${d.progress}%"></span></div></div></div>`:''}
+    <h4 style="margin:20px 0 12px;font-size:14px">Quick Actions</h4>
+    <div style="display:flex;flex-direction:column;gap:9px">
+      <button class="btn primary" onclick="closePanel();navigate('serviceability')">Run Serviceability</button>
+      <button class="btn" onclick="closePanel();navigate('commentary')">Generate Commentary</button>
+      <button class="btn" onclick="advanceDeal('${d.id}')">Advance Stage</button>
+      <button class="btn" onclick="toast('Documents requested from client','info')">Request Documents</button>
+    </div>
+  `;
+  document.getElementById('overlay').classList.add('show');
+  const p = document.getElementById('panel'); p.classList.add('show');
+}
+function closePanel(){
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('panel').classList.remove('show');
+}
+function advanceDeal(id){
+  const d = DEALS.find(x=>x.id===id);
+  const order = ['DOCS_PENDING','AI_PROCESSING','BROKER_REVIEW','SUBMITTED','APPROVED'];
+  let i = order.indexOf(d.status);
+  d.status = order[Math.min(i+1, order.length-1)];
+  if(d.status==='APPROVED') d.progress=null;
+  toast(`${d.id} advanced to ${STATUS_META[d.status].label}`, 'ok');
+  closePanel(); renderDashboard(document.getElementById('page-dashboard'));
+}
+
+/* ============================================================
+   PAGE: WIZARD (8 steps)
+   ============================================================ */
+const WIZ_STEPS = ['Lender','Borrower','Entities','Loan','Documents','Extract','Commentary','Submit'];
+function renderWizard(el){
+  el.innerHTML = `
+    <div class="wiz-head">
+      <h1>New Deal Wizard</h1>
+      <p>Step ${state.wizStep} of 8 — ${WIZ_STEPS[state.wizStep-1]}</p>
+      <div class="wiz-steps" id="wizSteps"></div>
+    </div>
+    <div id="wizContent"></div>
+  `;
+  renderWizSteps(); renderWizStep();
+}
+function renderWizSteps(){
+  document.getElementById('wizSteps').innerHTML = WIZ_STEPS.map((s,i)=>{
+    const n = i+1;
+    const cls = n<state.wizStep?'done':n===state.wizStep?'cur':'';
+    return `<div class="wiz-step ${cls}"><div class="bar"></div><div class="nm">${s}</div></div>`;
+  }).join('');
+}
+function wizNav(){
+  return `<div class="wiz-nav">
+    <button class="btn ${state.wizStep===1?'':''}" ${state.wizStep===1?'disabled style="opacity:.4"':''} onclick="wizGo(-1)">← Back</button>
+    ${state.wizStep<8?`<button class="btn primary" onclick="wizGo(1)">Continue →</button>`:`<button class="btn primary" onclick="submitDeal()">Submit Deal ✓</button>`}
+  </div>`;
+}
+function wizGo(dir){
+  state.wizStep = Math.min(8, Math.max(1, state.wizStep+dir));
+  renderWizard(document.getElementById('page-wizard'));
+}
+function renderWizStep(){
+  const c = document.getElementById('wizContent');
+  const d = state.wizData;
+  let html='';
+  if(state.wizStep===1){
+    html = `<div class="wiz-card active"><h3>Select Lender & Deal Type</h3><p class="desc">Choose the lender and product for this application.</p>
+      <div class="subsec">Lender</div>
+      <div class="tile-grid">${m().lenders.map(l=>`<div class="tile ${d.lender===l?'sel':''}" onclick="state.wizData.lender='${l}';renderWizStep()"><div class="tt">${l}</div></div>`).join('')}</div>
+      <div class="subsec">Deal Type</div>
+      <div class="tile-grid">${['Owner Occupier','Investment','First Home','SMSF','Commercial','Refinance'].map(t=>`<div class="tile ${d.dealType===t?'sel':''}" onclick="state.wizData.dealType='${t}';renderWizStep()"><div class="tt">${t}</div></div>`).join('')}</div>
+      ${wizNav()}</div>`;
+  } else if(state.wizStep===2){
+    html = `<div class="wiz-card active"><h3>Borrower Details</h3><p class="desc">Primary applicant information.</p>
+      <div class="form-grid">
+        <div class="inp"><label>First Name</label><input value="Sarah"></div>
+        <div class="inp"><label>Last Name</label><input value="Mitchell"></div>
+        <div class="inp"><label>Email</label><input value="sarah.mitchell@email.com"></div>
+        <div class="inp"><label>Phone</label><input value="+61 412 345 678"></div>
+        <div class="inp"><label>Date of Birth</label><input type="date" value="1987-04-12"></div>
+        <div class="inp"><label>Dependants</label><input type="number" value="2"></div>
+      </div>${wizNav()}</div>`;
+  } else if(state.wizStep===3){
+    html = `<div class="wiz-card active"><h3>Entity Structure</h3><p class="desc">Define borrowing entities and ownership.</p>
+      <div class="tile-grid">${['Individual','Joint','Company','Trust','SMSF','Partnership'].map(t=>`<div class="tile ${d.entity===t?'sel':''}" onclick="state.wizData.entity='${t}';renderWizStep()"><div class="tt">${t}</div></div>`).join('')}</div>
+      ${wizNav()}</div>`;
+  } else if(state.wizStep===4){
+    const lvr = d.propValue>0 ? (d.loanAmount/d.propValue*100) : 0;
+    const lvrColor = lvr<=80?'var(--green)':lvr<=90?'var(--amber)':'var(--red)';
+    html = `<div class="wiz-card active"><h3>Loan Structure</h3><p class="desc">Live LVR updates as you type.</p>
+      <div class="form-grid">
+        <div class="inp"><label>Property Value</label><input type="number" value="${d.propValue}" oninput="state.wizData.propValue=+this.value;renderWizStep();updateStatusStrip()"></div>
+        <div class="inp"><label>Loan Amount</label><input type="number" value="${d.loanAmount}" oninput="state.wizData.loanAmount=+this.value;renderWizStep();updateStatusStrip()"></div>
+        <div class="inp"><label>Interest Rate (%)</label><input type="number" step="0.01" value="${d.rate}" oninput="state.wizData.rate=+this.value"></div>
+        <div class="inp"><label>Term (years)</label><input type="number" value="${d.term}" oninput="state.wizData.term=+this.value"></div>
+      </div>
+      <div class="lvr-badge" style="background:${lvrColor}1a;color:${lvrColor}">LVR ${lvr.toFixed(1)}%</div>
+      ${wizNav()}</div>`;
+  } else if(state.wizStep===5){
+    const docs = ['Payslips (last 2)','Bank Statements','ID Verification','Tax Returns','Liability Statements'];
+    html = `<div class="wiz-card active"><h3>Document Upload</h3><p class="desc">Drop or click each zone — turns green when uploaded.</p>
+      <div style="display:flex;flex-direction:column;gap:11px">
+        ${docs.map((doc,i)=>`<div class="upload-zone" id="wizUp${i}" onclick="wizUpload(${i},'${doc}')">⬆ ${doc}</div>`).join('')}
+      </div>${wizNav()}</div>`;
+  } else if(state.wizStep===6){
+    html = `<div class="wiz-card active"><h3>AI Data Extraction</h3><p class="desc">Extracted fields from uploaded documents.</p>
+      <table><thead><tr><th>Field</th><th>Value</th><th>Confidence</th></tr></thead><tbody>
+      ${[['Gross Income','$142,000','98%'],['Employer','Acme Corp Pty Ltd','96%'],['Net Monthly','$8,420','94%'],['Credit Card Limit','$15,000','99%'],['Account Conduct','Satisfactory','89%']].map(r=>
+        `<tr><td>${r[0]}</td><td class="mono">${r[1]}</td><td><div class="conf-bar"><span style="width:${r[2]}"></span></div> ${r[2]}</td></tr>`).join('')}
+      </tbody></table>
+      <button class="btn primary" style="margin-top:16px" onclick="callExtract()">↻ Re-run AI Extraction</button>
+      ${wizNav()}</div>`;
+  } else if(state.wizStep===7){
+    html = `<div class="wiz-card active"><h3>AI Commentary</h3><p class="desc">Generated submission notes — edit inline.</p>
+      <div class="inp"><label>Loan Purpose & Background</label><textarea rows="4">Applicants Sarah & Tom Mitchell seek finance to purchase an owner-occupied dwelling. Both are PAYG employed with stable tenure exceeding 3 years.</textarea></div>
+      <div class="inp" style="margin-top:12px"><label>Serviceability Summary</label><textarea rows="4">Combined assessed income comfortably supports the proposed repayments at the assessment rate including APRA buffer. NDI is positive and DSR within lender appetite.</textarea></div>
+      <button class="btn primary" style="margin-top:14px" onclick="navigate('commentary')">Open Full Commentary →</button>
+      ${wizNav()}</div>`;
+  } else if(state.wizStep===8){
+    html = `<div class="wiz-card active"><h3>Review & Submit</h3><p class="desc">Final checklist before submission.</p>
+      ${[['Lender selected', d.lender||'CBA'],['Deal type', d.dealType||'Owner Occupier'],['Loan amount', fmtMoney(d.loanAmount)],['LVR', (d.loanAmount/d.propValue*100).toFixed(1)+'%'],['Documents uploaded','5 of 5'],['Commentary generated','Complete']].map(r=>
+        `<div class="detail-row"><span class="dl">✓ ${r[0]}</span><span class="dv">${r[1]}</span></div>`).join('')}
+      <div class="assessed-note" style="background:rgba(5,150,105,.08);color:var(--green);margin-top:16px">✓ All requirements satisfied. Ready to submit to ${d.lender||'CBA'}.</div>
+      ${wizNav()}</div>`;
+  }
+  c.innerHTML = html;
+}
+function wizUpload(i, name){
+  const z = document.getElementById('wizUp'+i);
+  z.classList.add('done'); z.innerHTML = '✓ ' + name + ' — uploaded';
+  toast(name+' uploaded', 'ok');
+}
+function submitDeal(){
+  showLoader('Submitting deal to lender…');
+  setTimeout(()=>{
+    hideLoader();
+    const id = 'D-'+(892+Math.floor(Math.random()*100));
+    DEALS.unshift({id, name:'New Application', lender:state.wizData.lender||'CBA', amount:state.wizData.loanAmount, status:'SUBMITTED', lvr:+(state.wizData.loanAmount/state.wizData.propValue*100).toFixed(1), progress:null, type:state.wizData.dealType||'Owner Occupier'});
+    toast(`Deal ${id} submitted successfully!`, 'ok');
+    state.wizStep=1; navigate('dashboard');
+  }, 1600);
+}
+
+/* ============================================================
+   PAGE: SERVICEABILITY
+   ============================================================ */
+function renderServiceability(el){
+  el.innerHTML = `
+    <div class="page-head"><h1>Serviceability Calculator</h1><p>Live assessment — updates on every keystroke · ${m().flag} ${m().label}</p></div>
+    <div class="calc-split">
+      <div id="calcEditor"></div>
+      <div class="calc-results" id="calcResults"></div>
+    </div>`;
+  renderCalcEditor(); renderCalcResults();
+}
+function renderCalcEditor(){
+  const ed = document.getElementById('calcEditor'); if(!ed) return;
+  const buffer = m().buffer;
+  let html = state.calc.entities.map((ent, ei)=>`
+    <div class="entity-card">
+      <div class="entity-head" onclick="state.calc.entities[${ei}].open=!state.calc.entities[${ei}].open;renderCalcEditor()">
+        <h4>${ent.name}</h4>
+        <div style="display:flex;gap:10px;align-items:center">
+          ${state.calc.entities.length>1?`<span class="row-x" onclick="event.stopPropagation();removeEntity(${ei})">🗑</span>`:''}
+          <span style="color:var(--t3)">${ent.open?'▾':'▸'}</span>
+        </div>
+      </div>
+      ${ent.open?`<div class="entity-body">
+        <div class="subsec">Income</div>
+        <div class="row-head"><span>Type</span><span>Amount/yr</span><span>Shade</span><span>Shaded $</span><span></span></div>
+        ${ent.incomes.map((inc,ii)=>{
+          const sh = SHADE[inc.type]||1; const shaded=(parseFloat(inc.amount)||0)*sh;
+          return `<div class="row-line">
+            <select onchange="state.calc.entities[${ei}].incomes[${ii}].type=this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()">${Object.entries(INCOME_TYPES).map(([k,v])=>`<option value="${k}" ${inc.type===k?'selected':''}>${v}</option>`).join('')}</select>
+            <input type="number" value="${inc.amount}" oninput="state.calc.entities[${ei}].incomes[${ii}].amount=+this.value;renderCalcResults();updateStatusStrip()">
+            <span class="computed">×${sh.toFixed(2)}</span>
+            <span class="computed mono">${fmtMoney(shaded)}</span>
+            <span class="row-x" onclick="removeIncome(${ei},${ii})">×</span>
+          </div>`;}).join('')}
+        <button class="add-row" onclick="addIncome(${ei})">+ Add income</button>
+        <div class="subsec">Liabilities</div>
+        <div class="row-head liab"><span>Type</span><span>Balance/Limit</span><span>Rate%</span><span>Term</span><span>Assessed/mo</span><span></span></div>
+        ${ent.liabilities.map((l,li)=>{
+          const assessed = assessLiability(l, buffer);
+          return `<div class="row-line liab">
+            <select onchange="state.calc.entities[${ei}].liabilities[${li}].type=this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()">${Object.entries(LIAB_TYPES).map(([k,v])=>`<option value="${k}" ${l.type===k?'selected':''}>${v}</option>`).join('')}</select>
+            <input type="number" value="${l.balance}" oninput="state.calc.entities[${ei}].liabilities[${li}].balance=+this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()">
+            <input type="number" step="0.1" value="${l.rate}" oninput="state.calc.entities[${ei}].liabilities[${li}].rate=+this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()">
+            <input type="number" value="${l.term}" oninput="state.calc.entities[${ei}].liabilities[${li}].term=+this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()">
+            <span class="computed mono">${fmtMoney(assessed)}</span>
+            <span class="row-x" onclick="removeLiab(${ei},${li})">×</span>
+          </div>`;}).join('')}
+        <button class="add-row" onclick="addLiab(${ei})">+ Add liability</button>
+      </div>`:''}
+    </div>`).join('');
+
+  const nl = state.calc.newLoan;
+  html += `<div class="entity-card"><div class="entity-body" style="padding:16px">
+    <div class="subsec" style="margin-top:0">New Loan</div>
+    <div class="inp" style="margin-bottom:12px"><label>Loan Amount (${m().sym})</label><input type="number" value="${nl.amount}" oninput="state.calc.newLoan.amount=+this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()"></div>
+    <div class="slider-row"><label><span>Interest Rate</span><span class="mono">${nl.rate.toFixed(2)}%</span></label>
+      <input type="range" min="3" max="12" step="0.01" value="${nl.rate}" oninput="state.calc.newLoan.rate=+this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()"></div>
+    <div class="slider-row"><label><span>Term</span><span class="mono">${nl.term} yrs</span></label>
+      <input type="range" min="5" max="30" step="1" value="${nl.term}" oninput="state.calc.newLoan.term=+this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()"></div>
+    <div class="slider-row"><label><span>Dependants</span><span class="mono">${state.calc.dependants}</span></label>
+      <input type="range" min="0" max="6" step="1" value="${state.calc.dependants}" oninput="state.calc.dependants=+this.value;renderCalcResults();updateStatusStrip()"></div>
+    <div class="assessed-note">Assessed rate: ${(nl.rate+buffer*100).toFixed(2)}% (contract ${nl.rate.toFixed(2)}% + ${(buffer*100).toFixed(0)}% APRA buffer)</div>
+  </div></div>
+  <button class="btn ghost" style="margin-top:4px" onclick="addEntity()">+ Add Entity</button>`;
+  ed.innerHTML = html;
+}
+function addEntity(){ state.calc.entities.push({name:'Entity '+(state.calc.entities.length+1), open:true, incomes:[{type:'salary_ft',amount:0}], liabilities:[]}); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
+function removeEntity(i){ state.calc.entities.splice(i,1); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
+function addIncome(ei){ state.calc.entities[ei].incomes.push({type:'salary_ft',amount:0}); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
+function removeIncome(ei,ii){ state.calc.entities[ei].incomes.splice(ii,1); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
+function addLiab(ei){ state.calc.entities[ei].liabilities.push({type:'credit_card',balance:0,rate:0,term:0}); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
+function removeLiab(ei,li){ state.calc.entities[ei].liabilities.splice(li,1); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
+
+function renderCalcResults(){
+  const box = document.getElementById('calcResults'); if(!box) return;
+  const r = computeServiceability();
+  const vcls = r.verdict.toLowerCase();
+  const vsub = r.verdict==='PASS'?'Within lender appetite':r.verdict==='BORDERLINE'?'Marginal — review carefully':'Does not service';
+  // income flow rows
+  const flowMax = Math.max(r.income, 1);
+  const flows = [
+    {l:'Gross Income', v:r.income, c:'#5B4FF5'},
+    {l:'Existing Debt', v:r.existingDebt, c:'#D97706'},
+    {l:'New Loan', v:r.newLoanMo, c:'#8B5CF6'},
+    {l:'Living (HEM)', v:r.HEM, c:'#6B7280'},
+    {l:'Net Surplus (NDI)', v:Math.max(r.ndi,0), c:r.ndi>=0?'#059669':'#DC2626'}
+  ];
+  // stress test
+  const buffer=m().buffer, nl=state.calc.newLoan;
+  let stress='';
+  for(let i=0;i<=6;i++){
+    const add=i*0.5;
+    const sRate=(nl.rate+add)+buffer*100;
+    const pmt=PMT(parseFloat(nl.amount)||0, sRate/100, nl.term);
+    const sTotal=r.existingDebt+pmt;
+    const sNdi=r.income-sTotal-r.HEM;
+    const sDsr=r.income>0?sTotal/r.income*100:0;
+    stress+=`<tr><td>${add===0?'Today':'+'+add+'%'}</td><td class="mono">${(nl.rate+add).toFixed(2)}%</td><td class="mono">${fmtMoney(pmt)}</td><td class="mono" style="color:${sNdi>=0?'var(--green)':'var(--red)'}">${fmtMoney(sNdi)}</td><td class="mono">${sDsr.toFixed(0)}%</td></tr>`;
+  }
+  box.innerHTML = `
+    <div class="verdict ${vcls}">
+      <div class="v-lbl">Serviceability Verdict</div>
+      <div class="v-big">${r.verdict}</div>
+      <div class="v-sub">${vsub}</div>
+    </div>
+    <div class="res-grid">
+      <div class="res-box"><div class="rl">DSR</div><div class="rv mono">${r.dsr.toFixed(1)}%</div></div>
+      <div class="res-box"><div class="rl">NDI/mo</div><div class="rv mono" style="color:${r.ndi>=0?'var(--green)':'var(--red)'}">${fmtMoney(r.ndi)}</div></div>
+      <div class="res-box"><div class="rl">LVR</div><div class="rv mono">${r.lvr.toFixed(1)}%</div></div>
+      <div class="res-box"><div class="rl">Income/mo</div><div class="rv mono">${fmtMoney(r.income)}</div></div>
+      <div class="res-box"><div class="rl">Total Debt</div><div class="rv mono">${fmtMoney(r.totalDebt)}</div></div>
+      <div class="res-box"><div class="rl">HEM</div><div class="rv mono">${fmtMoney(r.HEM)}</div></div>
+    </div>
+    <div class="flow-chart">
+      <h4>Income Flow</h4>
+      ${flows.map(f=>`<div class="flow-row"><div class="fl"><span>${f.l}</span><span class="mono">${fmtMoney(f.v)}</span></div><div class="flow-bar"><span style="width:${Math.min(100, f.v/flowMax*100)}%;background:${f.c}"></span></div></div>`).join('')}
+    </div>
+    <div class="stress-table">
+      <h4>Rate Stress Test</h4>
+      <table><thead><tr><th>Shock</th><th>Rate</th><th>Repay/mo</th><th>NDI</th><th>DSR</th></tr></thead><tbody>${stress}</tbody></table>
+    </div>
+    <button class="btn primary" style="width:100%" onclick="callAIAssessment()">✦ AI Assessment</button>
+  `;
+}
+
+/* ============================================================
+   PAGE: COMMENTARY
+   ============================================================ */
+let COMMENTARY = [
+  {title:'Loan Purpose & Background', ai:true, text:'Applicants seek finance for an owner-occupied purchase. Both borrowers are PAYG employed with stable employment tenure. Purpose is consistent with declared objectives.'},
+  {title:'Applicant Profile', ai:true, text:'Primary borrower aged 39, employed full-time. Joint applicant in stable employment. Two dependants. Strong account conduct observed across statements.'},
+  {title:'Serviceability Assessment', ai:true, text:'Combined assessed income supports proposed repayments at the assessment rate inclusive of the APRA buffer. NDI positive; DSR within lender appetite.'},
+  {title:'Security & Valuation', ai:true, text:'Security comprises a residential dwelling in a metro location. LVR within policy. Valuation ordered and acceptable.'},
+  {title:'Credit History', ai:true, text:'No adverse credit events identified. Existing liabilities conducted satisfactorily with no arrears in the preceding 12 months.'},
+  {title:'Risk Mitigants & Compliance', ai:false, text:'[Broker to confirm] Genuine savings verified. Living expenses validated against statements. Responsible lending obligations met.'},
+  {title:'Exit Strategy', ai:false, text:'[Broker to confirm] Loan term aligns with retirement timeline; no foreseeable repayment difficulty. Document exit plan for applicants over 50.'},
+  {title:'Broker Recommendation', ai:false, text:'[Broker to confirm] Recommend approval. Application meets lender policy and serviceability requirements.'}
+];
+function renderCommentary(el){
+  el.innerHTML = `
+    <div class="page-head" style="display:flex;justify-content:space-between;align-items:center">
+      <div><h1>AI Commentary</h1><p>8 submission sections — edit inline or regenerate with AI</p></div>
+      <div style="display:flex;gap:9px">
+        <button class="btn" onclick="window.print()">⎙ Export PDF</button>
+        <button class="btn primary" onclick="regenerateAll()">✦ Regenerate All</button>
+      </div>
+    </div>
+    <div class="commentary-wrap" id="commWrap"></div>`;
+  renderCommWrap();
+}
+function renderCommWrap(){
+  document.getElementById('commWrap').innerHTML = COMMENTARY.map((c,i)=>`
+    <div class="comm-card ${c.ai?'':'broker'}">
+      <div class="comm-head">
+        <h4>${c.title}</h4>
+        <div style="display:flex;gap:7px;align-items:center">
+          <span class="pill ${c.ai?'green':'amber'}">${c.ai?'AI generated':'Broker required'}</span>
+          <button class="mini-btn" onclick="toggleEdit(${i})" id="editBtn${i}">Edit</button>
+          <button class="mini-btn" onclick="regenSection(${i})">↻ AI</button>
+        </div>
+      </div>
+      <div id="commBody${i}"><div class="comm-text">${c.text}</div></div>
+    </div>`).join('');
+}
+function toggleEdit(i){
+  const body = document.getElementById('commBody'+i);
+  const btn = document.getElementById('editBtn'+i);
+  if(btn.textContent==='Edit'){
+    body.innerHTML = `<textarea id="ta${i}">${COMMENTARY[i].text}</textarea>`;
+    btn.textContent='Save';
+  } else {
+    COMMENTARY[i].text = document.getElementById('ta'+i).value;
+    body.innerHTML = `<div class="comm-text">${COMMENTARY[i].text}</div>`;
+    btn.textContent='Edit'; toast('Section saved', 'ok');
+  }
+}
+function regenSection(i){
+  showLoader('Regenerating section…');
+  callClaude(`Write a concise mortgage submission paragraph for the section "${COMMENTARY[i].title}". Market: ${m().label}. Loan: ${fmtMoney(state.calc.newLoan.amount)}. Keep it under 70 words, professional broker tone.`)
+    .then(txt=>{ COMMENTARY[i].text=txt; hideLoader(); renderCommWrap(); toast('Section regenerated', 'ok'); });
+}
+function regenerateAll(){
+  showLoader('Generating full commentary…');
+  const r = computeServiceability();
+  callClaude(`Generate concise mortgage broker submission commentary. Market: ${m().label}. Loan amount ${fmtMoney(state.calc.newLoan.amount)}, DSR ${r.dsr.toFixed(1)}%, NDI ${fmtMoney(r.ndi)}/mo, verdict ${r.verdict}. Provide a 60-word professional overview.`)
+    .then(txt=>{ COMMENTARY[0].text=txt; hideLoader(); renderCommWrap(); toast('Commentary regenerated', 'ok'); });
+}
+
+/* ============================================================
+   PAGE: DOCUMENTS
+   ============================================================ */
+function renderDocuments(el){
+  const verified = DOCS.filter(d=>d.status==='Verified').length;
+  const processing = DOCS.filter(d=>d.status==='Processing').length;
+  const review = DOCS.filter(d=>d.status==='Review').length;
+  const avgConf = Math.round(DOCS.reduce((s,d)=>s+d.conf,0)/DOCS.length);
+  el.innerHTML = `
+    <div class="page-head" style="display:flex;justify-content:space-between;align-items:center">
+      <div><h1>Documents</h1><p>${DOCS.length} documents across active deals</p></div>
+      <div style="display:flex;gap:9px">
+        <button class="btn" onclick="classifyAll()">✦ AI Classify All</button>
+        <button class="btn primary" onclick="document.getElementById('docInput').click()">⬆ Upload</button>
+        <input type="file" id="docInput" multiple style="display:none" onchange="uploadDocs(this.files)">
+      </div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi" style="border-top-color:var(--green)"><div class="ico" style="background:rgba(5,150,105,.1);color:var(--green)">✓</div><div class="num">${verified}</div><div class="cap">Verified</div></div>
+      <div class="kpi" style="border-top-color:var(--brand)"><div class="ico" style="background:rgba(91,79,245,.1);color:var(--brand)">⟳</div><div class="num">${processing}</div><div class="cap">Processing</div></div>
+      <div class="kpi" style="border-top-color:var(--amber)"><div class="ico" style="background:rgba(217,119,6,.1);color:var(--amber)">👁</div><div class="num">${review}</div><div class="cap">Needs Review</div></div>
+      <div class="kpi" style="border-top-color:var(--t1)"><div class="ico" style="background:rgba(15,15,26,.08);color:var(--t1)">%</div><div class="num">${avgConf}%</div><div class="cap">Avg Confidence</div></div>
+    </div>
+    <div class="table-card">
+      <table><thead><tr><th>Document</th><th>Deal</th><th>Type</th><th>Confidence</th><th>Status</th><th>Size</th><th>Date</th><th></th></tr></thead>
+      <tbody id="docBody"></tbody></table>
+    </div>`;
+  renderDocBody();
+}
+function renderDocBody(){
+  const statusCls = {Verified:'green', Processing:'violet', Review:'amber'};
+  document.getElementById('docBody').innerHTML = DOCS.map((d,i)=>`
+    <tr>
+      <td style="font-weight:600">${d.name}</td>
+      <td>${d.deal}</td><td>${d.type}</td>
+      <td><div class="conf-bar"><span style="width:${d.conf}%"></span></div> <span class="mono">${d.conf}%</span></td>
+      <td><span class="pill ${statusCls[d.status]||'gray'}">${d.status}</span></td>
+      <td class="mono">${d.size}</td><td>${d.date}</td>
+      <td><span class="row-x" style="cursor:pointer" onclick="deleteDoc(${i})">🗑</span></td>
+    </tr>`).join('');
+}
+function uploadDocs(files){
+  [...files].forEach(f=>{
+    DOCS.unshift({name:f.name, deal:'D-891', type:'Unclassified', conf:0, status:'Processing', size:(f.size/1024).toFixed(0)+' KB', date:'2026-05-27'});
+  });
+  toast(files.length+' document(s) uploaded', 'ok');
+  renderDocuments(document.getElementById('page-documents'));
+}
+function deleteDoc(i){ const n=DOCS[i].name; DOCS.splice(i,1); toast(n+' deleted','info'); renderDocuments(document.getElementById('page-documents')); }
+function classifyAll(){
+  showLoader('Classifying documents with AI…');
+  setTimeout(()=>{
+    DOCS.forEach(d=>{ if(d.type==='Unclassified'){d.type='Bank Statement'; d.conf=92; d.status='Verified';} });
+    hideLoader(); toast('All documents classified', 'ok'); renderDocuments(document.getElementById('page-documents'));
+  }, 1400);
+}
+
+/* ============================================================
+   PAGE: LENDER COMPARE
+   ============================================================ */
+function renderCompare(el){
+  const r = computeServiceability();
+  const loan = parseFloat(state.calc.newLoan.amount)||0;
+  const term = state.calc.newLoan.term;
+  const buffer = m().buffer;
+  // build 6 lenders with varied rates
+  const baseRates = [5.99, 6.09, 6.14, 6.24, 6.34, 6.49];
+  const rows = m().lenders.slice(0,6).map((l,i)=>{
+    const rate = baseRates[i];
+    const aRate = rate+buffer*100;
+    const pmt = PMT(loan, rate/100, term);
+    const aPmt = PMT(loan, aRate/100, term);
+    const totalDebt = r.existingDebt+aPmt;
+    const ndi = r.income-totalDebt-r.HEM;
+    const dsr = r.income>0?totalDebt/r.income*100:0;
+    const totalCost = pmt*term*12;
+    const serviceable = ndi>0 && dsr<m().dsrMax;
+    return {l, rate, aRate, pmt, aPmt, dsr, ndi, totalCost, serviceable};
+  });
+  const bestRate = Math.min(...rows.map(x=>x.rate));
+  el.innerHTML = `
+    <div class="page-head"><h1>Lender Comparison</h1><p>${m().flag} ${m().label} — comparing ${rows.length} lenders for ${fmtMoney(loan)} over ${term} years</p></div>
+    <div class="table-card">
+      <table><thead><tr><th>Lender</th><th>Rate</th><th>Assessed</th><th>Monthly</th><th>Assessed/mo</th><th>DSR</th><th>NDI</th><th>Total Cost</th><th>Serviceable</th></tr></thead>
+      <tbody>${rows.map(x=>`
+        <tr class="${x.rate===bestRate?'best-row':''}">
+          <td style="font-weight:700">${x.l}${x.rate===bestRate?' 🏆':''}</td>
+          <td class="mono">${x.rate.toFixed(2)}%</td>
+          <td class="mono">${x.aRate.toFixed(2)}%</td>
+          <td class="mono">${fmtMoney(x.pmt)}</td>
+          <td class="mono">${fmtMoney(x.aPmt)}</td>
+          <td class="mono">${x.dsr.toFixed(1)}%</td>
+          <td class="mono" style="color:${x.ndi>=0?'var(--green)':'var(--red)'}">${fmtMoney(x.ndi)}</td>
+          <td class="mono">${fmtMoney(x.totalCost)}</td>
+          <td><span class="pill ${x.serviceable?'green':'red'}">${x.serviceable?'Yes':'No'}</span></td>
+        </tr>`).join('')}
+      </tbody></table>
+    </div>`;
+}
+
+/* ============================================================
+   PAGE: CLIENT PORTAL
+   ============================================================ */
+const PORTAL_DOCS = ['Photo ID','Payslips','Bank Statements','Liabilities'];
+let portalFeatures = {esign:true, reminders:true, progress:false, chat:true};
+function renderPortal(el){
+  el.innerHTML = `
+    <div class="page-head"><h1>Client Portal</h1><p>Configure the mobile document collection experience</p></div>
+    <div class="portal-split">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="phone-top"><h4>Upload Documents</h4><p style="font-size:12px;opacity:.85;margin-top:3px">Mitchell Application · D-891</p></div>
+          <div class="phone-body" id="phoneBody"></div>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="padding:20px;margin-bottom:16px">
+          <h4 style="font-size:15px;font-weight:700;margin-bottom:8px">Portal Features</h4>
+          ${Object.entries({esign:'E-Signature',reminders:'SMS Reminders',progress:'Progress Tracker',chat:'In-app Chat'}).map(([k,v])=>`
+            <div class="toggle-row"><span style="font-weight:600">${v}</span><div class="switch ${portalFeatures[k]?'on':''}" onclick="portalFeatures.${k}=!portalFeatures.${k};this.classList.toggle('on')"></div></div>`).join('')}
+        </div>
+        <button class="btn primary" style="width:100%" onclick="generateLink()">🔗 Generate Secure Link</button>
+      </div>
+    </div>`;
+  renderPhoneBody();
+}
+function renderPhoneBody(){
+  document.getElementById('phoneBody').innerHTML = PORTAL_DOCS.map((d,i)=>`<div class="dz" id="dz${i}" onclick="simUpload(${i},'${d}')">⬆ ${d}</div>`).join('') +
+    `<p style="font-size:11px;color:var(--t3);text-align:center;margin-top:8px">Tap a zone to simulate upload</p>`;
+}
+function simUpload(i, name){
+  const z = document.getElementById('dz'+i);
+  z.innerHTML = '⟳ Uploading…';
+  setTimeout(()=>{ z.classList.add('done'); z.innerHTML = '✓ '+name; }, 1800);
+}
+function generateLink(){
+  const link = 'https://portal.debtiq.com/u/'+Math.random().toString(36).slice(2,10);
+  toast('Secure link generated: '+link, 'ok');
+}
+
+/* ============================================================
+   PAGE: GLOBAL MARKETS
+   ============================================================ */
+function renderMarkets(el){
+  const totalLenders = Object.values(MARKETS).reduce((s,mk)=>s+mk.lenders.length,0);
+  el.innerHTML = `
+    <div class="market-hero">
+      <h2>🌐 Global Markets</h2>
+      <p style="opacity:.85;margin-top:4px">One platform, six markets. Policy-aware serviceability everywhere.</p>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="hn">6</div><div class="hl">Markets</div></div>
+        <div class="hero-stat"><div class="hn">${totalLenders}</div><div class="hl">Lenders</div></div>
+        <div class="hero-stat"><div class="hn">6</div><div class="hl">Currencies</div></div>
+        <div class="hero-stat"><div class="hn">${m().code}</div><div class="hl">Active Now</div></div>
+      </div>
+    </div>
+    <div class="market-grid">${Object.values(MARKETS).map(mk=>`
+      <div class="market-card ${state.market===mk.code?'active':''}" onclick="setMarket('${mk.code}')">
+        <div class="mc-flag">${mk.flag}</div>
+        <div class="mc-name">${mk.label}</div>
+        <div style="color:var(--t3);font-size:12px;margin-top:4px">${mk.cur} · ${mk.lenders.length} lenders</div>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+          <span class="pill gray">Buffer ${(mk.buffer*100).toFixed(0)}%</span>
+          <span class="pill gray">DSR ${mk.dsrMax}%</span>
+        </div>
+      </div>`).join('')}
+    </div>
+    <div class="table-card">
+      <h4 style="font-size:15px;font-weight:700;margin:14px 0 6px">Policy Rules Comparison</h4>
+      <table><thead><tr><th>Market</th><th>Currency</th><th>APRA Buffer</th><th>Max DSR</th><th>HEM Floor</th><th>Lenders</th></tr></thead>
+      <tbody>${Object.values(MARKETS).map(mk=>`
+        <tr style="${state.market===mk.code?'background:rgba(91,79,245,.06)':''}">
+          <td style="font-weight:700">${mk.flag} ${mk.label}</td>
+          <td>${mk.cur}</td><td class="mono">${(mk.buffer*100).toFixed(0)}%</td>
+          <td class="mono">${mk.dsrMax}%</td><td class="mono">${mk.sym}${mk.hem.toLocaleString()}</td>
+          <td>${mk.lenders.length}</td>
+        </tr>`).join('')}
+      </tbody></table>
+    </div>`;
+}
+
+/* ============================================================
+   PAGE: BILLING
+   ============================================================ */
+function renderBilling(el){
+  el.innerHTML = `
+    <div class="page-head"><h1>Billing & Usage</h1><p>Manage your subscription and monitor usage</p></div>
+    <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="kpi"><div class="cap">Deals This Month</div><div class="num mono">34 / 50</div><div class="usage-bar"><span style="width:68%"></span></div></div>
+      <div class="kpi"><div class="cap">AI Credits</div><div class="num mono">1,240 / 2,000</div><div class="usage-bar"><span style="width:62%"></span></div></div>
+      <div class="kpi"><div class="cap">Storage</div><div class="num mono">4.2 / 10 GB</div><div class="usage-bar"><span style="width:42%"></span></div></div>
+    </div>
+    <h4 style="font-size:16px;font-weight:700;margin:8px 0 16px">Plans</h4>
+    <div class="plan-grid">
+      ${[
+        {n:'Starter', p:149, cur:state.market, active:false, f:['25 deals/mo','Basic AI commentary','3 markets','Email support']},
+        {n:'Professional', p:249, active:true, f:['Unlimited deals','Full AI suite','All 6 markets','Priority support','Client portal']},
+        {n:'Aggregator', p:79, active:false, f:['Per-broker pricing','White-label','API access','Dedicated manager']}
+      ].map(pl=>`
+        <div class="plan ${pl.active?'active':''}">
+          <div style="font-weight:700;font-size:17px">${pl.n}</div>
+          <div class="price">${m().sym}${pl.p}<small>/mo</small></div>
+          <ul>${pl.f.map(x=>`<li>✓ ${x}</li>`).join('')}</ul>
+          <button class="btn ${pl.active?'':'primary'}" style="width:100%;${pl.active?'background:rgba(255,255,255,.2);color:#fff;border:none':''}" onclick="toast('${pl.active?'Current plan':'Switched to '+pl.n}','${pl.active?'info':'ok'}')">${pl.active?'Current Plan':'Choose '+pl.n}</button>
+        </div>`).join('')}
+    </div>`;
+}
+
+/* ============================================================
+   PAGE: SETTINGS
+   ============================================================ */
+let settingsTab = 'profile';
+let aiConfig = {autoCommentary:true, autoClassify:true, stressTest:true, riskFlags:false};
+let notifs = {emailNew:true, emailApproved:true, pushDocs:false, pushReview:true};
+function renderSettings(el){
+  el.innerHTML = `
+    <div class="page-head"><h1>Settings</h1><p>Manage your account and platform preferences</p></div>
+    <div class="tabs">
+      ${[['profile','Profile'],['lenders','Lenders'],['ai','AI Config'],['notifs','Notifications']].map(([k,l])=>
+        `<div class="tab ${settingsTab===k?'active':''}" onclick="settingsTab='${k}';renderSettings(document.getElementById('page-settings'))">${l}</div>`).join('')}
+    </div>
+    <div class="card" style="padding:24px;max-width:760px">${settingsPane()}</div>`;
+}
+function settingsPane(){
+  if(settingsTab==='profile'){
+    return `<div class="form-grid">
+      <div class="inp"><label>Full Name</label><input value="Jordan Blake"></div>
+      <div class="inp"><label>Email</label><input value="broker@debtiq.com"></div>
+      <div class="inp"><label>Brokerage</label><input value="Summit Mortgage Group"></div>
+      <div class="inp"><label>Credit License #</label><input value="ACL 389201"></div>
+      <div class="inp"><label>Phone</label><input value="+61 400 123 456"></div>
+      <div class="inp"><label>Default Market</label><select onchange="setMarket(this.value)">${Object.values(MARKETS).map(mk=>`<option value="${mk.code}" ${state.market===mk.code?'selected':''}>${mk.label}</option>`).join('')}</select></div>
+    </div><button class="btn primary" style="margin-top:18px" onclick="toast('Profile saved','ok')">Save Changes</button>`;
+  }
+  if(settingsTab==='lenders'){
+    return `<p style="color:var(--t3);margin-bottom:16px">Accredited lenders for ${m().flag} ${m().label}</p>
+      <div class="check-grid">${m().lenders.map((l,i)=>`<label class="check-item"><input type="checkbox" ${i<6?'checked':''}> ${l}</label>`).join('')}</div>
+      <button class="btn primary" style="margin-top:18px" onclick="toast('Accreditations updated','ok')">Save</button>`;
+  }
+  if(settingsTab==='ai'){
+    return `${Object.entries({autoCommentary:'Auto-generate commentary on deal creation',autoClassify:'Auto-classify uploaded documents',stressTest:'Run rate stress test automatically',riskFlags:'Surface AI risk flags in pipeline'}).map(([k,v])=>`
+      <div class="toggle-row"><span style="font-weight:600">${v}</span><div class="switch ${aiConfig[k]?'on':''}" onclick="aiConfig.${k}=!aiConfig.${k};this.classList.toggle('on')"></div></div>`).join('')}
+      <p style="color:var(--t3);font-size:12px;margin-top:14px">Model: claude-sonnet-4-20250514 · Powered by Anthropic</p>`;
+  }
+  return `${Object.entries({emailNew:'Email — new deal assigned',emailApproved:'Email — deal approved',pushDocs:'Push — documents received',pushReview:'Push — broker review needed'}).map(([k,v])=>`
+    <div class="toggle-row"><span style="font-weight:600">${v}</span><div class="switch ${notifs[k]?'on':''}" onclick="notifs.${k}=!notifs.${k};this.classList.toggle('on')"></div></div>`).join('')}`;
+}
+
+/* ============================================================
+   CLAUDE API
+   ============================================================ */
+async function callClaude(prompt){
+  try{
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:700,
+        messages:[{ role:'user', content:prompt }]
+      })
+    });
+    const data = await res.json();
+    return data?.content?.[0]?.text || mockCommentary(prompt);
+  }catch(e){
+    // Graceful fallback when platform API not reachable
+    return mockCommentary(prompt);
+  }
+}
+function mockCommentary(prompt){
+  const r = computeServiceability();
+  return `Based on the submitted figures for ${m().label}, the application presents a ${r.verdict.toLowerCase()} serviceability profile. Assessed monthly income of ${fmtMoney(r.income)} supports total commitments of ${fmtMoney(r.totalDebt)} with a DSR of ${r.dsr.toFixed(1)}% and net disposable income of ${fmtMoney(r.ndi)} per month, comfortably accounting for the ${(m().buffer*100).toFixed(0)}% assessment buffer and HEM living-expense floor. The structure aligns with lender policy and responsible-lending requirements.`;
+}
+function callAIAssessment(){
+  showLoader('Running AI serviceability assessment…');
+  const r = computeServiceability();
+  callClaude(`As a mortgage credit analyst for ${m().label}, assess this loan: income ${fmtMoney(r.income)}/mo, total debt ${fmtMoney(r.totalDebt)}/mo, DSR ${r.dsr.toFixed(1)}%, NDI ${fmtMoney(r.ndi)}/mo, LVR ${r.lvr.toFixed(1)}%, verdict ${r.verdict}. Give a 70-word professional assessment.`)
+    .then(txt=>{ hideLoader(); showAssessment(txt); });
+}
+function showAssessment(txt){
+  document.getElementById('panelName').textContent = '✦ AI Assessment';
+  document.getElementById('panelId').textContent = m().label + ' market';
+  document.getElementById('panelBody').innerHTML = `<div class="comm-card" style="margin:0"><div class="comm-text">${txt}</div></div>
+    <button class="btn primary" style="width:100%;margin-top:16px" onclick="closePanel()">Done</button>`;
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('panel').classList.add('show');
+}
+function callExtract(){
+  showLoader('Extracting data from documents…');
+  setTimeout(()=>{ hideLoader(); toast('Extraction complete — 5 fields updated','ok'); }, 1400);
+}
+
+/* ============================================================
+   UTILITIES — toast, loader, login
+   ============================================================ */
+function toast(msg, type='info'){
+  const t = document.createElement('div');
+  t.className = 'toast '+(type==='ok'?'ok':type==='err'?'err':'info');
+  t.innerHTML = (type==='ok'?'✓':type==='err'?'✕':'ℹ') + ' ' + msg;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(40px)'; t.style.transition='.3s'; setTimeout(()=>t.remove(),300); }, 3200);
+}
+function showLoader(msg){ document.getElementById('loaderMsg').textContent=msg||'Working…'; document.getElementById('loader').classList.add('show'); }
+function hideLoader(){ document.getElementById('loader').classList.remove('show'); }
+
+function doLogin(){
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='block';
+  toast('Welcome back, Jordan!', 'ok');
+  init();
+}
+document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+
+/* ---------- Init ---------- */
+function init(){
+  renderCountryDD();
+  renderNav();
+  navigate('dashboard');
+  // simulate live AI progress on the processing deal
+  setInterval(()=>{
+    const d = DEALS.find(x=>x.status==='AI_PROCESSING');
+    if(d && d.progress<99){ d.progress = Math.min(99, d.progress+1); if(state.page==='dashboard') renderDealGrid(); }
+  }, 2500);
+}
+</script>
+</body>
+</html>
