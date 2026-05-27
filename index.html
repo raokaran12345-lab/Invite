@@ -646,6 +646,14 @@ const state = {
     ],
     dependants:0,
     newLoan:{amount:785000, rate:6.24, term:30}
+  },
+  svcTab:'detailed',     // 'detailed' (verified line items) | 'manual' (unverified lump sums)
+  // Manual / unverified quick calc — broker/banker/lender enters lump sums when docs aren't verified yet.
+  manual:{
+    incomeAnnual:142000, incomeShade:100, taxRate:0,
+    expensesMonthly:2200, useHEM:true,
+    assets:1000000, liabilitiesMonthly:475,
+    loanAmount:785000, rate:6.24, term:30, bufferPct:3, dependants:0
   }
 };
 const fmtMoney = (n)=> MARKETS[state.market].sym + Math.round(n).toLocaleString();
@@ -709,7 +717,8 @@ const NAV = [
   {section:'Intelligence', items:[
     {id:'serviceability', label:'Serviceability', ico:'📊'},
     {id:'commentary', label:'AI Commentary', ico:'✦'},
-    {id:'compare', label:'Lender Compare', ico:'⚖'}
+    {id:'compare', label:'Lender Compare', ico:'⚖'},
+    {id:'intel', label:'Market Intel', ico:'📰'}
   ]},
   {section:'Platform', items:[
     {id:'portal', label:'Client Portal', ico:'📱'},
@@ -723,7 +732,7 @@ const NAV = [
 const PAGE_TITLES = {
   dashboard:'Dashboard', aipilot:'AI Pilot', wizard:'New Deal', documents:'Documents',
   serviceability:'Serviceability Calculator', commentary:'AI Commentary',
-  compare:'Lender Compare', portal:'Client Portal', markets:'Global Markets',
+  compare:'Lender Compare', intel:'Market Intelligence', portal:'Client Portal', markets:'Global Markets',
   billing:'Billing', settings:'Settings'
 };
 
@@ -748,7 +757,7 @@ function navigate(page){
   ({
     dashboard:renderDashboard, aipilot:renderAIPilot, wizard:renderWizard, documents:renderDocuments,
     serviceability:renderServiceability, commentary:renderCommentary, compare:renderCompare,
-    portal:renderPortal, markets:renderMarkets, billing:renderBilling, settings:renderSettings
+    intel:renderIntel, portal:renderPortal, markets:renderMarkets, billing:renderBilling, settings:renderSettings
   }[page] || renderDashboard)(target);
   updateStatusStrip();
 }
@@ -1120,14 +1129,21 @@ function renderServiceability(el){
          </select>
          ${activePolicy()?`<span class="pill ${activePolicy().apra_regulated?'gray':'amber'}">${activePolicy().apra_regulated?'ADI':'Non-bank'}</span><span class="pill violet">${(activeBuffer()*100).toFixed(0)}% buffer</span><span class="pill gray">DSR &lt; ${activeDsrMax()}%</span><span class="pill gray">Max LVR ${activePolicy().max_lvr_owner_occ_pi||'—'}%</span>`:''}
        </div>` : '';
+  const tabs = `<div class="tabs" style="margin-bottom:16px">
+      <div class="tab ${state.svcTab==='detailed'?'active':''}" onclick="state.svcTab='detailed';renderServiceability(document.getElementById('page-serviceability'))">Detailed (verified)</div>
+      <div class="tab ${state.svcTab==='manual'?'active':''}" onclick="state.svcTab='manual';renderServiceability(document.getElementById('page-serviceability'))">Manual / unverified</div>
+    </div>`;
   el.innerHTML = `
     <div class="page-head"><h1>Serviceability Calculator</h1><p>Live assessment — updates on every keystroke · ${m().flag} ${m().label}</p></div>
+    ${tabs}
     ${auLender}
     <div class="calc-split">
       <div id="calcEditor"></div>
       <div class="calc-results" id="calcResults"></div>
     </div>`;
-  renderCalcEditor(); renderCalcResults(); updateStatusStrip();
+  if(state.svcTab==='manual'){ renderManualEditor(); renderManualResults(); }
+  else { renderCalcEditor(); renderCalcResults(); }
+  updateStatusStrip();
 }
 function renderCalcEditor(){
   const ed = document.getElementById('calcEditor'); if(!ed) return;
@@ -1267,6 +1283,108 @@ function renderCalcResults(){
     </div>
     <button class="btn primary" style="width:100%" onclick="callAIAssessment()">✦ AI Assessment</button>
   `;
+}
+
+/* ============================================================
+   MANUAL / UNVERIFIED CALCULATION
+   Lump-sum entry for income/expenses/assets/liabilities with manually
+   editable rate, term, tax, shading and buffer — for use by broker,
+   banker or lender when verification documents aren't yet available.
+   ============================================================ */
+function computeManual(){
+  const x = state.manual;
+  const shaded = (parseFloat(x.incomeAnnual)||0) * ((parseFloat(x.incomeShade)||0)/100);
+  const afterTax = shaded * (1 - (parseFloat(x.taxRate)||0)/100);
+  const incomeMo = afterTax/12;
+  const buffer = (parseFloat(x.bufferPct)||0)/100;
+  const newLoanMo = PMT(parseFloat(x.loanAmount)||0, ((parseFloat(x.rate)||0)+buffer*100)/100, parseFloat(x.term)||30);
+  const existingDebt = parseFloat(x.liabilitiesMonthly)||0;
+  const totalDebt = existingDebt + newLoanMo;
+  const living = x.useHEM
+    ? Math.max(m().hem + (parseFloat(x.dependants)||0)*700, incomeMo*0.28)
+    : (parseFloat(x.expensesMonthly)||0);
+  const ndi = incomeMo - totalDebt - living;
+  const dsr = incomeMo>0 ? totalDebt/incomeMo*100 : 0;
+  const lvr = (parseFloat(x.assets)||0)>0 ? (parseFloat(x.loanAmount)||0)/(parseFloat(x.assets)||0)*100 : 0;
+  const dti = afterTax>0 ? ((parseFloat(x.loanAmount)||0)+existingDebt*12)/afterTax : 0;  // crude DTI on assessable income
+  const dsrMax = activeDsrMax();
+  let verdict;
+  if(ndi>0 && dsr<dsrMax) verdict='PASS';
+  else if(ndi>-500 || dsr<dsrMax+10) verdict='BORDERLINE';
+  else verdict='FAIL';
+  return {incomeMo, newLoanMo, existingDebt, totalDebt, living, ndi, dsr, lvr, dti, verdict, assessedRate:(parseFloat(x.rate)||0)+buffer*100, dsrMax};
+}
+function setManual(field, val){ state.manual[field] = val; renderManualResults(); }
+function renderManualEditor(){
+  const ed = document.getElementById('calcEditor'); if(!ed) return;
+  const x = state.manual;
+  const row = (label, field, val, prefix='', step='1')=>`<div class="inp" style="margin-bottom:12px"><label>${label}</label><input type="number" step="${step}" value="${val}" oninput="setManual('${field}', +this.value)"></div>`;
+  ed.innerHTML = `
+    <div class="card" style="padding:14px 16px;margin-bottom:14px;border-left:4px solid var(--amber);font-size:12.5px;color:var(--t2)">
+      <b>Unverified mode.</b> Enter lump-sum figures and adjust the assumptions manually. Use when payslips, statements or valuations aren't yet verified — for broker, banker or lender what-if assessment.
+    </div>
+    <div class="entity-card"><div class="entity-body" style="padding:16px">
+      <div class="subsec" style="margin-top:0">Income & tax</div>
+      ${row('Gross income (annual)','incomeAnnual',x.incomeAnnual,'',1000)}
+      <div class="slider-row"><label><span>Income shading</span><span class="mono" id="mShade">${x.incomeShade}%</span></label>
+        <input type="range" min="0" max="100" step="5" value="${x.incomeShade}" oninput="state.manual.incomeShade=+this.value;setText('mShade',this.value+'%');renderManualResults()"></div>
+      <div class="slider-row"><label><span>Tax rate (gross→net)</span><span class="mono" id="mTax">${x.taxRate}%</span></label>
+        <input type="range" min="0" max="50" step="1" value="${x.taxRate}" oninput="state.manual.taxRate=+this.value;setText('mTax',this.value+'%');renderManualResults()"></div>
+
+      <div class="subsec">Living expenses</div>
+      <div class="toggle-row" style="padding:8px 0"><span style="font-weight:600;font-size:12.5px">Use HEM floor (auto)</span><div class="switch ${x.useHEM?'on':''}" onclick="state.manual.useHEM=!state.manual.useHEM;this.classList.toggle('on');renderManualEditor();renderManualResults()"></div></div>
+      ${x.useHEM ? `<div class="assessed-note">Using HEM floor: ${fmtMoney(m().hem)} + ${fmtMoney((parseFloat(x.dependants)||0)*700)} dependants — or 28% of income, whichever is higher.</div>`
+                 : row('Declared expenses (monthly)','expensesMonthly',x.expensesMonthly,'',50)}
+      <div class="slider-row" style="margin-top:12px"><label><span>Dependants</span><span class="mono" id="mDep">${x.dependants}</span></label>
+        <input type="range" min="0" max="6" step="1" value="${x.dependants}" oninput="state.manual.dependants=+this.value;setText('mDep',this.value);renderManualEditor();renderManualResults()"></div>
+
+      <div class="subsec">Assets & liabilities</div>
+      ${row('Total assets (security value)','assets',x.assets,'',1000)}
+      ${row('Existing commitments (monthly)','liabilitiesMonthly',x.liabilitiesMonthly,'',25)}
+
+      <div class="subsec">New loan</div>
+      ${row('Loan amount','loanAmount',x.loanAmount,'',1000)}
+      <div class="slider-row"><label><span>Interest rate</span><span class="mono" id="mRate">${(+x.rate).toFixed(2)}%</span></label>
+        <input type="range" min="3" max="12" step="0.01" value="${x.rate}" oninput="state.manual.rate=+this.value;setText('mRate',(+this.value).toFixed(2)+'%');renderManualResults()"></div>
+      <div class="slider-row"><label><span>Term</span><span class="mono" id="mTerm">${x.term} yrs</span></label>
+        <input type="range" min="5" max="30" step="1" value="${x.term}" oninput="state.manual.term=+this.value;setText('mTerm',this.value+' yrs');renderManualResults()"></div>
+      <div class="slider-row"><label><span>Assessment buffer</span><span class="mono" id="mBuf">${x.bufferPct}%</span></label>
+        <input type="range" min="0" max="5" step="0.25" value="${x.bufferPct}" oninput="state.manual.bufferPct=+this.value;setText('mBuf',this.value+'%');renderManualResults()"></div>
+      <div class="assessed-note" id="mAssessed">Assessed rate: ${((+x.rate)+(+x.bufferPct)).toFixed(2)}% (contract ${(+x.rate).toFixed(2)}% + ${x.bufferPct}% buffer)</div>
+    </div></div>`;
+}
+function renderManualResults(){
+  const box = document.getElementById('calcResults'); if(!box) return;
+  setText('mAssessed', `Assessed rate: ${((+state.manual.rate)+(+state.manual.bufferPct)).toFixed(2)}% (contract ${(+state.manual.rate).toFixed(2)}% + ${state.manual.bufferPct}% buffer)`);
+  const r = computeManual();
+  const vcls = r.verdict.toLowerCase();
+  const vsub = r.verdict==='PASS'?'Affordable on the entered figures':r.verdict==='BORDERLINE'?'Marginal — verify before relying on it':'Does not service on these figures';
+  const flowMax = Math.max(r.incomeMo,1);
+  const flows = [
+    {l:'Net income', v:r.incomeMo, c:'#5B4FF5'},
+    {l:'Existing commitments', v:r.existingDebt, c:'#D97706'},
+    {l:'New loan', v:r.newLoanMo, c:'#8B5CF6'},
+    {l:'Living', v:r.living, c:'#6B7280'},
+    {l:'Surplus (NDI)', v:Math.max(r.ndi,0), c:r.ndi>=0?'#059669':'#DC2626'}
+  ];
+  box.innerHTML = `
+    <div class="verdict ${vcls}"><div class="v-lbl">Manual Affordability — unverified</div><div class="v-big">${r.verdict}</div><div class="v-sub">${vsub}</div></div>
+    <div class="res-grid">
+      <div class="res-box"><div class="rl">DSR</div><div class="rv mono">${r.dsr.toFixed(1)}%</div></div>
+      <div class="res-box"><div class="rl">NDI/mo</div><div class="rv mono" style="color:${r.ndi>=0?'var(--green)':'var(--red)'}">${fmtMoney(r.ndi)}</div></div>
+      <div class="res-box"><div class="rl">LVR</div><div class="rv mono">${r.lvr.toFixed(1)}%</div></div>
+      <div class="res-box"><div class="rl">Net income/mo</div><div class="rv mono">${fmtMoney(r.incomeMo)}</div></div>
+      <div class="res-box"><div class="rl">Total debt/mo</div><div class="rv mono">${fmtMoney(r.totalDebt)}</div></div>
+      <div class="res-box"><div class="rl">DTI</div><div class="rv mono">${r.dti.toFixed(1)}x</div></div>
+    </div>
+    <div class="flow-chart"><h4>Affordability flow</h4>
+      ${flows.map(f=>`<div class="flow-row"><div class="fl"><span>${f.l}</span><span class="mono">${fmtMoney(f.v)}</span></div><div class="flow-bar"><span style="width:${Math.min(100,f.v/flowMax*100)}%;background:${f.c}"></span></div></div>`).join('')}
+    </div>
+    <div class="card" style="padding:14px 16px">
+      <div class="insight-row"><span class="ic" style="color:var(--${r.dsr<r.dsrMax?'green':'red'})">${r.dsr<r.dsrMax?'✓':'✕'}</span><span style="font-size:12.5px">DSR ${r.dsr.toFixed(1)}% vs ${r.dsrMax}% ceiling (${activePolicy()?(activePolicy().label):'market'}).</span></div>
+      <div class="insight-row"><span class="ic" style="color:var(--${r.dti<6?'green':r.dti<9?'amber':'red'})">${r.dti<6?'✓':r.dti<9?'➜':'✕'}</span><span style="font-size:12.5px">DTI ${r.dti.toFixed(1)}x — ${r.dti<6?'within standard appetite':r.dti<9?'high (>6x needs justification)':'very high (>9x generally declined)'}.</span></div>
+      <div class="insight-row"><span class="ic" style="color:var(--amber)">⚠</span><span style="font-size:12.5px">Figures are unverified — confirm with payslips, statements and a valuation before submission.</span></div>
+    </div>`;
 }
 
 /* ============================================================
@@ -1484,6 +1602,90 @@ function renderCompare(el){
         </tr>`).join('')}
       </tbody></table>
     </div>`;
+}
+
+/* ============================================================
+   PAGE: MARKET INTELLIGENCE (curated — see MARKET_INTEL in lenders.js)
+   ============================================================ */
+const intelDB = ()=> (typeof window!=='undefined' && window.MARKET_INTEL) || (typeof MARKET_INTEL!=='undefined' ? MARKET_INTEL : {});
+let aiSuggestions = null;   // optional AI-generated extras (over the curated base)
+function renderIntel(el){
+  const intel = intelDB()[state.market];
+  if(!intel){ el.innerHTML = `<div class="page-head"><h1>Market Intelligence</h1><p>No intelligence on file for this market yet.</p></div>`; return; }
+  const tagCls = t=>({LVR:'violet',SMSF:'green',HECS:'amber',DTI:'red',Buffer:'violet',Stress:'amber',LTI:'violet',LTV:'green'}[t]||'gray');
+  // Rate board: AU shows every lender from the policy DB; other markets show a note.
+  const auRates = state.market==='AU' && Object.keys(lenderDB()).length
+    ? Object.keys(lenderDB()).map(id=>{ const p=lenderDB()[id]; return {id, label:p.label||id, type:p.apra_regulated?'ADI':'Non-bank', rate:p.base_rate, buffer:p.buffer, color:p.lender_color}; }).sort((a,b)=>a.rate-b.rate)
+    : null;
+  const bestRate = auRates ? auRates[0].rate : null;
+  el.innerHTML = `
+    <div class="market-hero">
+      <h2>📰 Market Intelligence — ${m().flag} ${m().label}</h2>
+      <p style="opacity:.9;margin-top:4px">Curated snapshot · as of ${intel.asOf}</p>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="hn mono">${intel.cashRate.toFixed(2)}%</div><div class="hl">${intel.cashRateLabel}</div></div>
+        <div class="hero-stat"><div class="hn">${intel.policy_updates.length}</div><div class="hl">Policy updates</div></div>
+        <div class="hero-stat"><div class="hn">${intel.news.length}</div><div class="hl">News items</div></div>
+        <div class="hero-stat" style="grid-column:span 1"><div class="hl" style="opacity:.85">Trend</div><div style="font-weight:700;font-size:13px;margin-top:3px">${intel.trend}</div></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start" id="intelGrid">
+      <div>
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">${auRates?'Live rate board':'Cash rate'}</h3>
+        <div class="table-card">
+          ${auRates ? `<table><thead><tr><th>Lender</th><th>Type</th><th>Rate</th><th>Buffer</th><th>Assessed</th></tr></thead><tbody>
+            ${auRates.map(x=>`<tr><td style="font-weight:700"><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${x.color};margin-right:7px"></span>${x.label}${x.rate===bestRate?' 🏆':''}</td>
+              <td><span class="pill ${x.type==='ADI'?'gray':'amber'}">${x.type}</span></td>
+              <td class="mono">${x.rate.toFixed(2)}%</td><td class="mono">${(x.buffer*100).toFixed(0)}%</td>
+              <td class="mono">${(x.rate+x.buffer*100).toFixed(2)}%</td></tr>`).join('')}
+          </tbody></table><p style="font-size:11px;color:var(--t3);padding:8px 4px 0">Indicative variable OO P&I rates — assessed = contract + lender buffer.</p>`
+          : `<p style="padding:14px;color:var(--t2)">Per-lender rate board is available for Australia. Current benchmark: <b class="mono">${intel.cashRate.toFixed(2)}%</b> (${intel.cashRateLabel}).</p>`}
+        </div>
+
+        <h3 style="font-size:15px;font-weight:700;margin:22px 0 12px">Policy updates</h3>
+        ${intel.policy_updates.map(p=>`<div class="card" style="padding:14px 16px;margin-bottom:10px;border-left:4px solid var(--brand)">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <b style="font-size:13.5px">${p.title}</b><span class="pill ${tagCls(p.tag)}">${p.tag}</span>
+          </div>
+          <div style="font-size:12.5px;color:var(--t2);margin-top:5px">${p.detail}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:6px">${p.lender} · ${p.date}</div>
+        </div>`).join('')}
+      </div>
+
+      <div>
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Latest news</h3>
+        ${intel.news.map(n=>`<div class="card" style="padding:14px 16px;margin-bottom:10px">
+          <b style="font-size:13.5px">${n.title}</b>
+          <div style="font-size:12.5px;color:var(--t2);margin-top:5px">${n.summary}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:6px">${n.source} · ${n.date}</div>
+        </div>`).join('')}
+
+        <div class="card" style="padding:18px;margin-top:12px;border-left:4px solid var(--brand)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <h3 style="font-size:15px;font-weight:700">Broker suggestions</h3>
+            <button class="mini-btn" onclick="refreshAISuggestions()">✦ AI refresh</button>
+          </div>
+          <div id="intelSuggestions">${renderSuggestionList(intel.suggestions)}</div>
+        </div>
+      </div>
+    </div>`;
+}
+function renderSuggestionList(list){
+  return list.map(s=>`<div class="insight-row"><span class="ic" style="color:var(--brand)">➜</span><span style="font-size:12.5px;font-weight:500">${s}</span></div>`).join('');
+}
+function refreshAISuggestions(){
+  showLoader('Generating fresh suggestions…');
+  const intel = intelDB()[state.market];
+  callClaude(`You are a mortgage strategy assistant for the ${m().label} market (cash rate ${intel.cashRate}%, ${intel.trend}). Active lender: ${lenderContext()}. Give 4 short, concrete broker suggestions (one line each, no numbering) to win or restructure deals right now.`)
+    .then(txt=>{
+      hideLoader();
+      const lines = txt.split('\n').map(l=>l.replace(/^[\s\-\*\d\.\)]+/,'').trim()).filter(l=>l.length>8).slice(0,4);
+      aiSuggestions = lines.length ? lines : intel.suggestions;
+      const box = document.getElementById('intelSuggestions');
+      if(box) box.innerHTML = renderSuggestionList(aiSuggestions);
+      toast('Suggestions refreshed', 'ok');
+    });
 }
 
 /* ============================================================

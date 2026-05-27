@@ -457,9 +457,63 @@ const LENDERS = {
   }
 };
 
+/* ============================================================
+   MARKET INTELLIGENCE — curated (not a live feed)
+   ------------------------------------------------------------
+   Hand-maintained snapshot of cash rates, lender policy updates,
+   news and broker suggestions per market. Refresh `asOf` and the
+   entries periodically; a real deployment could replace this with
+   a server-fed JSON document of the same shape.
+   ============================================================ */
+const MARKET_INTEL = {
+  AU: {
+    asOf:'2026-05-27', cashRate:3.85, cashRateLabel:'RBA cash rate',
+    trend:'On hold — futures price one 25bp cut by Q4 2026',
+    policy_updates:[
+      {date:'2026-05-22', lender:'Westpac', tag:'LVR', title:'95% LVR for investors', detail:'Westpac extends 95% LVR (with LMI) to investment P&I loans; IO capped at 90%.'},
+      {date:'2026-05-15', lender:'AMP', tag:'SMSF', title:'AMP reopens SMSF lending', detail:'AMP Bank returns to SMSF residential lending after a multi-year pause.'},
+      {date:'2026-05-10', lender:'NAB', tag:'HECS', title:'HELP debts under $20k disregarded', detail:'NAB confirms HECS/HELP balances below $20,000 are excluded from serviceability.'},
+      {date:'2026-04-30', lender:'APRA', tag:'DTI', title:'High-DTI lending under scrutiny', detail:'APRA reiterates DTI>6x is restricted (needs justification); DTI>9x generally declined by majors.'},
+      {date:'2026-04-18', lender:'Liberty', tag:'Buffer', title:'1% assessment buffer retained', detail:'Liberty keeps a 1% serviceability buffer — the lowest in the market — vs APRA’s 3% for ADIs.'}
+    ],
+    news:[
+      {date:'2026-05-26', source:'AFR', title:'Fixed-rate cliff eases as borrowers refinance early', summary:'Most 2021–22 fixed loans have rolled; refinancing volumes stay elevated as borrowers chase sharper variable pricing.'},
+      {date:'2026-05-24', source:'RBA', title:'Board holds cash rate at 3.85%', summary:'The Board cited sticky services inflation but signalled scope to ease later in 2026 if disinflation continues.'},
+      {date:'2026-05-20', source:'CoreLogic', title:'National dwelling values up 0.4% in May', summary:'Perth and Brisbane lead gains; Melbourne flat. Listings remain below the five-year average.'},
+      {date:'2026-05-12', source:'MFAA', title:'Broker market share hits record 74%', summary:'Mortgage brokers now originate roughly three in four new home loans, underscoring channel dominance.'}
+    ],
+    suggestions:[
+      'Clients failing the majors’ 3% buffer often service at Pepper/Resimac (2%) or Liberty (1%) — model it side-by-side in Lender Compare.',
+      'Self-employed with only 1 year trading? Route to La Trobe or Bluestone alt-doc instead of waiting for a second tax return.',
+      'HECS balance under $20k → NAB disregards it; CBA ignores it if repayable within 12 months — can lift capacity materially.',
+      'Watch DTI: above 6x needs written justification and above 9x is generally declined by majors — consider splitting or restructuring.'
+    ]
+  },
+  US: { asOf:'2026-05-27', cashRate:4.50, cashRateLabel:'Fed funds upper bound', trend:'Fed on hold; market pricing cuts into 2026',
+    policy_updates:[{date:'2026-05-18', lender:'Rocket', tag:'DTI', title:'Conforming DTI flexibility', detail:'Agency automated underwriting approving select loans above 45% DTI with strong reserves.'}],
+    news:[{date:'2026-05-25', source:'MBA', title:'30-yr fixed eases below 6.5%', summary:'Application activity ticks up as rates soften.'}],
+    suggestions:['Compare conforming vs jumbo thresholds — borderline loan sizes can drop the rate by switching product.'] },
+  UK: { asOf:'2026-05-27', cashRate:4.25, cashRateLabel:'BoE base rate', trend:'Gradual cuts expected through 2026',
+    policy_updates:[{date:'2026-05-14', lender:'Nationwide', tag:'LTI', title:'Higher LTI for first-time buyers', detail:'Selected FTB products allow lending above 4.5x income within the regulatory flow limit.'}],
+    news:[{date:'2026-05-23', source:'BoE', title:'Base rate held at 4.25%', summary:'MPC split vote; further easing signalled.'}],
+    suggestions:['Use the 4.5x LTI flow allowance strategically for first-time buyers near the cap.'] },
+  CA: { asOf:'2026-05-27', cashRate:2.75, cashRateLabel:'BoC overnight rate', trend:'Holding after a cutting cycle',
+    policy_updates:[{date:'2026-05-16', lender:'TD Bank', tag:'Stress', title:'Uninsured stress test at +2%', detail:'Qualifying rate = contract +2% or 5.25% floor, whichever is higher.'}],
+    news:[{date:'2026-05-22', source:'CMHC', title:'Insured volumes rise', summary:'High-ratio insured lending up as affordability improves.'}],
+    suggestions:['Mind the +2% / 5.25% floor stress test on uninsured deals when sizing the loan.'] },
+  NZ: { asOf:'2026-05-27', cashRate:3.25, cashRateLabel:'RBNZ OCR', trend:'Easing bias maintained',
+    policy_updates:[{date:'2026-05-13', lender:'ANZ NZ', tag:'DTI', title:'DTI caps in force', detail:'RBNZ DTI restrictions: speed limits on lending above 6x for owner-occupiers.'}],
+    news:[{date:'2026-05-21', source:'RBNZ', title:'OCR held at 3.25%', summary:'Inflation within target band.'}],
+    suggestions:['Check the DTI speed-limit headroom before submitting high-leverage owner-occupier deals.'] },
+  IN: { asOf:'2026-05-27', cashRate:6.00, cashRateLabel:'RBI repo rate', trend:'Neutral stance',
+    policy_updates:[{date:'2026-05-11', lender:'SBI', tag:'LVR', title:'Higher LTV for affordable housing', detail:'LTV up to 90% for loans under ₹30 lakh under priority-sector norms.'}],
+    news:[{date:'2026-05-20', source:'RBI', title:'Repo rate steady at 6.00%', summary:'Growth resilient; inflation easing.'}],
+    suggestions:['For sub-₹30L affordable-housing loans, leverage the higher 90% LTV allowance.'] }
+};
+
 /* Pure lookups (no app state) */
 function getLenderPolicy(id){ return (typeof window!=='undefined' && window.LENDERS ? window.LENDERS : LENDERS)[id] || null; }
 function getAssessmentRate(contractRate, id){ const l=getLenderPolicy(id); return contractRate + (l ? l.buffer : 0.03)*100; }
 
-if(typeof window!=='undefined'){ window.LENDERS = LENDERS; window.getLenderPolicy = getLenderPolicy; window.getAssessmentRate = getAssessmentRate; }
-if(typeof module!=='undefined' && module.exports){ module.exports = { LENDERS, getLenderPolicy, getAssessmentRate }; }
+if(typeof window!=='undefined'){ window.LENDERS = LENDERS; window.MARKET_INTEL = MARKET_INTEL; window.getLenderPolicy = getLenderPolicy; window.getAssessmentRate = getAssessmentRate; }
+if(typeof module!=='undefined' && module.exports){ module.exports = { LENDERS, MARKET_INTEL, getLenderPolicy, getAssessmentRate }; }
