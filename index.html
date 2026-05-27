@@ -559,35 +559,29 @@ tr:last-child td{border-bottom:none}
    DEBTIQ v6 — Application Logic
    ============================================================ */
 
-/* ---------- 6 Country Markets ---------- */
+/* ---------- Markets (AU fully wired; NZ database arrives Q3) ---------- */
 const MARKETS = {
   AU:{code:'AU',label:'Australia',flag:'🇦🇺',cur:'AUD',sym:'$',buffer:0.03,dsrMax:45,hem:2200,
       lenders:['CBA','ANZ','NAB','Westpac','Macquarie','ING','Suncorp','St George','Pepper','Liberty']},
-  US:{code:'US',label:'United States',flag:'🇺🇸',cur:'USD',sym:'$',buffer:0.02,dsrMax:43,hem:2400,
-      lenders:['Chase','Wells Fargo','Bank of America','Rocket','United Wholesale','Pennymac','loanDepot','Caliber','Fairway','Guild']},
-  UK:{code:'UK',label:'United Kingdom',flag:'🇬🇧',cur:'GBP',sym:'£',buffer:0.03,dsrMax:40,hem:1800,
-      lenders:['Barclays','HSBC','NatWest','Lloyds','Santander','Halifax','Nationwide','Virgin Money','Metro','Accord']},
-  CA:{code:'CA',label:'Canada',flag:'🇨🇦',cur:'CAD',sym:'$',buffer:0.02,dsrMax:44,hem:2100,
-      lenders:['TD Bank','RBC','BMO','Scotiabank','CIBC','National Bank','HSBC Canada','Desjardins','Meridian','First National']},
   NZ:{code:'NZ',label:'New Zealand',flag:'🇳🇿',cur:'NZD',sym:'$',buffer:0.03,dsrMax:40,hem:1900,
-      lenders:['ANZ NZ','ASB','BNZ','Westpac NZ','Kiwibank','SBS Bank','TSB','Co-op Bank','Pepper NZ','Resimac']},
-  IN:{code:'IN',label:'India',flag:'🇮🇳',cur:'INR',sym:'₹',buffer:0.02,dsrMax:50,hem:35000,
-      lenders:['SBI','HDFC','ICICI','Axis Bank','Kotak','LIC Housing','PNB Housing','Bajaj Housing','Indiabulls','Tata Capital']}
+      lenders:['ANZ NZ','ASB','BNZ','Westpac NZ','Kiwibank','SBS Bank','TSB','Co-op Bank','Pepper NZ','Resimac']}
 };
 
 /* ---------- Income shading multipliers ---------- */
 const SHADE = {
-  salary_ft:1.00, salary_pt:1.00, self_emp:1.00, freelance:0.90, overtime:0.80,
+  salary_ft:1.00, salary_pt:1.00, self_emp:1.00, freelance:0.90, overtime:0.80, bonus:0.80, commission:0.80,
   rental_res:0.80, rental_com:0.75, dividends:0.75, trust_dist:0.80,
   pension:1.00, family:1.00, foreign:0.80, boarder:0.60, interest:1.00
 };
 const INCOME_TYPES = {
   salary_ft:'Salary (Full-time)', salary_pt:'Salary (Part-time)', self_emp:'Self-employed',
-  freelance:'Freelance', overtime:'Overtime', rental_res:'Rental (Residential)',
-  rental_com:'Rental (Commercial)', dividends:'Dividends', trust_dist:'Trust Distribution',
-  pension:'Pension', family:'Family Payments', foreign:'Foreign Income',
-  boarder:'Boarder Income', interest:'Interest Income'
+  freelance:'Freelance', overtime:'Overtime', bonus:'Bonus', commission:'Commission',
+  rental_res:'Rental (Residential)', rental_com:'Rental (Commercial)', dividends:'Dividends',
+  trust_dist:'Trust Distribution', pension:'Pension', family:'Family Payments',
+  foreign:'Foreign Income', boarder:'Boarder Income', interest:'Interest Income'
 };
+// Income types that get conditional-shading toggles in the calculator.
+const CONDITIONAL_INCOME = ['overtime','bonus','self_emp'];
 const LIAB_TYPES = {
   mortgage:'Mortgage', personal:'Personal Loan', car:'Car Loan',
   credit_card:'Credit Card', hecs:'HECS/Student', bnpl:'BNPL', other:'Other'
@@ -600,25 +594,52 @@ function PMT(principal, annualRate, years){
   if(r===0) return principal/n;
   return (principal*r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
 }
+// Type-specific default loan terms — never default to 25y except a mortgage.
+const DEFAULT_TERM = { mortgage:25, personal:5, car:5, bnpl:1, other:5 };
+function defaultTerm(type){ return DEFAULT_TERM[type] || 5; }
 function assessLiability(l, buffer){
   const bal = parseFloat(l.balance)||0;
   const rate = (parseFloat(l.rate)||0)/100;
   const term = parseFloat(l.term)||0;
   switch(l.type){
-    case 'credit_card': return bal*0.038/12;           // limit * 3.8% / 12
-    case 'hecs':        return bal*0.01/12;             // balance * 1% / 12
-    default:            return PMT(bal, rate+buffer, term||25); // PMT w/ buffer
+    case 'credit_card': return bal*0.038/12;                 // limit * 3.8% / 12
+    case 'hecs':        return bal*0.01/12;                   // balance * 1% / 12
+    default:            return PMT(bal, rate+buffer, term>0 ? term : defaultTerm(l.type));
   }
 }
+/* HEM lookup approximating the Melbourne Institute table — by income band × household. */
+function getHEM(grossAnnualHousehold, adults, dependants){
+  const bands = [
+    { max:  60000, single:1850, couple_no_kids:2800, couple_1:3450, couple_2:4050, couple_3plus:4600 },
+    { max:  90000, single:2050, couple_no_kids:3100, couple_1:3800, couple_2:4450, couple_3plus:5050 },
+    { max: 140000, single:2350, couple_no_kids:3500, couple_1:4200, couple_2:4900, couple_3plus:5550 },
+    { max: 200000, single:2750, couple_no_kids:4050, couple_1:4750, couple_2:5500, couple_3plus:6200 },
+    { max: Infinity, single:3250, couple_no_kids:4700, couple_1:5400, couple_2:6200, couple_3plus:6950 }
+  ];
+  const band = bands.find(b => grossAnnualHousehold <= b.max);
+  const col = (adults<=1) ? 'single'
+            : dependants===0 ? 'couple_no_kids'
+            : dependants===1 ? 'couple_1'
+            : dependants===2 ? 'couple_2' : 'couple_3plus';
+  return band[col];
+}
 
-/* ---------- Demo deals ---------- */
+/* ---------- Default commission rates (broker economics) ---------- */
+const COMMISSION = { upfront:0.0065, trail:0.0018 };   // 0.65% upfront, 0.18%/yr trail
+
+/* ---------- Demo deals (commission + CRM fields) ---------- */
+function mkDeal(d){ return Object.assign({
+  upfront_commission_rate:COMMISSION.upfront, trail_commission_rate:COMMISSION.trail,
+  primary_phone:'', primary_email:'', referral_source:'direct',
+  next_action_date:'', next_action_note:'', closed:'', activity:[]
+}, d); }
 let DEALS = [
-  {id:'D-891', name:'Sarah & Tom Mitchell', lender:'CBA', amount:785000, status:'BROKER_REVIEW', lvr:78.5, progress:null, type:'Owner Occupier'},
-  {id:'D-890', name:'Chen Property Trust', lender:'ANZ', amount:2100000, status:'DOCS_PENDING', lvr:55.2, progress:null, type:'Investment'},
-  {id:'D-889', name:'James Okonkwo', lender:'NAB', amount:620000, status:'AI_PROCESSING', lvr:82.1, progress:67, type:'Owner Occupier'},
-  {id:'D-888', name:'Patel Family SMSF', lender:'Westpac', amount:1400000, status:'SUBMITTED', lvr:60.0, progress:null, type:'SMSF'},
-  {id:'D-887', name:'Amanda Torres', lender:'CBA', amount:495000, status:'APPROVED', lvr:72.3, progress:null, type:'First Home'},
-  {id:'D-886', name:'Nguyen Trading Pty', lender:'ANZ', amount:3200000, status:'MORE_INFO', lvr:48.7, progress:null, type:'Commercial'}
+  mkDeal({id:'D-891', name:'Sarah & Tom Mitchell', lender:'CBA', amount:785000, status:'BROKER_REVIEW', lvr:78.5, progress:null, type:'Owner Occupier', primary_phone:'+61 412 345 678', primary_email:'sarah.mitchell@email.com', referral_source:'past_client', next_action_date:'2026-05-28', next_action_note:'Call re: payslip clarification'}),
+  mkDeal({id:'D-890', name:'Chen Property Trust', lender:'ANZ', amount:2100000, status:'DOCS_PENDING', lvr:55.2, progress:null, type:'Investment', referral_source:'aggregator', next_action_date:'2026-05-29', next_action_note:'Chase trust deed'}),
+  mkDeal({id:'D-889', name:'James Okonkwo', lender:'NAB', amount:620000, status:'AI_PROCESSING', lvr:82.1, progress:67, type:'Owner Occupier', referral_source:'partner'}),
+  mkDeal({id:'D-888', name:'Patel Family SMSF', lender:'Westpac', amount:1400000, status:'SUBMITTED', lvr:60.0, progress:null, type:'SMSF', referral_source:'past_client'}),
+  mkDeal({id:'D-887', name:'Amanda Torres', lender:'CBA', amount:495000, status:'APPROVED', lvr:72.3, progress:null, type:'First Home', referral_source:'direct', closed:'2026-05-14'}),
+  mkDeal({id:'D-886', name:'Nguyen Trading Pty', lender:'ANZ', amount:3200000, status:'MORE_INFO', lvr:48.7, progress:null, type:'Commercial', referral_source:'partner'})
 ];
 
 /* ---------- Demo documents ---------- */
@@ -648,7 +669,8 @@ const state = {
   dealFilter:'all',
   dealSearch:'',
   wizStep:1,
-  wizData:{lender:null, dealType:null, propValue:1000000, loanAmount:785000, rate:6.24, term:30},
+  // Wizard shares state.calc — only non-calc wizard inputs live here.
+  wizData:{lender:null, dealType:null, propValue:1000000},
   calc:{
     entities:[
       {name:'Primary Borrower', open:true,
@@ -656,8 +678,11 @@ const state = {
        liabilities:[{type:'credit_card', balance:15000, rate:21.9, term:0}]}
     ],
     dependants:0,
+    adults:1,
     newLoan:{amount:785000, rate:6.24, term:30}
   },
+  anthropicKey:'',       // demo only — production must proxy via backend
+  panelTab:'overview',
   svcTab:'detailed',     // 'detailed' (verified line items) | 'manual' (unverified lump sums)
   // Manual / unverified quick calc — broker/banker/lender enters lump sums when docs aren't verified yet.
   manual:{
@@ -683,28 +708,34 @@ function activePolicy(id){
 }
 function activeBuffer(id){ const p=activePolicy(id); return p ? p.buffer : m().buffer; }
 function activeDsrMax(id){ const p=activePolicy(id); return p ? p.dsr_max : m().dsrMax; }
-// Lender-aware income shading: policy table → alias family→family_ben → global SHADE → 1.00
-function getShadedIncome(type, annual, id){
-  const p = activePolicy(id);
+// Lender-aware, conditional income shading. Accepts the income object so it can
+// read evidence_years / emergency-services / healthcare flags.
+function getShadedIncome(inc, id){
+  const type = inc.type, annual = parseFloat(inc.amount)||0, p = activePolicy(id);
   let shade;
   if(p && p.income_shading){
     const key = (type==='family' && p.income_shading.family===undefined) ? 'family_ben' : type;
     shade = p.income_shading[key];
   }
-  if(shade===undefined || typeof shade!=='number') shade = (SHADE[type]!==undefined ? SHADE[type] : 1.00);
-  return (parseFloat(annual)||0) * shade;
+  if(typeof shade!=='number') shade = (SHADE[type]!==undefined ? SHADE[type] : 1.00);
+  const ev = inc.evidence_years || 2;
+  if(type==='overtime' && (inc.is_emergency_services||inc.is_healthcare) && p && /Westpac/i.test(p.label||'')) shade = 1.00;
+  if(type==='bonus' && ev<2) shade = 0.00;                 // bonus needs 2yr history
+  if(type==='self_emp' && ev<2) shade = Math.min(shade, 0.50); // 1yr self-emp = conservative
+  return annual * shade;
 }
-// Lender HECS rule: 'exclude_under_20k' (NAB) / 'exclude_if_12mo' (CBA, approximated
-// as repayable within 12mo when est. annual compulsory repayment >= balance). Returns
-// the monthly HECS amount to drop from commitments (0 = include in full).
-function hecsExclusion(balance, income, id){
+// Lender HECS rule. Uses the explicit monthly_deduction from the payslip where present.
+// 'exclude_under_20k' (NAB) · 'exclude_if_12mo' (CBA: balance repayable within 12 months).
+// Returns the monthly HECS amount to drop from commitments (0 = include in full).
+function hecsExclusion(liab, income, id){
   const p = activePolicy(id);
   const rule = p && p.income_shading && p.income_shading.hecs;
-  const bal = parseFloat(balance)||0;
+  const bal = parseFloat(liab.balance)||0;
+  const monthlyDed = parseFloat(liab.monthly_deduction)||0;
   if(rule==='exclude_under_20k' && bal < 20000) return bal*0.01/12;
   if(rule==='exclude_if_12mo'){
-    const estAnnualRepay = (income*12)*0.07;   // ~top-band compulsory HECS rate
-    if(estAnnualRepay >= bal) return bal*0.01/12;
+    const annualRepay = monthlyDed>0 ? monthlyDed*12 : (income*12)*0.07;  // payslip figure, else estimate
+    if(annualRepay >= bal) return bal*0.01/12;
   }
   return 0;
 }
@@ -822,28 +853,28 @@ function computeServiceability(){
   const breakdown = {};
   // First pass for income (needed to evaluate the income-based HECS exclusion).
   state.calc.entities.forEach(ent=> ent.incomes.forEach(inc=>{
-    const shaded = getShadedIncome(inc.type, inc.amount);
+    const shaded = getShadedIncome(inc);
     shadedAnnual += shaded;
     breakdown[inc.type] = (breakdown[inc.type]||0) + shaded;
   }));
   const income = shadedAnnual/12;
   state.calc.entities.forEach(ent=> ent.liabilities.forEach(l=>{
     let assessed = assessLiability(l, buffer);
-    if(l.type==='hecs') assessed -= hecsExclusion(l.balance, income);  // lender HECS rule
+    if(l.type==='hecs') assessed -= hecsExclusion(l, income);  // lender HECS rule
     existingDebt += Math.max(0, assessed);
     totalLiab += parseFloat(l.balance)||0;
   }));
   const nl = state.calc.newLoan;
   const newLoanMo = PMT(parseFloat(nl.amount)||0, ((parseFloat(nl.rate)||0)+buffer*100)/100, parseFloat(nl.term)||30);
   const totalDebt = existingDebt + newLoanMo;
-  const HEM = Math.max(mk.hem + state.calc.dependants*700, income*0.28);
+  const HEM = Math.max(getHEM(shadedAnnual, state.calc.adults||1, state.calc.dependants), income*0.28);
   const ndi = income - totalDebt - HEM;
   const dsr = income>0 ? totalDebt/income*100 : 0;
   // LVR: new loan + existing property debt vs property value (assets)
   const propValue = parseFloat(state.wizData.propValue)|| (parseFloat(nl.amount)/0.8) || 1;
-  const totalAssets = propValue;
-  const totalLiabilities = (parseFloat(nl.amount)||0);
-  const lvr = totalAssets>0 ? totalLiabilities/totalAssets*100 : 0;
+  const lvr = propValue>0 ? (parseFloat(nl.amount)||0)/propValue*100 : 0;
+  // DTI: total debt balance (existing + new loan) vs gross shaded annual income (APRA 2026 cap).
+  const dti = shadedAnnual>0 ? (totalLiab + (parseFloat(nl.amount)||0))/shadedAnnual : 0;
 
   let verdict;
   const pass = ndi>0 && dsr<dsrMax;
@@ -851,7 +882,7 @@ function computeServiceability(){
   else if(ndi>-500 || dsr<dsrMax+10) verdict='BORDERLINE';
   else verdict='FAIL';
 
-  return {income, shadedAnnual, existingDebt, newLoanMo, totalDebt, HEM, ndi, dsr, lvr, verdict, breakdown, assessedRate:(parseFloat(nl.rate)||0)+buffer*100};
+  return {income, shadedAnnual, existingDebt, newLoanMo, totalDebt, HEM, ndi, dsr, lvr, dti, totalLiab, verdict, breakdown, assessedRate:(parseFloat(nl.rate)||0)+buffer*100};
 }
 
 /* ============================================================
@@ -1358,7 +1389,7 @@ function computeManual(){
   const existingDebt = parseFloat(x.liabilitiesMonthly)||0;
   const totalDebt = existingDebt + newLoanMo;
   const living = x.useHEM
-    ? Math.max(m().hem + (parseFloat(x.dependants)||0)*700, incomeMo*0.28)
+    ? Math.max(getHEM(shaded, 2, parseFloat(x.dependants)||0), incomeMo*0.28)
     : (parseFloat(x.expensesMonthly)||0);
   const ndi = incomeMo - totalDebt - living;
   const dsr = incomeMo>0 ? totalDebt/incomeMo*100 : 0;
@@ -1390,7 +1421,7 @@ function renderManualEditor(){
 
       <div class="subsec">Living expenses</div>
       <div class="toggle-row" style="padding:8px 0"><span style="font-weight:600;font-size:12.5px">Use HEM floor (auto)</span><div class="switch ${x.useHEM?'on':''}" onclick="state.manual.useHEM=!state.manual.useHEM;this.classList.toggle('on');renderManualEditor();renderManualResults()"></div></div>
-      ${x.useHEM ? `<div class="assessed-note">Using HEM floor: ${fmtMoney(m().hem)} + ${fmtMoney((parseFloat(x.dependants)||0)*700)} dependants — or 28% of income, whichever is higher.</div>`
+      ${x.useHEM ? `<div class="assessed-note">Using HEM floor: ${fmtMoney(getHEM((parseFloat(x.incomeAnnual)||0)*((parseFloat(x.incomeShade)||0)/100), 2, parseFloat(x.dependants)||0))}/mo (income band × household) — or 28% of income, whichever is higher.</div>`
                  : row('Declared expenses (monthly)','expensesMonthly',x.expensesMonthly,'',50)}
       <div class="slider-row" style="margin-top:12px"><label><span>Dependants</span><span class="mono" id="mDep">${x.dependants}</span></label>
         <input type="range" min="0" max="6" step="1" value="${x.dependants}" oninput="state.manual.dependants=+this.value;setText('mDep',this.value);renderManualEditor();renderManualResults()"></div>
@@ -1574,17 +1605,18 @@ function classifyAll(){
 // Ranks serviceable lenders first, then by lowest rate.
 // Income/existingDebt/HEM computed under a SPECIFIC lender's shading + HECS rule.
 function figuresForLender(id){
-  const mk = m(), buffer = activeBuffer(id);
-  let shadedAnnual = 0, existingDebt = 0;
-  state.calc.entities.forEach(ent=> ent.incomes.forEach(inc=> shadedAnnual += getShadedIncome(inc.type, inc.amount, id)));
+  const buffer = activeBuffer(id);
+  let shadedAnnual = 0, existingDebt = 0, totalLiab = 0;
+  state.calc.entities.forEach(ent=> ent.incomes.forEach(inc=> shadedAnnual += getShadedIncome(inc, id)));
   const income = shadedAnnual/12;
   state.calc.entities.forEach(ent=> ent.liabilities.forEach(l=>{
     let assessed = assessLiability(l, buffer);
-    if(l.type==='hecs') assessed -= hecsExclusion(l.balance, income, id);
+    if(l.type==='hecs') assessed -= hecsExclusion(l, income, id);
     existingDebt += Math.max(0, assessed);
+    totalLiab += parseFloat(l.balance)||0;
   }));
-  const HEM = Math.max(mk.hem + state.calc.dependants*700, income*0.28);
-  return {income, existingDebt, HEM};
+  const HEM = Math.max(getHEM(shadedAnnual, state.calc.adults||1, state.calc.dependants), income*0.28);
+  return {income, shadedAnnual, existingDebt, HEM, totalLiab};
 }
 function rankLenders(){
   const loan = parseFloat(state.calc.newLoan.amount)||0;
@@ -1961,16 +1993,16 @@ function callExtract(){
    ============================================================ */
 // Income / existing-debt / HEM figures independent of the proposed new loan.
 function baseFigures(){
-  const mk = m(), buffer = activeBuffer();
+  const buffer = activeBuffer();
   let shadedAnnual = 0, existingDebt = 0;
-  state.calc.entities.forEach(ent=> ent.incomes.forEach(inc=> shadedAnnual += getShadedIncome(inc.type, inc.amount)));
+  state.calc.entities.forEach(ent=> ent.incomes.forEach(inc=> shadedAnnual += getShadedIncome(inc)));
   const income = shadedAnnual/12;
   state.calc.entities.forEach(ent=> ent.liabilities.forEach(l=>{
     let assessed = assessLiability(l, buffer);
-    if(l.type==='hecs') assessed -= hecsExclusion(l.balance, income);
+    if(l.type==='hecs') assessed -= hecsExclusion(l, income);
     existingDebt += Math.max(0, assessed);
   }));
-  const HEM = Math.max(mk.hem + state.calc.dependants*700, income*0.28);
+  const HEM = Math.max(getHEM(shadedAnnual, state.calc.adults||1, state.calc.dependants), income*0.28);
   return {income, existingDebt, HEM};
 }
 function ccLimits(){
