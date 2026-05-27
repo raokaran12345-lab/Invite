@@ -541,6 +541,8 @@ tr:last-child td{border-bottom:none}
 <div id="toasts"></div>
 <div id="loader"><div class="loader-card"><div class="spinner"></div><p id="loaderMsg">Working…</p></div></div>
 
+<!-- Australian lender credit-policy database (must load before the app script) -->
+<script src="lenders.js"></script>
 <script>
 /* ============================================================
    DEBTIQ v6 — Application Logic
@@ -631,6 +633,7 @@ const STATUS_META = {
 const state = {
   page:'dashboard',
   market:'AU',
+  lender:'CBA',          // active lender for per-lender policy (AU)
   dealFilter:'all',
   dealSearch:'',
   wizStep:1,
@@ -647,6 +650,51 @@ const state = {
 };
 const fmtMoney = (n)=> MARKETS[state.market].sym + Math.round(n).toLocaleString();
 const m = ()=> MARKETS[state.market];
+
+/* ============================================================
+   LENDER POLICY ACCESSORS (from lenders.js)
+   Per-lender rules apply only for AU + a known lender; every
+   other market / unknown lender falls back to market defaults.
+   ============================================================ */
+const lenderDB = ()=> (typeof window!=='undefined' && window.LENDERS) || (typeof LENDERS!=='undefined' ? LENDERS : {});
+function activePolicy(id){
+  const lid = id || state.lender;
+  if(state.market!=='AU') return null;
+  return lenderDB()[lid] || null;
+}
+function activeBuffer(id){ const p=activePolicy(id); return p ? p.buffer : m().buffer; }
+function activeDsrMax(id){ const p=activePolicy(id); return p ? p.dsr_max : m().dsrMax; }
+// Lender-aware income shading: policy table → alias family→family_ben → global SHADE → 1.00
+function getShadedIncome(type, annual, id){
+  const p = activePolicy(id);
+  let shade;
+  if(p && p.income_shading){
+    const key = (type==='family' && p.income_shading.family===undefined) ? 'family_ben' : type;
+    shade = p.income_shading[key];
+  }
+  if(shade===undefined || typeof shade!=='number') shade = (SHADE[type]!==undefined ? SHADE[type] : 1.00);
+  return (parseFloat(annual)||0) * shade;
+}
+// Lender HECS rule: 'exclude_under_20k' (NAB) / 'exclude_if_12mo' (CBA, approximated
+// as repayable within 12mo when est. annual compulsory repayment >= balance). Returns
+// the monthly HECS amount to drop from commitments (0 = include in full).
+function hecsExclusion(balance, income, id){
+  const p = activePolicy(id);
+  const rule = p && p.income_shading && p.income_shading.hecs;
+  const bal = parseFloat(balance)||0;
+  if(rule==='exclude_under_20k' && bal < 20000) return bal*0.01/12;
+  if(rule==='exclude_if_12mo'){
+    const estAnnualRepay = (income*12)*0.07;   // ~top-band compulsory HECS rate
+    if(estAnnualRepay >= bal) return bal*0.01/12;
+  }
+  return 0;
+}
+// One-line lender description for AI prompts.
+function lenderContext(){
+  const p = activePolicy();
+  if(!p) return `${m().label} market (buffer ${(m().buffer*100).toFixed(0)}%, DSR ${m().dsrMax}%)`;
+  return `${p.label} (${p.apra_regulated?'APRA-regulated ADI':'non-bank'}, ${(p.buffer*100).toFixed(0)}% assessment buffer, DSR ceiling ${p.dsr_max}%${p.notes&&p.notes[0]?'; note: '+p.notes[0]:''})`;
+}
 
 /* ============================================================
    NAVIGATION
@@ -718,6 +766,7 @@ function toggleCountryDD(e){ e.stopPropagation(); document.getElementById('count
 function setMarket(code, e){
   if(e) e.stopPropagation();
   state.market = code;
+  if(code==='AU' && !lenderDB()[state.lender]) state.lender = 'CBA';   // keep active lender valid for AU
   const mk = MARKETS[code];
   document.getElementById('countryFlag').textContent = mk.flag;
   document.getElementById('countryName').textContent = mk.label;
@@ -739,7 +788,8 @@ function updateStatusStrip(){
     <div class="si"><span class="lbl">NDI</span><span class="val mono">${fmtMoney(r.ndi)}/mo</span></div>
     <div class="si"><span class="lbl">LVR</span><span class="val mono">${r.lvr.toFixed(1)}%</span></div>
     <div class="si"><span class="lbl">Verdict</span><span class="val" style="color:${verdictColor}">${r.verdict}</span></div>
-    <div class="si"><span class="lbl">Market</span><span class="val">${m().flag} ${m().code} · buffer ${(m().buffer*100).toFixed(0)}%</span></div>
+    <div class="si"><span class="lbl">Lender</span><span class="val">${activePolicy()?(activePolicy().label||state.lender):'—'} · buffer ${(activeBuffer()*100).toFixed(0)}%</span></div>
+    <div class="si"><span class="lbl">Market</span><span class="val">${m().flag} ${m().code}</span></div>
   `;
 }
 
@@ -747,22 +797,22 @@ function updateStatusStrip(){
    SERVICEABILITY COMPUTATION
    ============================================================ */
 function computeServiceability(){
-  const buffer = m().buffer, mk = m();
+  const buffer = activeBuffer(), mk = m(), dsrMax = activeDsrMax();
   let shadedAnnual = 0, totalLiab = 0, existingDebt = 0;
   const breakdown = {};
-  state.calc.entities.forEach(ent=>{
-    ent.incomes.forEach(inc=>{
-      const amt = parseFloat(inc.amount)||0;
-      const shaded = amt * (SHADE[inc.type]||1);
-      shadedAnnual += shaded;
-      breakdown[inc.type] = (breakdown[inc.type]||0) + shaded;
-    });
-    ent.liabilities.forEach(l=>{
-      existingDebt += assessLiability(l, buffer);
-      totalLiab += parseFloat(l.balance)||0;
-    });
-  });
+  // First pass for income (needed to evaluate the income-based HECS exclusion).
+  state.calc.entities.forEach(ent=> ent.incomes.forEach(inc=>{
+    const shaded = getShadedIncome(inc.type, inc.amount);
+    shadedAnnual += shaded;
+    breakdown[inc.type] = (breakdown[inc.type]||0) + shaded;
+  }));
   const income = shadedAnnual/12;
+  state.calc.entities.forEach(ent=> ent.liabilities.forEach(l=>{
+    let assessed = assessLiability(l, buffer);
+    if(l.type==='hecs') assessed -= hecsExclusion(l.balance, income);  // lender HECS rule
+    existingDebt += Math.max(0, assessed);
+    totalLiab += parseFloat(l.balance)||0;
+  }));
   const nl = state.calc.newLoan;
   const newLoanMo = PMT(parseFloat(nl.amount)||0, ((parseFloat(nl.rate)||0)+buffer*100)/100, parseFloat(nl.term)||30);
   const totalDebt = existingDebt + newLoanMo;
@@ -776,9 +826,9 @@ function computeServiceability(){
   const lvr = totalAssets>0 ? totalLiabilities/totalAssets*100 : 0;
 
   let verdict;
-  const pass = ndi>0 && dsr<mk.dsrMax;
+  const pass = ndi>0 && dsr<dsrMax;
   if(pass) verdict='PASS';
-  else if(ndi>-500 || dsr<mk.dsrMax+10) verdict='BORDERLINE';
+  else if(ndi>-500 || dsr<dsrMax+10) verdict='BORDERLINE';
   else verdict='FAIL';
 
   return {income, shadedAnnual, existingDebt, newLoanMo, totalDebt, HEM, ndi, dsr, lvr, verdict, breakdown, assessedRate:(parseFloat(nl.rate)||0)+buffer*100};
@@ -938,16 +988,43 @@ function updateWizLVR(){
   if(el){ el.textContent='LVR '+lvr.toFixed(1)+'%'; el.style.background=color+'1a'; el.style.color=color; }
   updateStatusStrip();
 }
+// Checklist generator — selected lender's required docs, extended by deal type.
+function lenderChecklist(id, dealType){
+  const p = activePolicy(id);
+  if(!p) return ['Payslips (last 2)','Bank Statements','ID Verification','Tax Returns','Liability Statements'];
+  let docs = [...(p.checklist_standard||[])];
+  if((dealType==='Commercial' || dealType==='SMSF') && p.checklist_self_employed) docs = docs.concat(p.checklist_self_employed);
+  if(dealType==='Investment' && p.checklist_investment) docs = docs.concat(p.checklist_investment);
+  return docs;
+}
 function renderWizStep(){
   const c = document.getElementById('wizContent');
   const d = state.wizData;
   let html='';
   if(state.wizStep===1){
-    html = `<div class="wiz-card active"><h3>Select Lender & Deal Type</h3><p class="desc">Choose the lender and product for this application.</p>
+    const useDB = state.market==='AU' && Object.keys(lenderDB()).length;
+    const lenderIds = useDB ? Object.keys(lenderDB()) : m().lenders;
+    const tiles = lenderIds.map(l=>{
+      const p = useDB ? lenderDB()[l] : null;
+      const sub = p ? `${p.apra_regulated?'ADI':'Non-bank'} · ${(p.buffer*100).toFixed(0)}% buffer` : '';
+      return `<div class="tile ${d.lender===l?'sel':''}" onclick="state.wizData.lender='${l}';state.lender='${l}';renderWizStep()"><div class="tt">${p?(p.label||l):l}</div>${sub?`<div class="ts">${sub}</div>`:''}</div>`;
+    }).join('');
+    const pol = useDB ? lenderDB()[d.lender] : null;
+    const reqCard = pol ? `<div class="card" style="padding:16px;margin-top:16px;border-left:4px solid ${pol.lender_color||'var(--brand)'}">
+        <div style="font-weight:700;margin-bottom:8px">${pol.label} — lender requirements</div>
+        <div class="detail-row"><span class="dl">Submission</span><span class="dv">${pol.submission_channel||'—'}</span></div>
+        <div class="detail-row"><span class="dl">Conditional SLA</span><span class="dv">${pol.sla_conditional?pol.sla_conditional+' business days':'—'}</span></div>
+        <div class="detail-row"><span class="dl">Buffer / Max DSR</span><span class="dv mono">${(pol.buffer*100).toFixed(0)}% / ${pol.dsr_max}%</span></div>
+        <div class="detail-row"><span class="dl">Max LVR (OO P&I)</span><span class="dv mono">${pol.max_lvr_owner_occ_pi||'—'}%</span></div>
+        <div class="detail-row"><span class="dl">Genuine savings</span><span class="dv">${pol.genuine_savings_required?('Required >'+(pol.genuine_savings_threshold_lvr||85)+'% LVR'):'Not required'}</span></div>
+        <ul style="margin:10px 0 0;padding-left:18px;color:var(--t2);font-size:12.5px">${(pol.notes||[]).slice(0,4).map(n=>`<li style="margin-bottom:3px">${n}</li>`).join('')}</ul>
+      </div>` : '';
+    html = `<div class="wiz-card active"><h3>Select Lender & Deal Type</h3><p class="desc">Choose the lender and product — policy loads from the lender database.</p>
       <div class="subsec">Lender</div>
-      <div class="tile-grid">${m().lenders.map(l=>`<div class="tile ${d.lender===l?'sel':''}" onclick="state.wizData.lender='${l}';renderWizStep()"><div class="tt">${l}</div></div>`).join('')}</div>
+      <div class="tile-grid">${tiles}</div>
       <div class="subsec">Deal Type</div>
       <div class="tile-grid">${['Owner Occupier','Investment','First Home','SMSF','Commercial','Refinance'].map(t=>`<div class="tile ${d.dealType===t?'sel':''}" onclick="state.wizData.dealType='${t}';renderWizStep()"><div class="tt">${t}</div></div>`).join('')}</div>
+      ${reqCard}
       ${wizNav()}</div>`;
   } else if(state.wizStep===2){
     html = `<div class="wiz-card active"><h3>Borrower Details</h3><p class="desc">Primary applicant information.</p>
@@ -976,10 +1053,11 @@ function renderWizStep(){
       <div class="lvr-badge" id="wizLvr" style="background:${lvrColor}1a;color:${lvrColor}">LVR ${lvr.toFixed(1)}%</div>
       ${wizNav()}</div>`;
   } else if(state.wizStep===5){
-    const docs = ['Payslips (last 2)','Bank Statements','ID Verification','Tax Returns','Liability Statements'];
-    html = `<div class="wiz-card active"><h3>Document Upload</h3><p class="desc">Drop or click each zone — turns green when uploaded.</p>
+    const docs = lenderChecklist(d.lender, d.dealType);
+    const pol = activePolicy(d.lender);
+    html = `<div class="wiz-card active"><h3>Document Upload</h3><p class="desc">Checklist generated from ${pol?(pol.label+"’s"):'standard'} requirements${d.dealType?` for a ${d.dealType} deal`:''} — click each zone to upload.</p>
       <div style="display:flex;flex-direction:column;gap:11px">
-        ${docs.map((doc,i)=>`<div class="upload-zone" id="wizUp${i}" onclick="wizUpload(${i},'${doc}')">⬆ ${doc}</div>`).join('')}
+        ${docs.map((doc,i)=>`<div class="upload-zone" id="wizUp${i}" onclick="wizUpload(${i},this.dataset.doc)" data-doc="${doc.replace(/"/g,'&quot;')}">⬆ ${doc}</div>`).join('')}
       </div>${wizNav()}</div>`;
   } else if(state.wizStep===6){
     html = `<div class="wiz-card active"><h3>AI Data Extraction</h3><p class="desc">Extracted fields from uploaded documents.</p>
@@ -996,10 +1074,20 @@ function renderWizStep(){
       <button class="btn primary" style="margin-top:14px" onclick="navigate('commentary')">Open Full Commentary →</button>
       ${wizNav()}</div>`;
   } else if(state.wizStep===8){
-    html = `<div class="wiz-card active"><h3>Review & Submit</h3><p class="desc">Final checklist before submission.</p>
-      ${[['Lender selected', d.lender||'CBA'],['Deal type', d.dealType||'Owner Occupier'],['Loan amount', fmtMoney(d.loanAmount)],['LVR', (d.loanAmount/d.propValue*100).toFixed(1)+'%'],['Documents uploaded','5 of 5'],['Commentary generated','Complete']].map(r=>
+    const pol = activePolicy(d.lender);
+    const lenderName = pol ? pol.label : (d.lender||'CBA');
+    const reqs = pol ? `
+      <div class="subsec" style="margin-top:18px">Lender requirements — ${lenderName}</div>
+      <div class="detail-row"><span class="dl">Submission channel</span><span class="dv">${pol.submission_channel||'—'}</span></div>
+      <div class="detail-row"><span class="dl">Conditional SLA</span><span class="dv">${pol.sla_conditional?pol.sla_conditional+' business days':'—'}</span></div>
+      <div class="detail-row"><span class="dl">Assessment buffer</span><span class="dv mono">${(pol.buffer*100).toFixed(0)}% (${pol.apra_regulated?'APRA':'non-bank'})</span></div>
+      <div class="detail-row"><span class="dl">Genuine savings</span><span class="dv">${pol.genuine_savings_required?('Required >'+(pol.genuine_savings_threshold_lvr||85)+'% LVR'):'Not required'}</span></div>
+      <ul style="margin:10px 0 0;padding-left:18px;color:var(--t2);font-size:12.5px">${(pol.notes||[]).slice(0,3).map(n=>`<li style="margin-bottom:3px">${n}</li>`).join('')}</ul>` : '';
+    html = `<div class="wiz-card active"><h3>Review & Submit</h3><p class="desc">Submission pack cover — verified against ${lenderName} policy.</p>
+      ${[['Lender selected', lenderName],['Deal type', d.dealType||'Owner Occupier'],['Loan amount', fmtMoney(d.loanAmount)],['LVR', (d.loanAmount/d.propValue*100).toFixed(1)+'%'],['Documents requested', lenderChecklist(d.lender,d.dealType).length+' items'],['Commentary generated','Complete']].map(r=>
         `<div class="detail-row"><span class="dl">✓ ${r[0]}</span><span class="dv">${r[1]}</span></div>`).join('')}
-      <div class="assessed-note" style="background:rgba(5,150,105,.08);color:var(--green);margin-top:16px">✓ All requirements satisfied. Ready to submit to ${d.lender||'CBA'}.</div>
+      ${reqs}
+      <div class="assessed-note" style="background:rgba(5,150,105,.08);color:var(--green);margin-top:16px">✓ All requirements satisfied. Ready to submit to ${lenderName}${pol?(' via '+(pol.submission_channel||'broker portal')):''}.</div>
       ${wizNav()}</div>`;
   }
   c.innerHTML = html;
@@ -1024,17 +1112,26 @@ function submitDeal(){
    PAGE: SERVICEABILITY
    ============================================================ */
 function renderServiceability(el){
+  const auLender = state.market==='AU' && Object.keys(lenderDB()).length
+    ? `<div class="card" style="padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+         <b style="font-size:13px">Assess against</b>
+         <select id="svcLender" onchange="state.lender=this.value;renderServiceability(document.getElementById('page-serviceability'))" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:12px;font-weight:600">
+           ${Object.keys(lenderDB()).map(id=>`<option value="${id}" ${state.lender===id?'selected':''}>${lenderDB()[id].label||id} — ${lenderDB()[id].apra_regulated?'ADI':'Non-bank'} ${(lenderDB()[id].buffer*100).toFixed(0)}% buffer</option>`).join('')}
+         </select>
+         ${activePolicy()?`<span class="pill ${activePolicy().apra_regulated?'gray':'amber'}">${activePolicy().apra_regulated?'ADI':'Non-bank'}</span><span class="pill violet">${(activeBuffer()*100).toFixed(0)}% buffer</span><span class="pill gray">DSR &lt; ${activeDsrMax()}%</span><span class="pill gray">Max LVR ${activePolicy().max_lvr_owner_occ_pi||'—'}%</span>`:''}
+       </div>` : '';
   el.innerHTML = `
     <div class="page-head"><h1>Serviceability Calculator</h1><p>Live assessment — updates on every keystroke · ${m().flag} ${m().label}</p></div>
+    ${auLender}
     <div class="calc-split">
       <div id="calcEditor"></div>
       <div class="calc-results" id="calcResults"></div>
     </div>`;
-  renderCalcEditor(); renderCalcResults();
+  renderCalcEditor(); renderCalcResults(); updateStatusStrip();
 }
 function renderCalcEditor(){
   const ed = document.getElementById('calcEditor'); if(!ed) return;
-  const buffer = m().buffer;
+  const buffer = activeBuffer();
   let html = state.calc.entities.map((ent, ei)=>`
     <div class="entity-card">
       <div class="entity-head" onclick="state.calc.entities[${ei}].open=!state.calc.entities[${ei}].open;renderCalcEditor()">
@@ -1226,13 +1323,13 @@ function toggleEdit(i){
 }
 function regenSection(i){
   showLoader('Regenerating section…');
-  callClaude(`Write a concise mortgage submission paragraph for the section "${COMMENTARY[i].title}". Market: ${m().label}. Loan: ${fmtMoney(state.calc.newLoan.amount)}. Keep it under 70 words, professional broker tone.`)
+  callClaude(`Write a concise mortgage submission paragraph for the section "${COMMENTARY[i].title}". Lender: ${lenderContext()}. Loan: ${fmtMoney(state.calc.newLoan.amount)}. Keep it under 70 words, professional broker tone.`)
     .then(txt=>{ COMMENTARY[i].text=txt; hideLoader(); renderCommWrap(); toast('Section regenerated', 'ok'); });
 }
 function regenerateAll(){
   showLoader('Generating full commentary…');
   const r = computeServiceability();
-  callClaude(`Generate concise mortgage broker submission commentary. Market: ${m().label}. Loan amount ${fmtMoney(state.calc.newLoan.amount)}, DSR ${r.dsr.toFixed(1)}%, NDI ${fmtMoney(r.ndi)}/mo, verdict ${r.verdict}. Provide a 60-word professional overview.`)
+  callClaude(`Generate concise mortgage broker submission commentary for ${lenderContext()}. Loan amount ${fmtMoney(state.calc.newLoan.amount)}, DSR ${r.dsr.toFixed(1)}%, NDI ${fmtMoney(r.ndi)}/mo, verdict ${r.verdict}. Provide a 60-word professional overview referencing the lender's policy.`)
     .then(txt=>{ COMMENTARY[0].text=txt; hideLoader(); renderCommWrap(); toast('Commentary regenerated', 'ok'); });
 }
 
@@ -1298,26 +1395,63 @@ function classifyAll(){
    ============================================================ */
 // Shared lender scoring — used by Lender Compare and AI Pilot.
 // Ranks serviceable lenders first, then by lowest rate.
+// Income/existingDebt/HEM computed under a SPECIFIC lender's shading + HECS rule.
+function figuresForLender(id){
+  const mk = m(), buffer = activeBuffer(id);
+  let shadedAnnual = 0, existingDebt = 0;
+  state.calc.entities.forEach(ent=> ent.incomes.forEach(inc=> shadedAnnual += getShadedIncome(inc.type, inc.amount, id)));
+  const income = shadedAnnual/12;
+  state.calc.entities.forEach(ent=> ent.liabilities.forEach(l=>{
+    let assessed = assessLiability(l, buffer);
+    if(l.type==='hecs') assessed -= hecsExclusion(l.balance, income, id);
+    existingDebt += Math.max(0, assessed);
+  }));
+  const HEM = Math.max(mk.hem + state.calc.dependants*700, income*0.28);
+  return {income, existingDebt, HEM};
+}
 function rankLenders(){
-  const r = computeServiceability();
   const loan = parseFloat(state.calc.newLoan.amount)||0;
   const term = state.calc.newLoan.term;
-  const buffer = m().buffer;
-  const baseRates = [5.99, 6.09, 6.14, 6.24, 6.34, 6.49];
-  const rows = m().lenders.slice(0,6).map((l,i)=>{
-    const rate = baseRates[i];
-    const aRate = rate+buffer*100;
-    const pmt = PMT(loan, rate/100, term);
-    const aPmt = PMT(loan, aRate/100, term);
-    const totalDebt = r.existingDebt+aPmt;
-    const ndi = r.income-totalDebt-r.HEM;
-    const dsr = r.income>0?totalDebt/r.income*100:0;
-    const totalCost = pmt*term*12;
-    const serviceable = ndi>0 && dsr<m().dsrMax;
-    return {l, rate, aRate, pmt, aPmt, dsr, ndi, totalCost, serviceable};
-  });
+  let rows;
+  if(state.market==='AU' && Object.keys(lenderDB()).length){
+    // Each lender uses ITS OWN buffer, DSR ceiling, base rate and income shading.
+    rows = Object.keys(lenderDB()).map(id=>{
+      const p = lenderDB()[id];
+      const fig = figuresForLender(id);
+      const rate = p.base_rate;
+      const aRate = rate + p.buffer*100;
+      const pmt = PMT(loan, rate/100, term);
+      const aPmt = PMT(loan, aRate/100, term);
+      const totalDebt = fig.existingDebt + aPmt;
+      const ndi = fig.income - totalDebt - fig.HEM;
+      const dsr = fig.income>0 ? totalDebt/fig.income*100 : 0;
+      const totalCost = pmt*term*12;
+      const serviceable = ndi>0 && dsr<p.dsr_max;
+      const maxLvr = p.max_lvr_owner_occ_pi || p.max_lvr_owner_occ || 0;
+      return {l:id, label:p.label||id, type:p.type, isAdi:p.apra_regulated, buffer:p.buffer,
+        color:p.lender_color, maxLvr, rate, aRate, pmt, aPmt, dsr, ndi, totalCost, serviceable};
+    });
+  } else {
+    // Non-AU markets: keep the original indicative-rate behaviour.
+    const r = computeServiceability(), buffer = m().buffer;
+    const baseRates = [5.99, 6.09, 6.14, 6.24, 6.34, 6.49];
+    rows = m().lenders.slice(0,6).map((l,i)=>{
+      const rate = baseRates[i], aRate = rate+buffer*100;
+      const pmt = PMT(loan, rate/100, term), aPmt = PMT(loan, aRate/100, term);
+      const totalDebt = r.existingDebt+aPmt;
+      const ndi = r.income-totalDebt-r.HEM;
+      const dsr = r.income>0?totalDebt/r.income*100:0;
+      return {l, label:l, type:'bank', isAdi:true, buffer, color:'#5B4FF5', maxLvr:m().dsrMax?95:95,
+        rate, aRate, pmt, aPmt, dsr, ndi, totalCost:pmt*term*12, serviceable: ndi>0 && dsr<m().dsrMax};
+    });
+  }
   rows.sort((a,b)=> (b.serviceable-a.serviceable) || (a.rate-b.rate));
   return rows;
+}
+// Lowest-rate lender that services the deal as currently structured (AU).
+function cheapestServiceableLender(){
+  const s = rankLenders().filter(x=>x.serviceable);
+  return s.length ? s[0] : null;
 }
 function renderCompare(el){
   const loan = parseFloat(state.calc.newLoan.amount)||0;
@@ -1325,22 +1459,27 @@ function renderCompare(el){
   const rows = rankLenders();
   const recommended = rows.find(x=>x.serviceable);
   const bestRate = Math.min(...rows.map(x=>x.rate));
+  const auNote = state.market==='AU'
+    ? `<div class="card" style="padding:14px 16px;margin-bottom:16px;font-size:12.5px;color:var(--t2)">Each lender is assessed on <b>its own APRA/non-bank buffer, DSR ceiling and income shading</b>. Note how non-banks (1–2% buffer) can service the same client that the 3% majors decline.</div>`
+    : '';
   el.innerHTML = `
     <div class="page-head"><h1>Lender Comparison</h1><p>${m().flag} ${m().label} — ${rows.length} lenders ranked by approvability for ${fmtMoney(loan)} over ${term} years</p></div>
-    ${recommended?`<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--brand)"><span class="pill violet">★ AI Recommended</span> <b style="margin-left:8px">${recommended.l}</b> — serviceable at <span class="mono">${recommended.rate.toFixed(2)}%</span>, NDI <span class="mono">${fmtMoney(recommended.ndi)}/mo</span>.</div>`:`<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--red)">No lender services this loan as structured — see the Serviceability page for the levers to fix it.</div>`}
+    ${recommended?`<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--brand)"><span class="pill violet">★ AI Recommended</span> <b style="margin-left:8px">${recommended.label}</b> <span class="pill ${recommended.isAdi?'gray':'amber'}" style="margin-left:6px">${recommended.isAdi?'ADI':'Non-bank'} · ${(recommended.buffer*100).toFixed(0)}% buffer</span> — serviceable at <span class="mono">${recommended.rate.toFixed(2)}%</span>, NDI <span class="mono">${fmtMoney(recommended.ndi)}/mo</span>.</div>`:`<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--red)">No lender services this loan as structured — see the Serviceability page for the levers to fix it.</div>`}
+    ${auNote}
     <div class="table-card">
-      <table><thead><tr><th>Rank</th><th>Lender</th><th>Rate</th><th>Assessed</th><th>Monthly</th><th>Assessed/mo</th><th>DSR</th><th>NDI</th><th>Total Cost</th><th>Serviceable</th></tr></thead>
+      <table><thead><tr><th>Rank</th><th>Lender</th><th>Type</th><th>Buffer</th><th>Max LVR</th><th>Rate</th><th>Assessed</th><th>Assessed/mo</th><th>DSR</th><th>NDI</th><th>Serviceable</th></tr></thead>
       <tbody>${rows.map((x,i)=>`
         <tr class="${x===recommended?'best-row':''}">
           <td style="font-weight:700">${i+1}</td>
-          <td style="font-weight:700">${x.l}${x===recommended?' ★':x.rate===bestRate?' 🏆':''}</td>
+          <td style="font-weight:700"><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${x.color};margin-right:7px"></span>${x.label}${x===recommended?' ★':x.rate===bestRate?' 🏆':''}</td>
+          <td><span class="pill ${x.isAdi?'gray':'amber'}">${x.isAdi?'ADI':'Non-bank'}</span></td>
+          <td class="mono">${(x.buffer*100).toFixed(0)}%</td>
+          <td class="mono">${x.maxLvr?x.maxLvr+'%':'—'}</td>
           <td class="mono">${x.rate.toFixed(2)}%</td>
           <td class="mono">${x.aRate.toFixed(2)}%</td>
-          <td class="mono">${fmtMoney(x.pmt)}</td>
           <td class="mono">${fmtMoney(x.aPmt)}</td>
           <td class="mono">${x.dsr.toFixed(1)}%</td>
           <td class="mono" style="color:${x.ndi>=0?'var(--green)':'var(--red)'}">${fmtMoney(x.ndi)}</td>
-          <td class="mono">${fmtMoney(x.totalCost)}</td>
           <td><span class="pill ${x.serviceable?'green':'red'}">${x.serviceable?'Yes':'No'}</span></td>
         </tr>`).join('')}
       </tbody></table>
@@ -1532,12 +1671,14 @@ async function callClaude(prompt){
 }
 function mockCommentary(prompt){
   const r = computeServiceability();
-  return `Based on the submitted figures for ${m().label}, the application presents a ${r.verdict.toLowerCase()} serviceability profile. Assessed monthly income of ${fmtMoney(r.income)} supports total commitments of ${fmtMoney(r.totalDebt)} with a DSR of ${r.dsr.toFixed(1)}% and net disposable income of ${fmtMoney(r.ndi)} per month, comfortably accounting for the ${(m().buffer*100).toFixed(0)}% assessment buffer and HEM living-expense floor. The structure aligns with lender policy and responsible-lending requirements.`;
+  const pol = activePolicy();
+  const who = pol ? pol.label : m().label;
+  return `Assessed against ${who}, the application presents a ${r.verdict.toLowerCase()} serviceability profile. Assessed monthly income of ${fmtMoney(r.income)} supports total commitments of ${fmtMoney(r.totalDebt)} with a DSR of ${r.dsr.toFixed(1)}% and net disposable income of ${fmtMoney(r.ndi)} per month, accounting for ${who}'s ${(activeBuffer()*100).toFixed(0)}% assessment buffer and the HEM living-expense floor. The structure aligns with ${pol?(pol.apra_regulated?'APRA':'non-bank'):'lender'} policy and responsible-lending requirements.`;
 }
 function callAIAssessment(){
   showLoader('Running AI serviceability assessment…');
   const r = computeServiceability();
-  callClaude(`As a mortgage credit analyst for ${m().label}, assess this loan: income ${fmtMoney(r.income)}/mo, total debt ${fmtMoney(r.totalDebt)}/mo, DSR ${r.dsr.toFixed(1)}%, NDI ${fmtMoney(r.ndi)}/mo, LVR ${r.lvr.toFixed(1)}%, verdict ${r.verdict}. Give a 70-word professional assessment.`)
+  callClaude(`As a mortgage credit analyst, assess this loan against ${lenderContext()}: income ${fmtMoney(r.income)}/mo, total debt ${fmtMoney(r.totalDebt)}/mo, DSR ${r.dsr.toFixed(1)}%, NDI ${fmtMoney(r.ndi)}/mo, LVR ${r.lvr.toFixed(1)}%, verdict ${r.verdict}. Give a 70-word professional assessment referencing the lender's buffer and appetite.`)
     .then(txt=>{ hideLoader(); showAssessment(txt); });
 }
 function showAssessment(txt){
@@ -1559,13 +1700,15 @@ function callExtract(){
    ============================================================ */
 // Income / existing-debt / HEM figures independent of the proposed new loan.
 function baseFigures(){
-  const mk = m(), buffer = mk.buffer;
+  const mk = m(), buffer = activeBuffer();
   let shadedAnnual = 0, existingDebt = 0;
-  state.calc.entities.forEach(ent=>{
-    ent.incomes.forEach(inc=> shadedAnnual += (parseFloat(inc.amount)||0)*(SHADE[inc.type]||1));
-    ent.liabilities.forEach(l=> existingDebt += assessLiability(l, buffer));
-  });
+  state.calc.entities.forEach(ent=> ent.incomes.forEach(inc=> shadedAnnual += getShadedIncome(inc.type, inc.amount)));
   const income = shadedAnnual/12;
+  state.calc.entities.forEach(ent=> ent.liabilities.forEach(l=>{
+    let assessed = assessLiability(l, buffer);
+    if(l.type==='hecs') assessed -= hecsExclusion(l.balance, income);
+    existingDebt += Math.max(0, assessed);
+  }));
   const HEM = Math.max(mk.hem + state.calc.dependants*700, income*0.28);
   return {income, existingDebt, HEM};
 }
@@ -1576,13 +1719,13 @@ function ccLimits(){
 }
 // Largest loan that still services, holding everything else constant (binary search).
 function maxServiceableLoan(){
-  const mk = m(), buffer = mk.buffer, nl = state.calc.newLoan, base = baseFigures();
+  const buffer = activeBuffer(), dsrMax = activeDsrMax(), nl = state.calc.newLoan, base = baseFigures();
   const serv = (amt)=>{
     const pmt = PMT(amt, ((parseFloat(nl.rate)||0)+buffer*100)/100, parseFloat(nl.term)||30);
     const totalDebt = base.existingDebt + pmt;
     const ndi = base.income - totalDebt - base.HEM;
     const dsr = base.income>0 ? totalDebt/base.income*100 : 0;
-    return ndi>0 && dsr<mk.dsrMax;
+    return ndi>0 && dsr<dsrMax;
   };
   if(!serv(0)) return 0;
   let lo = 0, hi = (parseFloat(nl.amount)||0)*2 + 200000;
@@ -1590,14 +1733,15 @@ function maxServiceableLoan(){
   return Math.floor(lo/1000)*1000;
 }
 function serviceabilityInsights(r){
-  const mk = m(), buffer = mk.buffer, nl = state.calc.newLoan, loan = parseFloat(nl.amount)||0;
+  const buffer = activeBuffer(), dsrMax = activeDsrMax(), nl = state.calc.newLoan, loan = parseFloat(nl.amount)||0;
+  const pol = activePolicy(), ceilingName = pol ? (pol.label||state.lender) : m().label;
   const out = [];
   if(r.verdict==='PASS'){
-    out.push({tone:'green', t:`Surplus of ${fmtMoney(r.ndi)}/mo after the ${(buffer*100).toFixed(0)}% assessment buffer and HEM floor.`});
+    out.push({tone:'green', t:`Surplus of ${fmtMoney(r.ndi)}/mo after ${ceilingName}'s ${(buffer*100).toFixed(0)}% assessment buffer and the HEM floor.`});
     const maxLoan = maxServiceableLoan();
     const extra = maxLoan - loan;
     if(extra > 1000) out.push({tone:'green', t:`Borrowing headroom: about ${fmtMoney(extra)} more before this becomes borderline.`});
-    if(r.dsr < mk.dsrMax) out.push({tone:'green', t:`DSR ${r.dsr.toFixed(1)}% sits under the ${mk.dsrMax}% ${mk.label} ceiling.`});
+    if(r.dsr < dsrMax) out.push({tone:'green', t:`DSR ${r.dsr.toFixed(1)}% sits under the ${dsrMax}% ${ceilingName} ceiling.`});
     return out;
   }
   // Not a clean pass — surface concrete levers with $ impact.
@@ -1616,8 +1760,13 @@ function serviceabilityInsights(r){
     const need = Math.min(cc, Math.ceil((-r.ndi)/perDollar/1000)*1000);
     out.push({tone:'amber', t:`Cut credit-card limits by ${fmtMoney(need)} → NDI +${fmtMoney(need*perDollar)}/mo.`});
   }
-  if(r.dsr >= mk.dsrMax){
-    out.push({tone:'red', t:`DSR ${r.dsr.toFixed(1)}% exceeds the ${mk.dsrMax}% ${mk.label} ceiling — reduce debt or add income.`});
+  if(r.dsr >= dsrMax){
+    out.push({tone:'red', t:`DSR ${r.dsr.toFixed(1)}% exceeds the ${dsrMax}% ${ceilingName} ceiling — reduce debt or add income.`});
+  }
+  // Cross-lender lever: if a lower-buffer lender would service it, surface that.
+  if(state.market==='AU'){
+    const cheaper = cheapestServiceableLender();
+    if(cheaper && cheaper.l!==state.lender) out.push({tone:'amber', t:`Switch to ${cheaper.label} (${(cheaper.buffer*100).toFixed(0)}% buffer) → serviceable as structured. See Lender Compare.`});
   }
   if(!out.length) out.push({tone:'red', t:'Assessed income is too low for this loan — an additional applicant or a larger deposit is required.'});
   return out;
@@ -1687,9 +1836,10 @@ function applyExtractedProfile(){
   updateStatusStrip();
 }
 function finishPilot(){
-  const r = computeServiceability();
   const ranked = rankLenders();
   const top = ranked.find(x=>x.serviceable) || ranked[0];
+  if(top && state.market==='AU') state.lender = top.l;   // adopt the recommended lender's policy
+  const r = computeServiceability();
   COMMENTARY[0].text = mockCommentary('pilot');   // synchronous draft (safe if user navigates away)
   pilotResult = {r, top};
   pilotState = 'done';
@@ -1704,7 +1854,7 @@ function renderPilotResults(){
     <div class="verdict ${r.verdict.toLowerCase()}" style="margin-top:16px">
       <div class="v-lbl">AI Pilot Verdict</div>
       <div class="v-big">${r.verdict}</div>
-      <div class="v-sub">${top && top.serviceable ? ('Recommended lender: '+top.l+' @ '+top.rate.toFixed(2)+'%') : 'No lender services this structure — see the levers below'}</div>
+      <div class="v-sub">${top && top.serviceable ? ('Recommended lender: '+(top.label||top.l)+' @ '+top.rate.toFixed(2)+'% ('+(top.buffer*100).toFixed(0)+'% buffer)') : 'No lender services this structure — see the levers below'}</div>
     </div>
     <div class="res-grid">
       <div class="res-box"><div class="rl">DSR</div><div class="rv mono">${r.dsr.toFixed(1)}%</div></div>
