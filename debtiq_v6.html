@@ -914,6 +914,15 @@ function wizGo(dir){
   state.wizStep = Math.min(8, Math.max(1, state.wizStep+dir));
   renderWizard(document.getElementById('page-wizard'));
 }
+/* Update LVR badge in place so the input keeps focus while typing */
+function updateWizLVR(){
+  const d = state.wizData;
+  const lvr = d.propValue>0 ? (d.loanAmount/d.propValue*100) : 0;
+  const color = lvr<=80?'var(--green)':lvr<=90?'var(--amber)':'var(--red)';
+  const el = document.getElementById('wizLvr');
+  if(el){ el.textContent='LVR '+lvr.toFixed(1)+'%'; el.style.background=color+'1a'; el.style.color=color; }
+  updateStatusStrip();
+}
 function renderWizStep(){
   const c = document.getElementById('wizContent');
   const d = state.wizData;
@@ -944,12 +953,12 @@ function renderWizStep(){
     const lvrColor = lvr<=80?'var(--green)':lvr<=90?'var(--amber)':'var(--red)';
     html = `<div class="wiz-card active"><h3>Loan Structure</h3><p class="desc">Live LVR updates as you type.</p>
       <div class="form-grid">
-        <div class="inp"><label>Property Value</label><input type="number" value="${d.propValue}" oninput="state.wizData.propValue=+this.value;renderWizStep();updateStatusStrip()"></div>
-        <div class="inp"><label>Loan Amount</label><input type="number" value="${d.loanAmount}" oninput="state.wizData.loanAmount=+this.value;renderWizStep();updateStatusStrip()"></div>
+        <div class="inp"><label>Property Value</label><input type="number" value="${d.propValue}" oninput="state.wizData.propValue=+this.value;updateWizLVR()"></div>
+        <div class="inp"><label>Loan Amount</label><input type="number" value="${d.loanAmount}" oninput="state.wizData.loanAmount=+this.value;updateWizLVR()"></div>
         <div class="inp"><label>Interest Rate (%)</label><input type="number" step="0.01" value="${d.rate}" oninput="state.wizData.rate=+this.value"></div>
         <div class="inp"><label>Term (years)</label><input type="number" value="${d.term}" oninput="state.wizData.term=+this.value"></div>
       </div>
-      <div class="lvr-badge" style="background:${lvrColor}1a;color:${lvrColor}">LVR ${lvr.toFixed(1)}%</div>
+      <div class="lvr-badge" id="wizLvr" style="background:${lvrColor}1a;color:${lvrColor}">LVR ${lvr.toFixed(1)}%</div>
       ${wizNav()}</div>`;
   } else if(state.wizStep===5){
     const docs = ['Payslips (last 2)','Bank Statements','ID Verification','Tax Returns','Liability Statements'];
@@ -1026,10 +1035,10 @@ function renderCalcEditor(){
         ${ent.incomes.map((inc,ii)=>{
           const sh = SHADE[inc.type]||1; const shaded=(parseFloat(inc.amount)||0)*sh;
           return `<div class="row-line">
-            <select onchange="state.calc.entities[${ei}].incomes[${ii}].type=this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()">${Object.entries(INCOME_TYPES).map(([k,v])=>`<option value="${k}" ${inc.type===k?'selected':''}>${v}</option>`).join('')}</select>
-            <input type="number" value="${inc.amount}" oninput="state.calc.entities[${ei}].incomes[${ii}].amount=+this.value;renderCalcResults();updateStatusStrip()">
-            <span class="computed">×${sh.toFixed(2)}</span>
-            <span class="computed mono">${fmtMoney(shaded)}</span>
+            <select onchange="state.calc.entities[${ei}].incomes[${ii}].type=this.value;updateCalc()">${Object.entries(INCOME_TYPES).map(([k,v])=>`<option value="${k}" ${inc.type===k?'selected':''}>${v}</option>`).join('')}</select>
+            <input type="number" value="${inc.amount}" oninput="state.calc.entities[${ei}].incomes[${ii}].amount=+this.value;updateCalc()">
+            <span class="computed" id="incShade-${ei}-${ii}">×${sh.toFixed(2)}</span>
+            <span class="computed mono" id="incShaded-${ei}-${ii}">${fmtMoney(shaded)}</span>
             <span class="row-x" onclick="removeIncome(${ei},${ii})">×</span>
           </div>`;}).join('')}
         <button class="add-row" onclick="addIncome(${ei})">+ Add income</button>
@@ -1038,11 +1047,11 @@ function renderCalcEditor(){
         ${ent.liabilities.map((l,li)=>{
           const assessed = assessLiability(l, buffer);
           return `<div class="row-line liab">
-            <select onchange="state.calc.entities[${ei}].liabilities[${li}].type=this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()">${Object.entries(LIAB_TYPES).map(([k,v])=>`<option value="${k}" ${l.type===k?'selected':''}>${v}</option>`).join('')}</select>
-            <input type="number" value="${l.balance}" oninput="state.calc.entities[${ei}].liabilities[${li}].balance=+this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()">
-            <input type="number" step="0.1" value="${l.rate}" oninput="state.calc.entities[${ei}].liabilities[${li}].rate=+this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()">
-            <input type="number" value="${l.term}" oninput="state.calc.entities[${ei}].liabilities[${li}].term=+this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()">
-            <span class="computed mono">${fmtMoney(assessed)}</span>
+            <select onchange="state.calc.entities[${ei}].liabilities[${li}].type=this.value;updateCalc()">${Object.entries(LIAB_TYPES).map(([k,v])=>`<option value="${k}" ${l.type===k?'selected':''}>${v}</option>`).join('')}</select>
+            <input type="number" value="${l.balance}" oninput="state.calc.entities[${ei}].liabilities[${li}].balance=+this.value;updateCalc()">
+            <input type="number" step="0.1" value="${l.rate}" oninput="state.calc.entities[${ei}].liabilities[${li}].rate=+this.value;updateCalc()">
+            <input type="number" value="${l.term}" oninput="state.calc.entities[${ei}].liabilities[${li}].term=+this.value;updateCalc()">
+            <span class="computed mono" id="liabAss-${ei}-${li}">${fmtMoney(assessed)}</span>
             <span class="row-x" onclick="removeLiab(${ei},${li})">×</span>
           </div>`;}).join('')}
         <button class="add-row" onclick="addLiab(${ei})">+ Add liability</button>
@@ -1052,14 +1061,14 @@ function renderCalcEditor(){
   const nl = state.calc.newLoan;
   html += `<div class="entity-card"><div class="entity-body" style="padding:16px">
     <div class="subsec" style="margin-top:0">New Loan</div>
-    <div class="inp" style="margin-bottom:12px"><label>Loan Amount (${m().sym})</label><input type="number" value="${nl.amount}" oninput="state.calc.newLoan.amount=+this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()"></div>
-    <div class="slider-row"><label><span>Interest Rate</span><span class="mono">${nl.rate.toFixed(2)}%</span></label>
-      <input type="range" min="3" max="12" step="0.01" value="${nl.rate}" oninput="state.calc.newLoan.rate=+this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()"></div>
-    <div class="slider-row"><label><span>Term</span><span class="mono">${nl.term} yrs</span></label>
-      <input type="range" min="5" max="30" step="1" value="${nl.term}" oninput="state.calc.newLoan.term=+this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()"></div>
-    <div class="slider-row"><label><span>Dependants</span><span class="mono">${state.calc.dependants}</span></label>
-      <input type="range" min="0" max="6" step="1" value="${state.calc.dependants}" oninput="state.calc.dependants=+this.value;renderCalcResults();updateStatusStrip()"></div>
-    <div class="assessed-note">Assessed rate: ${(nl.rate+buffer*100).toFixed(2)}% (contract ${nl.rate.toFixed(2)}% + ${(buffer*100).toFixed(0)}% APRA buffer)</div>
+    <div class="inp" style="margin-bottom:12px"><label>Loan Amount (${m().sym})</label><input type="number" value="${nl.amount}" oninput="state.calc.newLoan.amount=+this.value;updateCalc()"></div>
+    <div class="slider-row"><label><span>Interest Rate</span><span class="mono" id="nlRateLbl">${nl.rate.toFixed(2)}%</span></label>
+      <input type="range" min="3" max="12" step="0.01" value="${nl.rate}" oninput="state.calc.newLoan.rate=+this.value;updateCalc()"></div>
+    <div class="slider-row"><label><span>Term</span><span class="mono" id="nlTermLbl">${nl.term} yrs</span></label>
+      <input type="range" min="5" max="30" step="1" value="${nl.term}" oninput="state.calc.newLoan.term=+this.value;updateCalc()"></div>
+    <div class="slider-row"><label><span>Dependants</span><span class="mono" id="nlDepLbl">${state.calc.dependants}</span></label>
+      <input type="range" min="0" max="6" step="1" value="${state.calc.dependants}" oninput="state.calc.dependants=+this.value;updateCalc()"></div>
+    <div class="assessed-note" id="nlAssessed">Assessed rate: ${(nl.rate+buffer*100).toFixed(2)}% (contract ${nl.rate.toFixed(2)}% + ${(buffer*100).toFixed(0)}% APRA buffer)</div>
   </div></div>
   <button class="btn ghost" style="margin-top:4px" onclick="addEntity()">+ Add Entity</button>`;
   ed.innerHTML = html;
@@ -1070,6 +1079,27 @@ function addIncome(ei){ state.calc.entities[ei].incomes.push({type:'salary_ft',a
 function removeIncome(ei,ii){ state.calc.entities[ei].incomes.splice(ii,1); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
 function addLiab(ei){ state.calc.entities[ei].liabilities.push({type:'credit_card',balance:0,rate:0,term:0}); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
 function removeLiab(ei,li){ state.calc.entities[ei].liabilities.splice(li,1); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
+
+function setText(id,v){ const e=document.getElementById(id); if(e) e.textContent=v; }
+/* In-place update on keystroke/drag — never re-renders inputs, so focus and slider drag are preserved */
+function updateCalc(){
+  const buffer = m().buffer;
+  state.calc.entities.forEach((ent,ei)=>{
+    ent.incomes.forEach((inc,ii)=>{
+      const sh = SHADE[inc.type]||1;
+      setText(`incShade-${ei}-${ii}`, '×'+sh.toFixed(2));
+      setText(`incShaded-${ei}-${ii}`, fmtMoney((parseFloat(inc.amount)||0)*sh));
+    });
+    ent.liabilities.forEach((l,li)=> setText(`liabAss-${ei}-${li}`, fmtMoney(assessLiability(l, buffer))));
+  });
+  const nl = state.calc.newLoan;
+  setText('nlRateLbl', nl.rate.toFixed(2)+'%');
+  setText('nlTermLbl', nl.term+' yrs');
+  setText('nlDepLbl', state.calc.dependants);
+  setText('nlAssessed', `Assessed rate: ${(nl.rate+buffer*100).toFixed(2)}% (contract ${nl.rate.toFixed(2)}% + ${(buffer*100).toFixed(0)}% APRA buffer)`);
+  renderCalcResults();
+  updateStatusStrip();
+}
 
 function renderCalcResults(){
   const box = document.getElementById('calcResults'); if(!box) return;
@@ -1149,7 +1179,8 @@ function renderCommentary(el){
   renderCommWrap();
 }
 function renderCommWrap(){
-  document.getElementById('commWrap').innerHTML = COMMENTARY.map((c,i)=>`
+  const wrap = document.getElementById('commWrap'); if(!wrap) return;
+  wrap.innerHTML = COMMENTARY.map((c,i)=>`
     <div class="comm-card ${c.ai?'':'broker'}">
       <div class="comm-head">
         <h4>${c.title}</h4>
