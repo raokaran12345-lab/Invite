@@ -9,6 +9,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/extract"
+  to = "/.netlify/functions/extract"
+  status = 200
+
+[[redirects]]
   from = "/api/config"
   to = "/.netlify/functions/config"
   status = 200

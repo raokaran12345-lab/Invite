@@ -71,6 +71,28 @@ code changes needed to toggle.
 - RLS policies ensure each authenticated user can read/write **only** their own
   `deals` rows.
 
+## 4. Auto-deploy from GitHub (optional)
+
+`.github/workflows/netlify-deploy.yml` deploys to Netlify on every push to
+`main` / the working branch. Add two **GitHub** repo secrets
+(Settings → Secrets and variables → Actions):
+
+| Secret | Where to get it |
+|--------|-----------------|
+| `NETLIFY_AUTH_TOKEN` | Netlify → User settings → Applications → Personal access tokens |
+| `NETLIFY_SITE_ID` | Netlify → Site configuration → Site details → Site ID |
+
+If the secrets are unset the workflow skips the deploy step (no failure).
+Env vars (`ANTHROPIC_API_KEY`, `SUPABASE_*`) still live in **Netlify**, not GitHub.
+
+## Document extraction (real OCR)
+
+`netlify/functions/extract.js` → `/api/extract` sends uploaded images/PDFs to
+Claude vision and returns structured income/liability JSON. When signed in,
+uploading in a deal's **Documents** tab runs real extraction and fills the
+calculator; in demo mode it falls back to a filename-based mock. Supported:
+PNG/JPEG/WebP/PDF, ~6MB each, up to 6 files.
+
 ## Local dev (optional)
 
 ```

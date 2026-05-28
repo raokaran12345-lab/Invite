@@ -1084,6 +1084,7 @@ function loadDealIntoCalc(id){
 function panelDocs(el, d){
   const docs = DOCS.filter(x=>x.deal===d.id);
   const statusCls = {Verified:'green', Processing:'violet', Review:'amber'};
+  const ocrNote = `<p style="font-size:11px;color:var(--t3);text-align:center;margin-top:8px">${aiLive()?'AI reads PNG/JPEG/PDF uploads and fills the calculator automatically.':'Demo mode — uploads use a filename-based mock. Sign in (with the backend deployed) for real AI extraction.'}</p>`;
   el.innerHTML = docs.length ? `
     <div style="display:flex;flex-direction:column;gap:8px">
       ${docs.map(x=>`<div class="card" style="padding:11px 13px;display:flex;justify-content:space-between;align-items:center">
@@ -1091,16 +1092,69 @@ function panelDocs(el, d){
         <span class="pill ${statusCls[x.status]||'gray'}">${x.status}</span></div>`).join('')}
     </div>
     <button class="btn" style="margin-top:12px;width:100%" onclick="document.getElementById('panelDocUp').click()">⬆ Upload more</button>
-    <input type="file" id="panelDocUp" multiple style="display:none" onchange="panelUpload('${d.id}', this.files)">`
+    <input type="file" id="panelDocUp" multiple accept="image/*,application/pdf" style="display:none" onchange="panelUpload('${d.id}', this.files)">${ocrNote}`
   : `<div style="border:2px dashed #CBD2DC;border-radius:14px;padding:26px;text-align:center;color:var(--t3)">
       <p style="font-weight:600;margin-bottom:10px">No documents yet</p>
       <button class="btn primary" onclick="document.getElementById('panelDocUp').click()">⬆ Upload</button>
-      <input type="file" id="panelDocUp" multiple style="display:none" onchange="panelUpload('${d.id}', this.files)">
-    </div>`;
+      <input type="file" id="panelDocUp" multiple accept="image/*,application/pdf" style="display:none" onchange="panelUpload('${d.id}', this.files)">
+    </div>${ocrNote}`;
 }
 function panelUpload(id, files){
-  [...files].forEach(f=> DOCS.unshift({name:f.name, deal:id, type:'Unclassified', conf:0, status:'Processing', size:(f.size/1024).toFixed(0)+' KB', date:TODAY_STR}));
-  toast(files.length+' document(s) uploaded', 'ok'); renderPanel();
+  const arr = [...files];
+  arr.forEach(f=> DOCS.unshift({name:f.name, deal:id, type:'Unclassified', conf:0, status:'Processing', size:(f.size/1024).toFixed(0)+' KB', date:TODAY_STR}));
+  toast(arr.length+' document(s) uploaded', 'ok');
+  renderPanel();
+  if(aiLive()) extractFiles(arr, 0);            // real OCR when signed in
+  else arr.forEach(f=> wizExtract(f.name, 0));  // demo: keyword mock from filename
+}
+/* ---------- Real OCR via the /api/extract vision function ---------- */
+function fileToB64(file){
+  return new Promise((resolve,reject)=>{
+    const r = new FileReader();
+    r.onload = ()=> resolve(String(r.result).split(',')[1]||'');
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+async function extractFiles(files, entityIdx=0){
+  if(!aiLive()) return;
+  const allowed = ['image/png','image/jpeg','image/webp','image/gif','application/pdf'];
+  const payload = [];
+  for(const f of files){ if(allowed.includes(f.type)){ try{ payload.push({ media_type:f.type, data: await fileToB64(f) }); }catch(e){} } }
+  if(!payload.length){ toast('Upload PNG/JPEG/PDF for AI extraction', 'info'); return; }
+  showLoader('Extracting from '+payload.length+' document(s)…');
+  try{
+    let token=''; try{ const { data } = await sbClient.auth.getSession(); token = data && data.session && data.session.access_token; }catch(e){}
+    const res = await fetch('/api/extract', { method:'POST', headers:{ 'content-type':'application/json', ...(token?{Authorization:'Bearer '+token}:{}) }, body: JSON.stringify({ files: payload }) });
+    const j = await res.json();
+    hideLoader();
+    if(!res.ok){ toast('Extraction: '+(j.error||'failed'), 'err'); return; }
+    const n = mergeExtracted(j.extracted, entityIdx);
+    toast(n ? ('Extracted '+n+' line(s) into the calculator') : 'No data found in those documents', n?'ok':'info');
+    if(state.activeDeal) renderPanel();
+  }catch(e){ hideLoader(); toast('Extraction failed', 'err'); }
+}
+// Validate against the app's type codes and push extracted lines into an entity.
+function mergeExtracted(ex, entityIdx=0){
+  if(!ex) return 0;
+  const idx = entityIdx||0;
+  if(!state.calc.entities[idx]) state.calc.entities[idx] = {name:'Applicant '+(idx+1), open:true, incomes:[], liabilities:[]};
+  const ent = state.calc.entities[idx];
+  if(ex.applicant_name && /Applicant/.test(ent.name)) ent.name = ex.applicant_name;
+  let n=0;
+  (ex.incomes||[]).forEach(i=>{
+    if(!INCOME_TYPES[i.type]) return;
+    const y1 = parseFloat(i.amount_y1)||0;
+    ent.incomes.push({ type:i.type, amount:y1, amount_y1:y1, amount_y2:parseFloat(i.amount_y2)||0, use_average:false, evidence_years:2 });
+    n++;
+  });
+  (ex.liabilities||[]).forEach(l=>{
+    if(!LIAB_TYPES[l.type]) return;
+    ent.liabilities.push({ type:l.type, balance:parseFloat(l.balance)||0, rate:parseFloat(l.rate)||0, term:parseFloat(l.term)||0 });
+    n++;
+  });
+  if(state.page==='serviceability') updateStatusStrip();
+  return n;
 }
 function panelCommentary(el, d){ renderCommentary(el); }
 function panelPortal(el, d){

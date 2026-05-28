@@ -1,5 +1,24 @@
 # DebtIQ v6 — Changelog
 
+## Round 4 — CI deploy + real document OCR
+
+- **GitHub Actions → Netlify** (`.github/workflows/netlify-deploy.yml`): deploys
+  on push to `main` / the working branch using `netlify-cli`. Gated on
+  `NETLIFY_AUTH_TOKEN` + `NETLIFY_SITE_ID` repo secrets; skips cleanly if unset.
+- **Real OCR** (`netlify/functions/extract.js` → `/api/extract`): sends uploaded
+  images/PDFs to Claude vision and returns structured income/liability JSON
+  (server-side key, Supabase-session gated). Client `extractFiles()` reads files
+  to base64, calls the function, and `mergeExtracted()` validates the returned
+  type codes before pushing lines into the calculator. Wired into the deal
+  **Documents** tab upload: live AI extraction when signed in, filename-based
+  mock in demo mode. Route added to `netlify.toml`; `BACKEND.md` updated.
+
+**Verification:** jsdom smoke still all green in demo mode (extraction guarded by
+`aiLive()` ⇒ falls back to mock; `mergeExtracted` validated to ingest valid lines
+and reject unknown type codes). `extract.js` passes `node --check`.
+
+---
+
 ## Round 3 — backend (Netlify Functions + Supabase)
 
 Turns the static app into a deployable product **without breaking demo mode**.

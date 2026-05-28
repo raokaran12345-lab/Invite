@@ -1,0 +1,32 @@
+name: Deploy to Netlify
+
+on:
+  push:
+    branches: [ main, claude/debtiq-v6-build-tLZHa ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Secrets are surfaced as env so the deploy step can be skipped when unset.
+    env:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Deploy to Netlify (production)
+        if: ${{ env.NETLIFY_AUTH_TOKEN != '' && env.NETLIFY_SITE_ID != '' }}
+        run: npx --yes netlify-cli@17 deploy --prod --dir . --functions netlify/functions
+
+      - name: Skipped — secrets not set
+        if: ${{ env.NETLIFY_AUTH_TOKEN == '' || env.NETLIFY_SITE_ID == '' }}
+        run: |
+          echo "Skipping deploy: set NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID in"
+          echo "GitHub → Settings → Secrets and variables → Actions."
+          echo "Get the token from Netlify → User settings → Applications → Personal access tokens,"
+          echo "and the site ID from Site configuration → Site details → Site ID."
