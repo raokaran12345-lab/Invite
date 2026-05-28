@@ -582,6 +582,8 @@ tr:last-child td{border-bottom:none}
 
 <!-- Supabase client (auth + persistence). Safe to omit — app falls back to demo mode. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- pdf.js (legacy UMD) — used only to rasterise PDFs client-side for OCR. Optional. -->
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js"></script>
 <!-- Australian lender credit-policy database (must load before the app script) -->
 <script src="lenders.js"></script>
 <script>
@@ -1116,23 +1118,71 @@ function fileToB64(file){
     r.readAsDataURL(file);
   });
 }
+// Render PDF pages to PNG (base64) client-side via pdf.js — fallback for accounts
+// where direct PDF upload to the model isn't available.
+async function pdfToImages(file, maxPages=3){
+  const lib = window.pdfjsLib; if(!lib) throw new Error('pdf.js unavailable');
+  if(!lib.GlobalWorkerOptions.workerSrc) lib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.worker.min.js';
+  const buf = await file.arrayBuffer();
+  const pdf = await lib.getDocument({data:buf}).promise;
+  const out = [], pages = Math.min(maxPages, pdf.numPages);
+  for(let p=1;p<=pages;p++){
+    const page = await pdf.getPage(p);
+    const vp = page.getViewport({scale:1.6});
+    const cv = document.createElement('canvas'); cv.width=vp.width; cv.height=vp.height;
+    await page.render({canvasContext:cv.getContext('2d'), viewport:vp}).promise;
+    out.push({ media_type:'image/png', data: cv.toDataURL('image/png').split(',')[1]||'' });
+  }
+  return out;
+}
+// One file → one-or-more Anthropic content payload parts (PDFs rasterised when possible).
+async function fileToPayload(file){
+  const img = ['image/png','image/jpeg','image/webp','image/gif'];
+  if(img.includes(file.type)) return [{ media_type:file.type, data: await fileToB64(file) }];
+  if(file.type==='application/pdf'){
+    if(window.pdfjsLib){ try{ const imgs = await pdfToImages(file, 3); if(imgs.length) return imgs; }catch(e){} }
+    return [{ media_type:'application/pdf', data: await fileToB64(file) }];   // raw PDF fallback
+  }
+  return [];
+}
+async function buildExtractPayload(files){
+  const out = [];
+  for(const f of files){ for(const part of await fileToPayload(f)){ if(out.length<6) out.push(part); } }
+  return out;
+}
+async function callExtract(payload){
+  let token=''; try{ const { data } = await sbClient.auth.getSession(); token = data && data.session && data.session.access_token; }catch(e){}
+  const res = await fetch('/api/extract', { method:'POST', headers:{ 'content-type':'application/json', ...(token?{Authorization:'Bearer '+token}:{}) }, body: JSON.stringify({ files: payload }) });
+  return { ok:res.ok, json: await res.json() };
+}
 async function extractFiles(files, entityIdx=0){
   if(!aiLive()) return;
-  const allowed = ['image/png','image/jpeg','image/webp','image/gif','application/pdf'];
-  const payload = [];
-  for(const f of files){ if(allowed.includes(f.type)){ try{ payload.push({ media_type:f.type, data: await fileToB64(f) }); }catch(e){} } }
-  if(!payload.length){ toast('Upload PNG/JPEG/PDF for AI extraction', 'info'); return; }
-  showLoader('Extracting from '+payload.length+' document(s)…');
+  showLoader('Reading document(s)…');
+  let payload;
+  try{ payload = await buildExtractPayload([...files]); }catch(e){ hideLoader(); toast('Could not read files', 'err'); return; }
+  if(!payload.length){ hideLoader(); toast('Upload PNG/JPEG/PDF for AI extraction', 'info'); return; }
   try{
-    let token=''; try{ const { data } = await sbClient.auth.getSession(); token = data && data.session && data.session.access_token; }catch(e){}
-    const res = await fetch('/api/extract', { method:'POST', headers:{ 'content-type':'application/json', ...(token?{Authorization:'Bearer '+token}:{}) }, body: JSON.stringify({ files: payload }) });
-    const j = await res.json();
+    const { ok, json } = await callExtract(payload);
     hideLoader();
-    if(!res.ok){ toast('Extraction: '+(j.error||'failed'), 'err'); return; }
-    const n = mergeExtracted(j.extracted, entityIdx);
+    if(!ok){ toast('Extraction: '+(json.error||'failed'), 'err'); return; }
+    const n = mergeExtracted(json.extracted, entityIdx);
     toast(n ? ('Extracted '+n+' line(s) into the calculator') : 'No data found in those documents', n?'ok':'info');
     if(state.activeDeal) renderPanel();
   }catch(e){ hideLoader(); toast('Extraction failed', 'err'); }
+}
+// Standalone tester — shows the raw JSON the model returns (Compliance page).
+async function testExtract(files){
+  if(!files || !files.length) return;
+  const out = document.getElementById('ocrTestOut');
+  if(!aiLive()){ if(out) out.textContent = 'Demo mode — deploy the backend and sign in to run real extraction. (Files are read locally; nothing is sent.)'; toast('Backend required for live extraction','info'); return; }
+  showLoader('Extracting…');
+  try{
+    const payload = await buildExtractPayload([...files]);
+    if(!payload.length){ hideLoader(); if(out) out.textContent='No supported files (PNG/JPEG/PDF).'; return; }
+    const { ok, json } = await callExtract(payload);
+    hideLoader();
+    if(out) out.textContent = ok ? JSON.stringify(json.extracted||json, null, 2) : ('Error: '+(json.error||'failed'));
+  }catch(e){ hideLoader(); if(out) out.textContent='Extraction failed.'; }
 }
 // Validate against the app's type codes and push extracted lines into an entity.
 function mergeExtracted(ex, entityIdx=0){
@@ -2702,6 +2752,13 @@ function renderCompliance(el){
       <div class="card" style="padding:20px;background:rgba(91,79,245,.06);border:1.5px solid var(--brand)"><h3 style="font-size:15px;font-weight:700;margin-bottom:6px">Full Submission Pack</h3>
         <p style="font-size:12.5px;color:var(--t3);margin-bottom:14px">All documents + cover page + checklist. Print-ready AOL-format PDF.</p>
         <button class="btn primary" style="width:100%" onclick="generateSubmissionPack()">📄 Generate Full Pack</button></div>
+    </div>
+    <div class="card" style="padding:20px;margin-bottom:16px">
+      <h3 style="font-size:15px;font-weight:700;margin-bottom:6px">Document extraction tester</h3>
+      <p style="font-size:12.5px;color:var(--t3);margin-bottom:12px">Drag a payslip, tax return or statement (PNG/JPEG/PDF) to see the raw JSON the model returns. PDFs are rasterised in your browser first. ${aiLive()?'':'<b>Backend required</b> — connect to run live.'}</p>
+      <div id="ocrDrop" onclick="document.getElementById('ocrTestInput').click()" ondragover="event.preventDefault();this.style.borderColor='var(--brand)'" ondragleave="this.style.borderColor='#CBD2DC'" ondrop="event.preventDefault();this.style.borderColor='#CBD2DC';testExtract(event.dataTransfer.files)" style="border:2px dashed #CBD2DC;border-radius:14px;padding:26px;text-align:center;color:var(--t3);cursor:pointer;font-weight:600">⬆ Drag &amp; drop a document, or click to choose</div>
+      <input type="file" id="ocrTestInput" accept="image/*,application/pdf" multiple style="display:none" onchange="testExtract(this.files)">
+      <pre id="ocrTestOut" class="mono" style="margin-top:12px;background:#0F0F1A;color:#A7F3D0;padding:14px;border-radius:12px;font-size:11.5px;white-space:pre-wrap;max-height:280px;overflow:auto;display:block">// extracted JSON appears here</pre>
     </div>
     <div id="complianceOutput" style="display:flex;flex-direction:column;gap:12px"></div>`;
 }

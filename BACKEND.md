@@ -93,6 +93,13 @@ uploading in a deal's **Documents** tab runs real extraction and fills the
 calculator; in demo mode it falls back to a filename-based mock. Supported:
 PNG/JPEG/WebP/PDF, ~6MB each, up to 6 files.
 
+- **PDF fallback:** PDFs are rasterised to PNG **in the browser** (pdf.js, first
+  ~3 pages) before upload, so extraction works even if your Anthropic account
+  can't take PDFs directly. If pdf.js fails to load, the raw PDF is sent instead.
+- **Tester:** the **Compliance AI** page has a drag-and-drop tester that shows the
+  raw JSON the model returns — use it to sanity-check extraction before relying on
+  it in a deal.
+
 ## Local dev (optional)
 
 ```

@@ -1,5 +1,24 @@
 # DebtIQ v6 — Changelog
 
+## Round 5 — OCR tester + client-side PDF fallback
+
+- **PDF → image fallback:** PDFs are now rasterised to PNG in the browser via
+  pdf.js (first ~3 pages) before being sent to `/api/extract`, so extraction works
+  even when an Anthropic account can't accept PDFs directly; raw-PDF upload remains
+  the fallback if pdf.js fails to load. Refactored client OCR into shared helpers
+  (`fileToPayload`/`pdfToImages`/`buildExtractPayload`/`callExtract`).
+- **Drag-and-drop tester:** the Compliance AI page now has a tester that takes a
+  PNG/JPEG/PDF and shows the raw extracted JSON (`testExtract` → `#ocrTestOut`), so
+  OCR can be sanity-checked before relying on it in a deal. Demo mode shows a
+  backend-required message instead of calling out.
+- Loaded pdf.js (legacy UMD) via CDN; `BACKEND.md` updated.
+
+**Verification:** jsdom smoke still all green in demo mode — new checks confirm the
+OCR helpers + tester exist and that `testExtract` shows the backend-required
+message offline. JS syntax valid.
+
+---
+
 ## Round 4 — CI deploy + real document OCR
 
 - **GitHub Actions → Netlify** (`.github/workflows/netlify-deploy.yml`): deploys
