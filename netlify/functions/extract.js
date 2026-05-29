@@ -48,6 +48,26 @@ exports.handler = async (event) => {
   }
   if (!content.length) return json(400, { error: 'No supported files (png/jpeg/webp/pdf, under ~6MB each)' });
 
+  // ---- Type-aware extraction mode (document intelligence) ----
+  if (Array.isArray(body.schema) && body.schema.length) {
+    const docType = String(body.docType || 'document');
+    content.push({ type: 'text', text:
+`Extract the following fields from this ${docType}. For each field return the value and a confidence 0-100. If a field is not present, return null. Respond ONLY in JSON: {"fields":{${body.schema.map(f => `"${f}":{"value":...,"confidence":...,"source_text":"<the text you read it from>"}`).join(',')}}}` });
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1500, messages: [{ role: 'user', content }] })
+      });
+      const data = await res.json();
+      if (!res.ok) return json(res.status, { error: (data && data.error && data.error.message) || 'Anthropic API error' });
+      const text = (data && data.content && data.content[0] && data.content[0].text) || '';
+      let parsed = null;
+      try { parsed = JSON.parse(text); } catch (e) { const m = text.match(/\{[\s\S]*\}/); if (m) { try { parsed = JSON.parse(m[0]); } catch (e2) {} } }
+      return json(200, { docType, fields: (parsed && parsed.fields) || {}, raw: parsed ? undefined : text });
+    } catch (e) { return json(502, { error: 'Upstream request failed' }); }
+  }
+
   content.push({ type: 'text', text:
 `You are extracting mortgage application data from the attached document(s) for an Australian broker.
 Return ONLY a JSON object (no prose, no code fences) of this exact shape:

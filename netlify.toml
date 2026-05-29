@@ -19,6 +19,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/classify"
+  to = "/.netlify/functions/classify"
+  status = 200
+
+[[redirects]]
   from = "/api/config"
   to = "/.netlify/functions/config"
   status = 200

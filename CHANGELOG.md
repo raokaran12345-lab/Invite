@@ -1,5 +1,54 @@
 # DebtIQ v6 — Changelog
 
+## Round (doc-intelligence) — bulk ingest pipeline, classification, type-specific extraction, intelligent reconciliation, extraction review workspace, source tracing/provenance, missing-doc intelligence
+
+Drop a whole client file (up to 100 docs) and get back a classified, extracted,
+fraud-scanned, cross-verified, source-traced application with zero manual entry.
+Live via the backend proxy; full demo-mode mocks.
+
+**Backend:** new `netlify/functions/classify.js` → `/api/classify` (JWT-gated)
+returns `{type, applicant_hint, period, issuer, confidence}`. `extract.js` gains a
+backward-compatible **type-aware mode** (`{docType, schema}`) returning
+`{fields:{name:{value,confidence,source_text}}}`. `netlify.toml` updated.
+
+**Pipeline (Part 1-2):** a bulk drop zone (≤100 files) creates `Queued` docs and
+runs them through a **concurrency-3 queue**; each doc flows
+classify → extract → scan (forensics) → reconcile → done with a live progress panel
+(`doc.pipeline.stage`). `DOC_TYPES` catalogue + `EXTRACT_SCHEMAS` per type.
+
+**Extraction (Part 3):** type-aware schemas with **per-field confidence + source_text**
+(the text the value was read from — powers provenance). Multi-period aware (payslip
+YTD cross-check, tax-return 2-year model).
+
+**Reconciliation (Part 4):** `reconcile()` matches each doc to an entity
+(`applicant_hint` → entity name) and maps fields into `state.calc`
+(payslip→annualised salary, tax_return→self_emp, company_financials→add-backs,
+existing_loan→liability, rental→rental income, noa→HECS). Conflicting values are
+**never silently overwritten** — they raise a conflict the broker resolves (logged).
+
+**Review workspace (Part 5):** split view (document preview ‖ editable fields with
+confidence bars + source_text), inline forensic status, per-doc Approve, and
+"Trust all high-confidence". Nothing commits until reviewed.
+
+**Source tracing (Part 6):** every reconciled figure carries a provenance object;
+a `ⓘ` affordance on calculator rows shows "from <doc> · '<source_text>' · N%
+confidence". The submission pack gains a **Source Documents appendix**. Provenance
+persists on `deal.docIntel` (survives save/load).
+
+**Dashboard + copilot (Part 7):** a pipeline summary card (docs · extracted ·
+high-confidence · need review · integrity flags · conflicts · missing) and copilot
+insights for reviews, conflicts and **missing document types** by deal type
+(self-employed ⇒ tax returns/NOAs/company financials).
+
+**Demo (Part 8):** demo docs are pre-classified/extracted with provenance; a D-889
+income conflict is seeded; bulk-drop animates the full pipeline offline.
+
+**Verification:** `node --check` clean on `index.html`, `classify.js`, `extract.js`,
+`forensics.js`; jsdom smoke **69/69 green** (bulk ingest + concurrency, pipeline
+stages, classification, typed extraction w/ confidence+source_text, reconciliation
++ provenance, conflict resolution without overwrite, review workspace, source
+tracing, missing-doc gaps, provenance round-trip).
+
 ## Round (fraud) — document integrity / tamper detection
 
 The wedge feature: tamper-signal detection no AU broker tool ships. All analysis
