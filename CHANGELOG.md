@@ -1,5 +1,58 @@
 # DebtIQ v6 — Changelog
 
+## Round 6 — UI architecture rebuild (single-canvas operating system)
+
+Replaced the entire shell, layout and navigation model. **No financial engine,
+lender database, AI, wizard or data-structure logic was changed** — only how the
+app is framed and navigated.
+
+**New shell (HTML + CSS)**
+- **Command Bar** (full-width, 52px): logo, centred global search (`#globalSearch`
+  → `globalSearchHandler`, filters deals live + dropdown results), **+ New Deal**,
+  Settings gear, user avatar. No sidebar, no topbar, no country pill.
+- **Deal Strip** (40px, only when a deal is active): back arrow, ID · client ·
+  lender (colour dot) · amount · status, plus **live DSR / NDI / DTI / LVR chips**
+  that recompute on every state change — the old status strip, reimagined per deal.
+- **Tab Strip**: Pipeline · Client · Loan · Documents · Calculate · AI Pilot.
+- **AI Copilot panel** (always-visible, 320px; hidden < 900px): contextual
+  insights (`generateCopilotInsights` → verdict, best-lender suggestion, DTI/LVR
+  flags, missing docs, self-employed/next-action), quick actions (pack / pilot /
+  compare), and a deal-aware chat (`submitCopilotQuery` → `callClaude` with
+  `buildDealContext`).
+- **Live Timeline** (dark, bottom; click to expand 80↔240px): `logEvent` /
+  `renderTimeline` / `formatRelativeTime`, seeded with demo events and wired into
+  submit, advance, upload, lender switch, R&O, pack, AI assessment, add income/liab.
+- **Settings overlay** (`openSettings`/`renderSettingsOverlay`) replaces the
+  settings page; Billing folded in as a settings tab. Market switching lives in
+  Settings.
+- **New Deal wizard** now opens as a modal overlay (`openWizardModal`); submit
+  closes it and activates the new deal.
+
+**New tabs**
+- **Client** (`renderClientTab`) — contact/referral, status + next action, income &
+  entity summary; **Loan** (`renderLoanTab`) — lender select + loan structure +
+  property/LVR, all writing to `state.calc` and updating the deal strip live. Both
+  show a friendly prompt (`noDealPrompt`) when no deal is selected.
+
+**Navigation model**
+- New core `renderWorkspace(page)` renders into `#workspace` keeping
+  `id="page-<id>"`, so every existing `navigate('x')` / re-render call site keeps
+  working unchanged. `navigate()` is now a thin shim; `goTab(tab)` drives the tab
+  strip and logs to the timeline. `updateStatusStrip()` now refreshes the Deal
+  Strip + Copilot, so all existing calculator edits update them live. Deal cards
+  open via `setActiveDeal` (→ Client tab). The slide-over `#panel` is retained for
+  the AI Assessment popover.
+
+**Verification:** JS syntax valid (`node --check`). A jsdom smoke harness drives the
+new shell — **31/31 checks green**: login → flex shell, 6 tabs, pipeline + deal
+cards, copilot insights, seeded timeline, no-deal prompts, deal activation + live
+strip metrics, global search, calculate/loan/ai-pilot tabs, lender switch, settings
+overlay open/close, wizard modal open/advance/close, timeline expand, copilot chat,
+and clear-deal. No browser was available to run a full visual pass.
+
+**Note / minor deviation:** the Documents tab still lists all documents (not
+filtered to the active deal) — preserved from the original `renderDocuments`.
+
 ## Round 5 — OCR tester + client-side PDF fallback
 
 - **PDF → image fallback:** PDFs are now rasterised to PNG in the browser via

@@ -32,6 +32,18 @@
   --sh-2:0 4px 12px rgba(0,0,0,.08);
   --sh-brand:0 8px 24px rgba(91,79,245,.25);
   --sidebar-w:240px;
+  /* OS shell */
+  --t4:#9CA3AF;
+  --brand-bg:rgba(91,79,245,.08);
+  --brand-soft:rgba(91,79,245,.08);
+  --red-bg:#FEF2F2;
+  --mono:'DM Mono',monospace;
+  --copilot-w:320px;
+  --timeline-h:80px;
+  --timeline-h-expanded:240px;
+  --cmdbar-h:52px;
+  --dealstrip-h:40px;
+  --tabstrip-h:40px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
@@ -103,89 +115,154 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
 .demo-creds b{color:var(--t2)}
 
 /* ============================================================
-   APP SHELL
+   OPERATING SYSTEM SHELL
    ============================================================ */
-#app{display:none;height:100vh;overflow:hidden}
-.shell{display:flex;height:100%}
-
-/* Sidebar */
-.sidebar{
-  width:var(--sidebar-w);flex-shrink:0;background:var(--surface);
-  border-right:1px solid var(--border);
-  display:flex;flex-direction:column;transition:width .2s ease;
-}
-.sidebar.collapsed{width:64px}
-.sb-top{padding:18px 16px;display:flex;align-items:center;gap:10px}
+#app{display:none;flex-direction:column;height:100vh;overflow:hidden}
 .logo-mark{
   width:36px;height:36px;border-radius:11px;flex-shrink:0;
   background:var(--brand-grad);display:flex;align-items:center;justify-content:center;
   color:#fff;font-weight:800;font-size:19px;box-shadow:var(--sh-brand);
 }
 .wordmark{font-weight:800;font-size:18px;letter-spacing:-.4px}
-.sidebar.collapsed .hide-collapse{display:none}
-.country-pill{
-  margin:0 14px 14px;padding:9px 12px;border:1px solid var(--border);
-  border-radius:var(--r-pill);display:flex;align-items:center;gap:8px;cursor:pointer;
-  font-weight:600;font-size:13px;transition:.15s;position:relative;
-}
-.country-pill:hover{border-color:var(--brand);background:#FAFAFF}
-.nav{flex:1;overflow-y:auto;padding:4px 10px}
-.nav-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);padding:14px 10px 6px}
-.nav-item{
-  display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:10px;
-  color:var(--t2);font-weight:600;font-size:13.5px;cursor:pointer;transition:.13s;margin-bottom:2px;
-}
-.nav-item:hover{background:#F4F5F7}
-.nav-item.active{background:rgba(91,79,245,.1);color:var(--brand)}
-.nav-item .ico{width:20px;text-align:center;font-size:16px;flex-shrink:0}
-.sb-user{
-  margin:10px;padding:10px;border-radius:14px;background:#F4F5F7;
-  display:flex;align-items:center;gap:10px;cursor:pointer;
-}
 .avatar{
   width:34px;height:34px;border-radius:10px;flex-shrink:0;
   background:var(--brand-grad);color:#fff;font-weight:700;
   display:flex;align-items:center;justify-content:center;font-size:13px;
 }
-.sb-collapse{
-  margin:0 10px 10px;padding:8px;border-radius:10px;color:var(--t3);
-  font-size:12px;font-weight:600;text-align:center;transition:.13s;
-}
-.sb-collapse:hover{background:#F4F5F7;color:var(--t2)}
-
-/* Main column */
-.main-col{flex:1;display:flex;flex-direction:column;min-width:0}
-.topbar{
-  height:56px;flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border);
-  display:flex;align-items:center;gap:14px;padding:0 22px;
-}
-.topbar h2{font-size:17px;font-weight:700;flex:1}
-.badge-live{
-  display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:var(--r-pill);
-  background:rgba(13,148,136,.1);color:var(--teal);font-weight:700;font-size:12px;
-}
 .dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 2s infinite}
-.btn-new{
-  padding:9px 16px;border-radius:var(--r-btn);color:#fff;font-weight:700;font-size:13px;
-  background:var(--brand-grad);box-shadow:var(--sh-brand);transition:.15s;
-}
-.btn-new:hover{filter:brightness(1.08);transform:translateY(-1px)}
 
-/* Status strip */
-.status-strip{
-  flex-shrink:0;background:#0F0F1A;color:#fff;
-  display:flex;align-items:center;gap:6px;padding:9px 22px;overflow-x:auto;
-  font-size:12px;
+/* Command Bar */
+#cmdBar{
+  height:var(--cmdbar-h);flex-shrink:0;background:var(--surface);
+  border-bottom:1px solid var(--border);display:flex;align-items:center;
+  padding:0 18px;gap:14px;z-index:100;
 }
-.status-strip .si{display:flex;align-items:center;gap:6px;white-space:nowrap;padding:0 14px;border-right:1px solid rgba(255,255,255,.2)}
-.status-strip .si:last-child{border-right:none}
-.status-strip .lbl{opacity:.8;font-weight:600}
-.status-strip .val{font-weight:700}
+.cmd-left{display:flex;align-items:center;gap:9px;flex-shrink:0}
+.cmd-centre{flex:1;max-width:480px;margin:0 auto;position:relative}
+#globalSearch{
+  width:100%;padding:8px 14px;border:1.5px solid var(--border);
+  border-radius:var(--r-pill);font-size:13.5px;background:var(--bg);outline:none;transition:.15s;
+}
+#globalSearch:focus{border-color:var(--brand);background:#fff;box-shadow:0 0 0 4px rgba(91,79,245,.1)}
+.cmd-right{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:auto}
+.btn-sm{padding:8px 14px;border-radius:var(--r-btn);font-size:13px}
+.cmd-icon-btn{
+  width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  background:var(--bg);border:1px solid var(--border);cursor:pointer;color:var(--t3);transition:.13s;
+}
+.cmd-icon-btn:hover{background:var(--brand-bg);color:var(--brand)}
 
-/* Content */
-.content{flex:1;overflow-y:auto;padding:24px}
-.page{display:none;animation:fadeUp .35s cubic-bezier(.22,1,.36,1)}
-.page.active{display:block}
+/* Search results */
+.search-results{
+  position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;
+  border:1px solid var(--border);border-radius:14px;box-shadow:var(--sh-2);
+  z-index:200;display:none;overflow:hidden;
+}
+.sr-item{padding:10px 14px;cursor:pointer;transition:.12s}
+.sr-item:hover{background:var(--bg)}
+.sr-name{font-weight:700;font-size:13.5px}
+.sr-meta{font-size:12px;color:var(--t3);margin-top:2px}
+.sr-empty{padding:14px;text-align:center;color:var(--t3);font-size:13px}
+
+/* Deal Strip */
+#dealStrip{
+  height:var(--dealstrip-h);flex-shrink:0;background:#F9FAFB;
+  border-bottom:1px solid var(--border);display:flex;align-items:center;
+  padding:0 16px;gap:6px;font-size:12.5px;overflow:hidden;
+}
+.deal-back{background:none;border:none;cursor:pointer;color:var(--t3);font-size:16px;padding:0 6px 0 0;transition:color .13s}
+.deal-back:hover{color:var(--brand)}
+.ds-id{font-family:var(--mono);color:var(--t3)}
+.ds-name{font-weight:700;color:var(--t1)}
+.ds-lender{color:var(--t2)}
+.ds-amt{color:var(--t2)}
+.ds-sep{color:var(--t4)}
+.ds-metrics{margin-left:auto;display:flex;gap:8px}
+.ds-metric{
+  font-size:12px;font-weight:700;font-family:var(--mono);padding:2px 8px;
+  background:#fff;border:1px solid var(--border);border-radius:var(--r-pill);white-space:nowrap;
+}
+
+/* Tab Strip */
+#tabStrip{
+  height:var(--tabstrip-h);flex-shrink:0;background:var(--surface);
+  border-bottom:1px solid var(--border);display:flex;align-items:flex-end;
+  padding:0 16px;gap:2px;overflow-x:auto;
+}
+.os-tab{
+  padding:8px 16px;font-size:13.5px;font-weight:600;color:var(--t3);background:none;border:none;
+  border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;transition:.13s;
+  display:flex;align-items:center;gap:6px;
+}
+.os-tab:hover{color:var(--t1)}
+.os-tab.active{color:var(--brand);border-bottom-color:var(--brand)}
+.tab-badge{font-size:9px;font-weight:800;background:#FEF3C7;color:#92400E;padding:1px 5px;border-radius:5px;letter-spacing:.04em}
+
+/* Main canvas */
+#canvas{flex:1;display:flex;overflow:hidden;min-height:0}
+#workspace{flex:1;overflow-y:auto;min-width:0}
+.workspace-page{padding:24px;min-height:100%;animation:fadeUp .3s cubic-bezier(.22,1,.36,1)}
+
+/* AI Copilot panel */
+#copilotPanel{
+  width:var(--copilot-w);flex-shrink:0;background:var(--surface);
+  border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;
+}
+.cp-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.cp-title{font-size:13px;font-weight:700}
+.cp-model{font-size:10px;color:var(--t4);margin-left:2px}
+.cp-dot{width:7px;height:7px;border-radius:50%;background:var(--t4);margin-left:auto;animation:pulse 2s infinite}
+.cp-insights{flex:1;overflow-y:auto;padding:10px}
+.copilot-insight{
+  display:flex;align-items:flex-start;gap:9px;padding:9px 11px;border-radius:10px;margin-bottom:7px;
+  background:var(--bg);border-left:3px solid var(--border);font-size:12.5px;
+}
+.ci-icon{flex-shrink:0;font-size:13px}
+.ci-body{flex:1}
+.ci-text{color:var(--t2);line-height:1.5}
+.ci-action-btn{display:block;margin-top:6px;font-size:11.5px;font-weight:700;color:var(--brand);background:none;border:none;cursor:pointer;padding:0}
+.copilot-success{border-left-color:var(--green);background:rgba(5,150,105,.05)}
+.copilot-warning{border-left-color:var(--amber);background:rgba(217,119,6,.05)}
+.copilot-error{border-left-color:var(--red);background:rgba(220,38,38,.05)}
+.copilot-suggestion{border-left-color:var(--brand);background:rgba(91,79,245,.05)}
+.copilot-info{border-left-color:#60A5FA;background:rgba(96,165,250,.06)}
+.copilot-urgent{border-left-color:var(--red);background:var(--red-bg)}
+.cp-actions{
+  padding:9px 14px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  display:flex;gap:6px;flex-shrink:0;
+}
+.cp-actions button{flex:1;padding:7px;background:var(--bg);border:1px solid var(--border);border-radius:9px;cursor:pointer;font-size:15px;transition:.13s}
+.cp-actions button:hover{background:var(--brand-bg);border-color:var(--brand)}
+.cp-chat{height:160px;flex-shrink:0;display:flex;flex-direction:column;border-top:1px solid var(--border)}
+.cp-chat-log{flex:1;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.cp-msg{font-size:12px;padding:7px 10px;border-radius:10px;line-height:1.5;max-width:96%}
+.cp-user{background:var(--brand-soft);color:var(--brand);align-self:flex-end}
+.cp-ai{background:var(--bg);color:var(--t2);align-self:flex-start}
+.cp-chat-input{display:flex;border-top:1px solid var(--border);flex-shrink:0}
+#cpQuery{flex:1;padding:9px 12px;border:none;outline:none;font-size:12.5px;background:#fff}
+.cp-chat-input button{padding:0 13px;background:var(--brand);color:#fff;border:none;cursor:pointer;font-weight:700;font-size:14px}
+
+/* Live timeline */
+#liveTimeline{
+  height:var(--timeline-h);flex-shrink:0;background:#0F0F1A;color:rgba(255,255,255,.7);
+  display:flex;align-items:center;padding:0 20px;font-size:12px;cursor:pointer;overflow:hidden;
+  transition:height .3s cubic-bezier(.22,1,.36,1);
+}
+#liveTimeline.expanded{height:var(--timeline-h-expanded);align-items:flex-start;padding-top:14px;flex-wrap:wrap;gap:8px 0}
+.tl-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);margin-right:14px;flex-shrink:0}
+#tlEvents{display:flex;align-items:center;overflow:hidden;flex:1}
+#liveTimeline.expanded #tlEvents{flex-wrap:wrap}
+.tl-event{display:flex;align-items:center;gap:6px;white-space:nowrap;padding:0 12px;border-right:1px solid rgba(255,255,255,.1)}
+.tl-time{color:rgba(255,255,255,.35);font-family:var(--mono);font-size:11px}
+.tl-text{color:rgba(255,255,255,.75)}
+.tl-sep{color:rgba(255,255,255,.2);padding:0 6px}
+
+/* Settings overlay */
+.settings-overlay{position:fixed;inset:0;background:rgba(15,15,26,.5);backdrop-filter:blur(4px);z-index:800;display:none;align-items:center;justify-content:center}
+.settings-overlay.open{display:flex}
+.settings-panel{background:var(--surface);border-radius:24px;width:min(720px,92vw);max-height:88vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.3);animation:slideUp .3s cubic-bezier(.22,1,.36,1)}
+.settings-head{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:2}
+
 .page-head{margin-bottom:20px}
 .page-head h1{font-size:22px;font-weight:800}
 .page-head p{color:var(--t3);margin-top:3px}
@@ -471,23 +548,29 @@ tr:last-child td{border-bottom:none}
 
 /* Responsive */
 @media(max-width:900px){
-  .sidebar{width:64px}
-  .sidebar .hide-collapse{display:none}
+  #copilotPanel{display:none}
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
   .calc-split{grid-template-columns:1fr}
   .calc-results{position:static}
   .portal-split{grid-template-columns:1fr}
   .plan-grid,.hero-stats{grid-template-columns:1fr 1fr}
   .form-grid{grid-template-columns:1fr}
+  .workspace-page{padding:16px}
+}
+@media(max-width:600px){
+  .ds-metrics{display:none}
+  .cmd-centre{max-width:200px}
 }
 @media print {
-  #login, .sidebar, .topbar, .status-strip, .demo-banner,
+  #login, #cmdBar, #dealStrip, #tabStrip, #copilotPanel, #liveTimeline,
   .page-head button, .mini-btn, .btn, .toolbar, .tabs,
-  .wiz-head, nav, .sb-user, .sb-collapse, .skip-link,
+  .wiz-head, .skip-link,
   #toasts, #loader { display: none !important; }
   body { background: white; font-size: 10pt; color: #1a1a2e; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .content { padding: 0; overflow: visible; }
-  .main-col { overflow: visible; }
+  #app { display: block !important; overflow: visible; }
+  #canvas { display: block; overflow: visible; }
+  #workspace { overflow: visible; }
+  .workspace-page { padding: 0; }
   .commentary-wrap { max-width: 100%; margin: 0; }
   .comm-card { break-inside: avoid; page-break-inside: avoid; border: 1px solid #ccc; box-shadow: none; }
   .verdict { -webkit-print-color-adjust: exact; }
@@ -526,41 +609,102 @@ tr:last-child td{border-bottom:none}
 </div>
 
 <!-- ============================================================
-     APP SHELL
+     OPERATING SYSTEM SHELL
      ============================================================ -->
 <div id="app">
-<div class="shell">
 
-  <!-- Sidebar -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sb-top">
+  <!-- COMMAND BAR -->
+  <div id="cmdBar">
+    <div class="cmd-left">
       <div class="logo-mark">D</div>
-      <span class="wordmark hide-collapse">DebtIQ</span>
+      <span class="wordmark">DebtIQ</span>
     </div>
-    <div class="country-caption hide-collapse" id="countryCaption">🇦🇺 Australia · <span style="opacity:.6">🇳🇿 NZ soon</span></div>
-    <nav class="nav" id="nav" aria-label="Primary"></nav>
-    <div class="sb-collapse" onclick="toggleSidebar()" role="button" tabindex="0" aria-label="Collapse sidebar">⇆ Collapse</div>
-    <div class="sb-user">
-      <div class="avatar" id="sbAvatar">JB</div>
-      <div class="hide-collapse">
-        <div style="font-weight:700;font-size:13px" id="sbUserName">Jordan Blake</div>
-        <div style="font-size:11px;color:var(--t3)">Senior Broker</div>
+    <div class="cmd-centre">
+      <input id="globalSearch" aria-label="Global search"
+        placeholder="Search deals, clients, lenders…  ⌘K"
+        oninput="globalSearchHandler(this.value)"
+        onfocus="showSearchResults()"
+        onblur="setTimeout(hideSearchResults, 200)">
+      <div id="searchResults" class="search-results"></div>
+    </div>
+    <div class="cmd-right">
+      <button class="btn primary btn-sm" onclick="startNewDeal()">+ New Deal</button>
+      <button onclick="openSettings()" class="cmd-icon-btn" aria-label="Settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+      <div class="avatar" id="cmdAvatar">JB</div>
+    </div>
+  </div>
+
+  <!-- DEAL STRIP (hidden until a deal is active) -->
+  <div id="dealStrip" style="display:none">
+    <button class="deal-back" onclick="clearActiveDeal()" aria-label="Back to pipeline">←</button>
+    <span id="dsId" class="ds-id"></span>
+    <span class="ds-sep">·</span>
+    <span id="dsName" class="ds-name"></span>
+    <span class="ds-sep">·</span>
+    <span id="dsLender" class="ds-lender"></span>
+    <span class="ds-sep">·</span>
+    <span id="dsAmt" class="ds-amt mono"></span>
+    <span id="dsStatus" class="ds-status"></span>
+    <div class="ds-metrics" id="dsMetrics"></div>
+  </div>
+
+  <!-- TAB STRIP -->
+  <div id="tabStrip">
+    <button class="os-tab active" data-tab="pipeline" onclick="goTab('pipeline',this)">Pipeline</button>
+    <button class="os-tab" data-tab="client" onclick="goTab('client',this)">Client</button>
+    <button class="os-tab" data-tab="loan" onclick="goTab('loan',this)">Loan</button>
+    <button class="os-tab" data-tab="documents" onclick="goTab('documents',this)">Documents</button>
+    <button class="os-tab" data-tab="calculate" onclick="goTab('calculate',this)">Calculate</button>
+    <button class="os-tab" data-tab="aipilot" onclick="goTab('aipilot',this)">AI Pilot<span class="tab-badge" id="aipilotBadge">DEMO</span></button>
+  </div>
+
+  <!-- MAIN CANVAS -->
+  <div id="canvas">
+    <div id="workspace" role="main"></div>
+
+    <!-- AI COPILOT PANEL -->
+    <div id="copilotPanel">
+      <div class="cp-header">
+        <span class="cp-title">AI Copilot</span>
+        <span class="cp-model">claude-sonnet-4</span>
+        <span class="cp-dot" id="cpDot"></span>
+      </div>
+      <div class="cp-insights" id="cpInsights"></div>
+      <div class="cp-actions">
+        <button onclick="generateSubmissionPack()" title="Generate Submission Pack" aria-label="Generate Submission Pack">📄</button>
+        <button onclick="goTab('aipilot')" title="AI Pilot" aria-label="AI Pilot">✦</button>
+        <button onclick="showLenderCompare()" title="Compare Lenders" aria-label="Compare Lenders">⚖</button>
+      </div>
+      <div class="cp-chat">
+        <div class="cp-chat-log" id="cpChatLog"></div>
+        <div class="cp-chat-input">
+          <input id="cpQuery" aria-label="Ask AI about this deal"
+            placeholder="Ask AI about this deal…"
+            onkeydown="if(event.key==='Enter')submitCopilotQuery()">
+          <button onclick="submitCopilotQuery()" aria-label="Send">→</button>
+        </div>
       </div>
     </div>
-  </aside>
-
-  <!-- Main column -->
-  <div class="main-col">
-    <div class="demo-banner" id="demoBanner">Demo mode — no data is being saved. Sign in (Settings) to enable persistence.</div>
-    <div class="topbar">
-      <h2 id="pageTitle">Pipeline</h2>
-      <span class="badge-live" id="enginePill"><span class="dot"></span>DEMO MODE</span>
-      <button class="btn-new" onclick="navigate('wizard')" aria-label="Create new deal">+ New Deal</button>
-    </div>
-    <div class="status-strip" id="statusStrip"></div>
-    <div class="content" id="content" role="main"></div>
   </div>
-</div>
+
+  <!-- LIVE TIMELINE -->
+  <div id="liveTimeline" onclick="toggleTimeline()" role="button" tabindex="0" aria-label="Activity timeline">
+    <span class="tl-label">Timeline</span>
+    <span id="tlEvents"></span>
+  </div>
+
+  <!-- SETTINGS OVERLAY -->
+  <div id="settingsOverlay" class="settings-overlay" onclick="if(event.target===this)closeSettings()">
+    <div class="settings-panel">
+      <div class="settings-head">
+        <h2 style="font-size:18px;font-weight:800">Settings</h2>
+        <button onclick="closeSettings()" style="font-size:22px;background:none;border:none;cursor:pointer;color:var(--t3)" aria-label="Close settings">×</button>
+      </div>
+      <div style="padding:0 24px 24px" id="settingsBody"></div>
+    </div>
+  </div>
 </div>
 
 <!-- Slide-over panel -->
@@ -700,6 +844,8 @@ const STATUS_META = {
 /* ---------- App state ---------- */
 const state = {
   page:'dashboard',
+  tab:'pipeline',
+  eventLog:[],
   market:'AU',
   lender:'CBA',          // active lender for per-lender policy (AU)
   dealFilter:'all',
@@ -834,31 +980,45 @@ const PAGE_TITLES = {
 };
 const STRIP_PAGES = ['serviceability','aipilot'];   // status strip only where it's computed
 
-function renderNav(){
-  document.getElementById('nav').innerHTML = NAV.map(i=>`
-    <div class="nav-item ${state.page===i.id?'active':''}" onclick="navigate('${i.id}')" role="button" tabindex="0" aria-label="${i.label}" aria-current="${state.page===i.id?'page':'false'}">
-      <span class="ico">${svgIcon(i.icon)}</span><span class="hide-collapse">${i.label}</span>
-      ${i.badge?`<span class="nav-badge hide-collapse">${i.badge}</span>`:''}
-    </div>`).join('');
-}
+/* OS shell: a static tab strip replaces the old sidebar nav. */
+function renderNav(){ /* sidebar removed — tab strip is static HTML */ }
+function toggleSidebar(){ /* no sidebar in the OS shell */ }
 
-function navigate(page){
+// Legacy page id ⇄ OS tab id.
+const TAB_OF_PAGE = { dashboard:'pipeline', client:'client', loan:'loan', documents:'documents', serviceability:'calculate', aipilot:'aipilot' };
+const PAGE_OF_TAB = { pipeline:'dashboard', client:'client', loan:'loan', documents:'documents', calculate:'serviceability', aipilot:'aipilot' };
+// Every workspace-renderable page (top-level tabs + contextual views reached via navigate()).
+const WS_RENDERERS = {
+  dashboard:renderDashboard, client:renderClientTab, loan:renderLoanTab, documents:renderDocuments,
+  serviceability:renderServiceability, aipilot:renderAIPilot, compliance:renderCompliance,
+  commentary:renderCommentary, compare:renderLenders, intel:renderIntel, portal:renderPortal,
+  markets:renderMarkets, billing:renderBilling
+};
+
+// Core renderer. Keeps id="page-<legacyId>" so existing re-render call sites keep working.
+function renderWorkspace(page){
+  if(page==='settings'){ openSettings(); return; }
+  if(page==='wizard'){ openWizardModal(); return; }
   state.page = page;
-  document.getElementById('pageTitle').textContent = PAGE_TITLES[page]||'DebtIQ';
-  renderNav();
-  const c = document.getElementById('content');
-  c.innerHTML = `<div class="page active" id="page-${page}"></div>`;
-  const target = document.getElementById('page-'+page);
-  ({
-    dashboard:renderDashboard, aipilot:renderAIPilot, wizard:renderWizard, documents:renderDocuments,
-    serviceability:renderServiceability, commentary:renderCommentary, compare:renderLenders,
-    compliance:renderCompliance,
-    intel:renderIntel, portal:renderPortal, markets:renderMarkets, billing:renderBilling, settings:renderSettings
-  }[page] || renderDashboard)(target);
-  updateStatusStrip();
+  state.tab = TAB_OF_PAGE[page] || null;
+  document.title = 'DebtIQ · ' + page;
+  document.querySelectorAll('.os-tab').forEach(b=> b.classList.toggle('active', b.dataset.tab===state.tab));
+  const ws = document.getElementById('workspace');
+  if(!ws) return;
+  ws.innerHTML = `<div class="workspace-page" id="page-${page}"></div>`;
+  (WS_RENDERERS[page] || renderDashboard)(document.getElementById('page-'+page));
+  updateDealStrip();
+  updateCopilot();
 }
 
-function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('collapsed'); }
+// Back-compat shim — every existing navigate('x') still works.
+function navigate(page){ renderWorkspace(page); }
+
+// User tab click (logs to the timeline). btnEl is ignored — active state is data-driven.
+function goTab(tabId, btnEl){
+  renderWorkspace(PAGE_OF_TAB[tabId] || 'dashboard');
+  logEvent('Opened '+tabId+' tab');
+}
 
 /* ============================================================
    COUNTRY SELECTOR
@@ -877,23 +1037,9 @@ function setMarket(code){
 /* ============================================================
    STATUS STRIP (live)
    ============================================================ */
-function updateStatusStrip(){
-  const strip = document.getElementById('statusStrip');
-  if(!STRIP_PAGES.includes(state.page)){ strip.style.display='none'; return; }   // only where it's computed
-  strip.style.display='flex';
-  const r = computeServiceability();
-  const verdictColor = r.verdict==='PASS'?'#6EE7B7':r.verdict==='BORDERLINE'?'#FCD34D':'#FCA5A5';
-  const dtiColor = r.dti<=6?'#6EE7B7':r.dti<=9?'#FCD34D':'#FCA5A5';
-  strip.innerHTML = `
-    <div class="si"><span class="dot" style="background:#fff"></span><span class="lbl">LIVE</span></div>
-    <div class="si"><span class="lbl">DSR</span><span class="val mono">${r.dsr.toFixed(1)}%</span></div>
-    <div class="si"><span class="lbl">NDI</span><span class="val mono">${fmtMoney(r.ndi)}/mo</span></div>
-    <div class="si"><span class="lbl">LVR</span><span class="val mono">${r.lvr.toFixed(1)}%</span></div>
-    <div class="si"><span class="lbl">DTI</span><span class="val mono" style="color:${dtiColor}">${r.dti.toFixed(1)}x</span></div>
-    <div class="si"><span class="lbl">Verdict</span><span class="val" style="color:${verdictColor}">${r.verdict}</span></div>
-    <div class="si"><span class="lbl">Lender</span><span class="val">${activePolicy()?(activePolicy().label||state.lender):'—'} · ${(activeBuffer()*100).toFixed(0)}%</span></div>
-  `;
-}
+// Status strip reimagined: live metrics now live in the Deal Strip + Copilot.
+// Every existing updateStatusStrip() call refreshes both.
+function updateStatusStrip(){ updateDealStrip(); updateCopilot(); }
 
 /* ============================================================
    SERVICEABILITY COMPUTATION
@@ -1016,7 +1162,7 @@ function renderDealGrid(){
     const s = STATUS_META[d.status];
     const up = d.amount*d.upfront_commission_rate, tr = d.amount*d.trail_commission_rate;
     const nextSoon = d.next_action_date && (new Date(d.next_action_date)-TODAY)/864e5 <= 3 && d.status!=='APPROVED';
-    return `<div class="deal-card" onclick="openPanel('${d.id}')" role="button" tabindex="0">
+    return `<div class="deal-card" onclick="setActiveDeal('${d.id}')" role="button" tabindex="0">
       <div class="dc-top">
         <div class="dc-name">${d.name}</div>
         <span class="pill ${s.cls}">${s.label}</span>
@@ -1232,9 +1378,12 @@ function advanceDeal(id){
   (d.activity = d.activity||[]).push({at:TODAY_STR, text:'Advanced to '+STATUS_META[d.status].label});
   saveDeal(d);   // persist when signed in
   toast(`${d.id} advanced to ${STATUS_META[d.status].label}`, 'ok');
-  renderPanel(); renderDashboard(document.getElementById('page-dashboard'));
-  const si = document.getElementById('dealSearch');
-  if(si){ si.value = state.dealSearch; renderDealGrid(); }
+  logEvent(`${d.id} advanced to ${STATUS_META[d.status].label}`);
+  updateDealStrip(); updateCopilot();
+  const pg = document.getElementById('page-dashboard');
+  if(pg){ renderDashboard(pg); const si=document.getElementById('dealSearch'); if(si){ si.value=state.dealSearch; renderDealGrid(); } }
+  const cl = document.getElementById('page-client');
+  if(cl) renderClientTab(cl);
 }
 
 /* ============================================================
@@ -1267,7 +1416,8 @@ function wizNav(){
 }
 function wizGo(dir){
   state.wizStep = Math.min(8, Math.max(1, state.wizStep+dir));
-  renderWizard(document.getElementById('page-wizard'));
+  const host = document.getElementById('wizModalContent') || document.getElementById('page-wizard');
+  if(host) renderWizard(host);
 }
 /* Update LVR badge in place so the input keeps focus while typing */
 function updateWizLVR(){
@@ -1361,7 +1511,7 @@ function renderWizStep(){
     html = `<div class="wiz-card active"><h3>AI Commentary</h3><p class="desc">Generated submission notes — edit inline.</p>
       <div class="inp"><label>Loan Purpose & Background</label><textarea rows="4">Applicants Sarah & Tom Mitchell seek finance to purchase an owner-occupied dwelling. Both are PAYG employed with stable tenure exceeding 3 years.</textarea></div>
       <div class="inp" style="margin-top:12px"><label>Serviceability Summary</label><textarea rows="4">Combined assessed income comfortably supports the proposed repayments at the assessment rate including APRA buffer. NDI is positive and DSR within lender appetite.</textarea></div>
-      <button class="btn primary" style="margin-top:14px" onclick="navigate('commentary')">Open Full Commentary →</button>
+      <button class="btn primary" style="margin-top:14px" onclick="closeWizardModal();navigate('commentary')">Open Full Commentary →</button>
       ${wizNav()}</div>`;
   } else if(state.wizStep===8){
     const pol = activePolicy(d.lender);
@@ -1389,6 +1539,7 @@ function wizUpload(i, name, entityIdx=0){
   setTimeout(()=>{
     z.classList.add('done'); z.innerHTML = '✓ '+name+' — extracted';
     DOCS.unshift({name:name.replace(/[^a-z0-9]+/gi,'_')+'.pdf', deal:'NEW', type:name, conf:96, status:'Verified', size:'—', date:TODAY_STR});
+    logEvent('Document uploaded: '+name);
     wizExtract(name, entityIdx);
   }, 1100);
 }
@@ -1417,7 +1568,8 @@ function submitDeal(){
     DOCS.forEach(x=>{ if(x.deal==='NEW') x.deal=id; });   // retag wizard docs to the new deal
     saveDeal(newDeal);                                    // persist when signed in
     toast(`Deal ${id} submitted successfully!`, 'ok');
-    state.wizStep=1; navigate('dashboard');
+    logEvent(`Deal ${id} submitted to ${lenderLabel(newDeal.lender)}`);
+    state.wizStep=1; closeWizardModal(); setActiveDeal(id);
   }, 1600);
 }
 
@@ -1541,9 +1693,9 @@ function renderCalcEditor(){
 }
 function addEntity(){ state.calc.entities.push({name:'Entity '+(state.calc.entities.length+1), open:true, incomes:[{type:'salary_ft',amount:0}], liabilities:[]}); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
 function removeEntity(i){ state.calc.entities.splice(i,1); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
-function addIncome(ei){ state.calc.entities[ei].incomes.push({type:'salary_ft',amount:0}); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
+function addIncome(ei){ state.calc.entities[ei].incomes.push({type:'salary_ft',amount:0}); renderCalcEditor();renderCalcResults();updateStatusStrip(); logEvent('Income line added'); }
 function removeIncome(ei,ii){ state.calc.entities[ei].incomes.splice(ii,1); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
-function addLiab(ei){ state.calc.entities[ei].liabilities.push({type:'credit_card',balance:0,rate:0,term:0}); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
+function addLiab(ei){ state.calc.entities[ei].liabilities.push({type:'credit_card',balance:0,rate:0,term:0}); renderCalcEditor();renderCalcResults();updateStatusStrip(); logEvent('Liability added'); }
 function removeLiab(ei,li){ state.calc.entities[ei].liabilities.splice(li,1); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
 
 function setText(id,v){ const e=document.getElementById(id); if(e) e.textContent=v; }
@@ -2021,6 +2173,7 @@ function useLender(id){
   if(lenderDB()[id]) state.lender = id;
   state.svcTab = 'detailed';
   navigate('serviceability');
+  logEvent('Lender switched to '+lenderLabel(id));
   toast('Now assessing against '+lenderLabel(id), 'ok');
 }
 
@@ -2293,20 +2446,18 @@ function settingsPane(){
 }
 function updateEnginePill(){
   const live = !!state.anthropicKey;
-  const pill = document.getElementById('enginePill');
-  if(pill) pill.innerHTML = `<span class="dot"></span>${live?'AI Engine Live':'DEMO MODE'}`;
-  const banner = document.getElementById('demoBanner');
-  if(banner) banner.style.display = live ? 'none' : 'block';
+  const dot = document.getElementById('cpDot');
+  if(dot) dot.style.background = live ? 'var(--green)' : 'var(--t4)';
+  const badge = document.getElementById('aipilotBadge');
+  if(badge) badge.style.display = live ? 'none' : '';
 }
 function saveAccount(){
   const nameEl = document.getElementById('setName');
   if(nameEl && nameEl.value.trim()){
     const name = nameEl.value.trim();
     const initials = name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
-    const sbName = document.getElementById('sbUserName');
-    const sbAv = document.getElementById('sbAvatar');
-    if(sbName) sbName.textContent = name;
-    if(sbAv) sbAv.textContent = initials;
+    const av = document.getElementById('cmdAvatar');
+    if(av) av.textContent = initials;
   }
   toast('Account saved', 'ok');
 }
@@ -2344,6 +2495,7 @@ function mockCommentary(prompt){
 }
 function callAIAssessment(){
   showLoader('Running AI serviceability assessment…');
+  logEvent('AI assessment completed');
   const r = computeServiceability();
   callClaude(`As a mortgage credit analyst, assess this loan against ${lenderContext()}: income ${fmtMoney(r.income)}/mo, total debt ${fmtMoney(r.totalDebt)}/mo, DSR ${r.dsr.toFixed(1)}%, NDI ${fmtMoney(r.ndi)}/mo, LVR ${r.lvr.toFixed(1)}%, verdict ${r.verdict}. Give a 70-word professional assessment referencing the lender's buffer and appetite.`)
     .then(txt=>{ hideLoader(); showAssessment(txt); });
@@ -2579,6 +2731,7 @@ async function generateSubmissionPack(){
   }
   const html = buildPackHTML(r, pol, d, nl, ent, deal, bidText, servicingText);
   hideLoader();
+  logEvent('Submission pack generated');
   openPackWindow(html);
 }
 function openPackWindow(html){
@@ -2781,6 +2934,7 @@ async function genBID(){
   const txt = await callClaude(buildBIDPrompt(r, pol, state.wizData));
   hideLoader(); renderComplianceCard('Requirements & Objectives (RG209)', txt, 'bid', 'green');
   if(COMMENTARY[0]) COMMENTARY[0].text = txt;
+  logEvent('R&O statement generated');
 }
 async function genHEM(){
   const r = computeServiceability();
@@ -2832,6 +2986,290 @@ function saveCard(key, value){
   const div = document.createElement('div'); div.id='cc-text-'+key; div.className='comm-text'; div.textContent=value;
   ta.replaceWith(div);
   toast('Saved', 'ok');
+}
+
+/* ============================================================
+   OS SHELL — deal strip, copilot, timeline, search, tabs, settings
+   ============================================================ */
+
+/* ---------- Active deal context ---------- */
+function setActiveDeal(dealId){
+  const d = DEALS.find(x=>x.id===dealId);
+  if(!d) return;
+  state.activeDeal = dealId;
+  if(lenderDB()[d.lender]) state.lender = d.lender;
+  state.calc.newLoan.amount = d.amount;
+  updateDealStrip();
+  updateCopilot();
+  goTab('client');
+}
+function clearActiveDeal(){
+  state.activeDeal = null;
+  const strip = document.getElementById('dealStrip');
+  if(strip) strip.style.display = 'none';
+  goTab('pipeline');
+}
+function updateDealStrip(){
+  const strip = document.getElementById('dealStrip');
+  if(!strip) return;
+  const d = DEALS.find(x=>x.id===state.activeDeal);
+  if(!d){ strip.style.display='none'; return; }
+  strip.style.display = 'flex';
+  document.getElementById('dsId').textContent = d.id;
+  document.getElementById('dsName').textContent = d.name;
+  document.getElementById('dsLender').innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:3px;background:${(lenderDB()[d.lender]||{}).lender_color||'var(--brand)'};margin-right:5px"></span>${lenderLabel(d.lender)}`;
+  document.getElementById('dsAmt').textContent = fmtMoney(d.amount);
+  const s = STATUS_META[d.status];
+  document.getElementById('dsStatus').innerHTML = s ? `<span class="pill ${s.cls}" style="margin-left:8px">${s.label}</span>` : '';
+  const r = computeServiceability();
+  const dsrColor = r.dsr < activeDsrMax()*0.8 ? 'var(--green)' : r.dsr < activeDsrMax() ? 'var(--amber)' : 'var(--red)';
+  document.getElementById('dsMetrics').innerHTML = `
+    <span class="ds-metric" style="color:${dsrColor}">DSR ${r.dsr.toFixed(1)}%</span>
+    <span class="ds-metric" style="color:${r.ndi>=0?'var(--green)':'var(--red)'}">NDI ${fmtMoney(r.ndi)}/mo</span>
+    <span class="ds-metric" style="color:${r.dti<=6?'var(--green)':r.dti<=9?'var(--amber)':'var(--red)'}">DTI ${r.dti.toFixed(1)}x</span>
+    <span class="ds-metric" style="color:${r.lvr<=80?'var(--green)':r.lvr<=90?'var(--amber)':'var(--red)'}">LVR ${r.lvr.toFixed(1)}%</span>`;
+}
+
+/* ---------- AI Copilot ---------- */
+function generateCopilotInsights(){
+  const r = computeServiceability();
+  const pol = activePolicy();
+  const insights = [];
+  insights.push({
+    type: r.verdict==='PASS'?'success':r.verdict==='BORDERLINE'?'warning':'error',
+    icon: r.verdict==='PASS'?'✓':r.verdict==='BORDERLINE'?'▲':'✕',
+    text: r.verdict==='PASS' ? `Services with ${fmtMoney(r.ndi)}/mo surplus`
+        : r.verdict==='BORDERLINE' ? `Marginal — ${fmtMoney(Math.abs(r.ndi))}/mo ${r.ndi<0?'short':'surplus'}`
+        : `Does not service — ${fmtMoney(-r.ndi)}/mo short`
+  });
+  if(state.market==='AU'){
+    const best = cheapestServiceableLender();
+    if(best && best.l!==state.lender) insights.push({ type:'suggestion', icon:'★', text:`${best.label} recommended — services this deal`, action:{ label:'Switch', fn:`useLender('${best.l}')` } });
+  }
+  if(r.dti>6) insights.push({ type:'warning', icon:'⚠', text:`DTI ${r.dti.toFixed(1)}x — APRA restricted (>6x)` });
+  const deal = DEALS.find(d=>d.id===state.activeDeal);
+  const dealDocs = DOCS.filter(d=>d.deal===state.activeDeal);
+  if(deal && dealDocs.length===0) insights.push({ type:'error', icon:'📎', text:'No documents uploaded', action:{ label:'Upload', fn:`goTab('documents')` } });
+  const hasSelfEmp = state.calc.entities.some(e=> e.incomes.some(i=> i.type==='self_emp'));
+  if(hasSelfEmp && pol && pol.self_employed_min_years) insights.push({ type:'info', icon:'ℹ', text:`${pol.label}: ${pol.self_employed_min_years}yr self-employed docs required` });
+  if(r.lvr>90) insights.push({ type:'warning', icon:'⚠', text:`LVR ${r.lvr.toFixed(1)}% — LMI required` });
+  if(deal && deal.next_action_date){
+    const days = Math.ceil((new Date(deal.next_action_date)-new Date())/864e5);
+    if(days<=1) insights.push({ type:'urgent', icon:'🔔', text: days<=0 ? `Overdue: ${deal.next_action_note||'Follow up'}` : `Due tomorrow: ${deal.next_action_note||'Follow up'}` });
+  }
+  return insights;
+}
+function updateCopilot(){
+  const el = document.getElementById('cpInsights');
+  if(el){
+    el.innerHTML = generateCopilotInsights().map(ins=>`
+      <div class="copilot-insight copilot-${ins.type}">
+        <span class="ci-icon">${ins.icon}</span>
+        <div class="ci-body"><span class="ci-text">${ins.text}</span>
+          ${ins.action?`<button class="ci-action-btn" onclick="${ins.action.fn}">${ins.action.label} →</button>`:''}</div>
+      </div>`).join('');
+  }
+  const dot = document.getElementById('cpDot');
+  if(dot) dot.style.background = state.anthropicKey ? 'var(--green)' : 'var(--t4)';
+}
+function buildDealContext(){
+  const r = computeServiceability();
+  const pol = activePolicy();
+  return `Deal context: ${state.activeDeal||'no active deal'}. Lender: ${pol?pol.label:state.lender}. `
+    + `Loan: ${fmtMoney(parseFloat(state.calc.newLoan.amount)||0)}. DSR: ${r.dsr.toFixed(1)}%. NDI: ${fmtMoney(r.ndi)}/mo. `
+    + `Verdict: ${r.verdict}. DTI: ${r.dti.toFixed(1)}x. Market: ${m().label}. Buffer: ${(activeBuffer()*100).toFixed(0)}%.`;
+}
+async function submitCopilotQuery(){
+  const input = document.getElementById('cpQuery');
+  const q = input && input.value.trim();
+  if(!q) return;
+  input.value = '';
+  const log = document.getElementById('cpChatLog');
+  if(log){ log.innerHTML += `<div class="cp-msg cp-user">${q}</div><div class="cp-msg cp-ai" id="cpPending">Thinking…</div>`; log.scrollTop = log.scrollHeight; }
+  const response = await callClaude(`${buildDealContext()}\n\nBroker asks: ${q}\n\nAnswer in 2-3 sentences. Be specific. Reference the deal numbers. Australian mortgage context.`);
+  const pending = document.getElementById('cpPending');
+  if(pending){ pending.textContent = response; pending.removeAttribute('id'); }
+  if(log) log.scrollTop = log.scrollHeight;
+}
+function showLenderCompare(){ renderWorkspace('compare'); }
+
+/* ---------- Live timeline ---------- */
+let timelineExpanded = false;
+function formatRelativeTime(date){
+  const diff = Math.floor((new Date() - date)/1000);
+  if(diff<60) return 'Just now';
+  if(diff<3600) return Math.floor(diff/60)+'m ago';
+  if(diff<86400) return Math.floor(diff/3600)+'h ago';
+  return 'Yesterday';
+}
+function logEvent(text){
+  if(!state.eventLog) state.eventLog = [];
+  state.eventLog.unshift({ time:new Date(), text });
+  if(state.eventLog.length>50) state.eventLog.pop();
+  renderTimeline();
+}
+function renderTimeline(){
+  const el = document.getElementById('tlEvents');
+  if(!el) return;
+  const events = state.eventLog.slice(0, timelineExpanded?12:4);
+  el.innerHTML = events.map(e=>`<span class="tl-event"><span class="tl-time">${formatRelativeTime(e.time)}</span><span class="tl-text">${e.text}</span></span>`).join('');
+}
+function toggleTimeline(){
+  timelineExpanded = !timelineExpanded;
+  const el = document.getElementById('liveTimeline');
+  if(el) el.classList.toggle('expanded', timelineExpanded);
+  renderTimeline();
+}
+function seedTimeline(){
+  const now = Date.now();
+  state.eventLog = [
+    { time:new Date(now-7200000),  text:'AI extracted income from Mitchell payslip' },
+    { time:new Date(now-18000000), text:'D-891 Mitchell — moved to Broker Review' },
+    { time:new Date(now-86400000), text:'D-890 Chen Trust — documents pending' }
+  ];
+  renderTimeline();
+}
+
+/* ---------- Global search ---------- */
+function globalSearchHandler(q){
+  state.dealSearch = q;
+  if(!q){ hideSearchResults(); if(state.page==='dashboard') renderDealGrid(); return; }
+  const results = DEALS.filter(d=>
+    d.name.toLowerCase().includes(q.toLowerCase()) ||
+    d.id.toLowerCase().includes(q.toLowerCase()) ||
+    lenderLabel(d.lender).toLowerCase().includes(q.toLowerCase()));
+  const box = document.getElementById('searchResults');
+  if(!box) return;
+  if(!results.length){ box.innerHTML = `<div class="sr-empty">No results for "${q}"</div>`; box.style.display='block'; return; }
+  box.innerHTML = results.slice(0,5).map(d=>{
+    const s = STATUS_META[d.status];
+    return `<div class="sr-item" onmousedown="setActiveDeal('${d.id}')"><div class="sr-name">${d.name}</div><div class="sr-meta">${d.id} · ${lenderLabel(d.lender)} · ${fmtMoney(d.amount)} · <span style="color:var(--${s?s.cls:'gray'})">${s?s.label:''}</span></div></div>`;
+  }).join('');
+  box.style.display = 'block';
+  if(state.page==='dashboard') renderDealGrid();
+}
+function showSearchResults(){ const inp=document.getElementById('globalSearch'); const box=document.getElementById('searchResults'); if(inp && inp.value && box && box.innerHTML.trim()) box.style.display='block'; }
+function hideSearchResults(){ const box=document.getElementById('searchResults'); if(box) box.style.display='none'; }
+
+/* ---------- New deal (wizard modal) ---------- */
+function startNewDeal(){ state.wizStep = 1; openWizardModal(); }
+function openWizardModal(){
+  closeWizardModal();
+  const overlay = document.createElement('div');
+  overlay.id = 'wizOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,15,26,.6);z-index:700;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
+  overlay.onclick = (e)=>{ if(e.target===overlay) closeWizardModal(); };
+  overlay.innerHTML = `<div style="width:min(760px,94vw);max-height:90vh;background:#fff;border-radius:24px;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.3);position:relative">
+      <button onclick="closeWizardModal()" aria-label="Close" style="position:absolute;top:14px;right:16px;z-index:3;font-size:22px;background:rgba(255,255,255,.85);border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;color:var(--t2)">×</button>
+      <div id="wizModalContent" style="padding:20px"></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  renderWizard(document.getElementById('wizModalContent'));
+}
+function closeWizardModal(){ const o=document.getElementById('wizOverlay'); if(o) o.remove(); }
+
+/* ---------- Settings overlay ---------- */
+function openSettings(){ renderSettingsOverlay(); const o=document.getElementById('settingsOverlay'); if(o) o.classList.add('open'); }
+function closeSettings(){ const o=document.getElementById('settingsOverlay'); if(o) o.classList.remove('open'); }
+function renderSettingsOverlay(){
+  const body = document.getElementById('settingsBody');
+  if(!body) return;
+  body.innerHTML = `
+    <div class="tabs" style="margin-bottom:20px">
+      ${[['account','Account'],['market','Market'],['ai','AI'],['commission','Commission'],['lenders','Lenders'],['billing','Billing']].map(([k,l])=>
+        `<div class="tab ${settingsTab===k?'active':''}" role="button" tabindex="0" onclick="settingsTab='${k}';renderSettingsOverlay()">${l}</div>`).join('')}
+    </div>
+    ${settingsTab==='billing' ? `<div id="settingsBilling"></div>` : settingsPane()}`;
+  if(settingsTab==='billing') renderBilling(document.getElementById('settingsBilling'));
+}
+
+/* ---------- Client tab ---------- */
+function noDealPrompt(tab, message){
+  return `<div style="text-align:center;padding:80px 20px;color:var(--t3)">
+    <div style="font-size:40px;margin-bottom:14px;opacity:.15">${tab==='Client'?'👤':tab==='Loan'?'🏠':'📂'}</div>
+    <h3 style="font-size:16px;font-weight:700;margin-bottom:8px">No deal selected</h3>
+    <p style="font-size:13px;margin-bottom:20px">${message}</p>
+    <button class="btn primary" onclick="goTab('pipeline')">← Go to Pipeline</button>
+  </div>`;
+}
+function renderIncomeSummarySection(){
+  return `<div class="card" style="padding:18px">
+    <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Income &amp; entities</h3>
+    ${state.calc.entities.map(ent=>`
+      <div style="margin-bottom:14px"><div style="font-weight:700;font-size:13.5px;margin-bottom:6px">${ent.name}</div>
+        ${ent.incomes.map(inc=>`<div class="detail-row"><span class="dl">${INCOME_TYPES[inc.type]||inc.type}</span><span class="dv mono">${fmtMoney(getShadedIncome(inc,state.lender))} <span style="color:var(--t3);font-weight:500">assessed</span></span></div>`).join('')}
+        ${ent.liabilities.map(l=>`<div class="detail-row"><span class="dl">${LIAB_TYPES[l.type]||l.type}</span><span class="dv mono">${fmtMoney(l.balance||0)}</span></div>`).join('')}
+      </div>`).join('')}
+    <p style="font-size:12px;color:var(--t3)">Full editing in the Calculate tab.</p></div>`;
+}
+function renderNextActionSection(d){
+  const s = STATUS_META[d.status];
+  return `<h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Status &amp; next action</h3>
+    <div style="margin-bottom:12px"><span class="pill ${s?s.cls:'gray'}">${s?s.label:(d.status||'—')}</span></div>
+    ${d.next_action_date ? `<div class="card" style="padding:12px 14px;border-left:4px solid var(--amber)">${svgIcon('clock',15)} <b>${d.next_action_date}</b> — ${d.next_action_note||'Follow up'}</div>` : '<p style="color:var(--t3);font-size:13px">No action scheduled.</p>'}
+    <button class="btn" style="margin-top:12px" onclick="advanceDeal('${d.id}')">Advance Stage</button>`;
+}
+function renderClientTab(el){
+  if(!state.activeDeal){ el.innerHTML = noDealPrompt('Client','Select a deal from Pipeline to view client details.'); return; }
+  const d = DEALS.find(x=>x.id===state.activeDeal) || {};
+  el.innerHTML = `
+    <div class="page-head"><h1>${d.name||'Client'}</h1><p>${d.id||''} · ${d.type||''}</p></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+      <div class="card" style="padding:18px">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Contact &amp; referral</h3>
+        <div class="detail-row"><span class="dl">Phone</span><span class="dv">${d.primary_phone||'—'}</span></div>
+        <div class="detail-row"><span class="dl">Email</span><span class="dv">${d.primary_email||'—'}</span></div>
+        <div class="detail-row"><span class="dl">Referral</span><span class="dv">${REF_LABEL[d.referral_source]||'—'}</span></div>
+        <div class="detail-row"><span class="dl">Lender</span><span class="dv">${lenderLabel(d.lender)}</span></div>
+        <div class="detail-row"><span class="dl">Est. commission</span><span class="dv mono">${fmtMoney((d.amount||0)*(d.upfront_commission_rate||0))} + ${fmtMoney((d.amount||0)*(d.trail_commission_rate||0))}/yr</span></div>
+      </div>
+      <div class="card" style="padding:18px">${renderNextActionSection(d)}</div>
+    </div>
+    <div style="margin-top:16px">${renderIncomeSummarySection()}</div>
+    <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn primary" onclick="goTab('calculate')">Open in Calculator →</button>
+      <button class="btn" onclick="goTab('documents')">View Documents →</button>
+      <button class="btn" onclick="goTab('loan')">Loan structure →</button>
+    </div>`;
+}
+
+/* ---------- Loan tab ---------- */
+function renderLoanStructureSection(){
+  const nl = state.calc.newLoan, buffer = activeBuffer();
+  const lenderSel = (state.market==='AU' && Object.keys(lenderDB()).length)
+    ? `<div class="inp" style="margin-bottom:12px"><label>Lender</label><select onchange="state.lender=this.value;updateStatusStrip();renderLoanTab(document.getElementById('page-loan'))">${Object.keys(lenderDB()).filter(id=> state.accreditedLenders.length===0||state.accreditedLenders.includes(id)).map(id=>`<option value="${id}" ${state.lender===id?'selected':''}>${lenderDB()[id].label||id}</option>`).join('')}</select></div>`
+    : '';
+  return `<div class="card" style="padding:18px">
+    <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">New loan</h3>
+    ${lenderSel}
+    <div class="inp" style="margin-bottom:12px"><label>Loan amount (${m().sym})</label><input type="number" value="${nl.amount}" oninput="state.calc.newLoan.amount=+this.value;updateStatusStrip()"></div>
+    <div class="slider-row"><label><span>Interest rate</span><span class="mono" id="loanRateLbl">${(+nl.rate).toFixed(2)}%</span></label>
+      <input type="range" min="3" max="12" step="0.01" value="${nl.rate}" oninput="state.calc.newLoan.rate=+this.value;setText('loanRateLbl',(+this.value).toFixed(2)+'%');updateStatusStrip()"></div>
+    <div class="slider-row"><label><span>Term</span><span class="mono" id="loanTermLbl">${nl.term} yrs</span></label>
+      <input type="range" min="5" max="30" step="1" value="${nl.term}" oninput="state.calc.newLoan.term=+this.value;setText('loanTermLbl',this.value+' yrs');updateStatusStrip()"></div>
+    <div class="assessed-note">Assessed rate: ${((+nl.rate)+buffer*100).toFixed(2)}% (contract + ${(buffer*100).toFixed(0)}% ${activePolicy()?(activePolicy().label+' '):''}buffer)</div>
+  </div>`;
+}
+function renderPropertySection(){
+  const d = state.wizData, nl = state.calc.newLoan;
+  const pv = parseFloat(d.propValue)||0, lvr = pv>0 ? ((parseFloat(nl.amount)||0)/pv*100) : 0;
+  const col = lvr<=80?'var(--green)':lvr<=90?'var(--amber)':'var(--red)';
+  return `<div class="card" style="padding:18px">
+    <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Security / property</h3>
+    <div class="inp" style="margin-bottom:12px"><label>Property value (${m().sym})</label><input type="number" value="${d.propValue}" oninput="state.wizData.propValue=+this.value;updateStatusStrip();renderLoanTab(document.getElementById('page-loan'))"></div>
+    <div class="lvr-badge" style="background:${col}1a;color:${col}">LVR ${lvr.toFixed(1)}%</div>
+    <p style="font-size:12px;color:var(--t3);margin-top:10px">LVR updates the live metrics in the deal strip above.</p>
+  </div>`;
+}
+function renderLoanTab(el){
+  if(!state.activeDeal){ el.innerHTML = noDealPrompt('Loan','Select a deal from Pipeline to view loan details.'); return; }
+  el.innerHTML = `
+    <div class="page-head"><h1>Loan structure</h1><p>Edits update the live metrics in the deal strip in real time.</p></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+      ${renderLoanStructureSection()}
+      ${renderPropertySection()}
+    </div>
+    <div style="margin-top:12px"><button class="btn primary" onclick="goTab('calculate')">Open full calculator →</button></div>`;
 }
 
 /* ============================================================
@@ -2934,7 +3372,7 @@ function renderLoginMode(){
 }
 async function enterApp(){
   document.getElementById('login').style.display='none';
-  document.getElementById('app').style.display='block';
+  document.getElementById('app').style.display='flex';
   if(aiLive()) await loadDeals();
   toast(state.user ? ('Welcome, '+(state.user.email||'broker')+'!') : 'Welcome back, Jordan!', 'ok');
   init();
@@ -2943,9 +3381,11 @@ document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==
 
 /* ---------- Init ---------- */
 function init(){
-  renderNav();
   updateEnginePill();
-  navigate('dashboard');
+  seedTimeline();
+  renderWorkspace('dashboard');   // Pipeline tab, no active deal → deal strip hidden
+  updateCopilot();
+  logEvent('Session started');
   // simulate live AI progress on the processing deal (demo data only)
   setInterval(()=>{
     const d = DEALS.find(x=>x.status==='AI_PROCESSING');
