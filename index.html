@@ -281,6 +281,36 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
 .pd-row-best td{background:rgba(5,150,105,.07)}
 .pd-row-cur td{box-shadow:inset 3px 0 0 var(--brand)}
 
+/* Document forensics */
+.fz-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:var(--r-pill);font-size:11px;font-weight:700;cursor:pointer;border:1px solid transparent}
+.fz-chip.clear{background:rgba(5,150,105,.12);color:var(--green)}
+.fz-chip.caution{background:rgba(217,119,6,.12);color:var(--amber)}
+.fz-chip.review{background:rgba(220,38,38,.12);color:var(--red)}
+.fz-chip.scanning{background:#EEF0F3;color:var(--t3)}
+.fz-spin{width:11px;height:11px;border:2px solid #D1D5DB;border-top-color:var(--t3);border-radius:50%;animation:spin .8s linear infinite}
+.fz-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block}
+.fz-dot.clear{background:var(--green)}
+.fz-dot.caution{background:var(--amber)}
+.fz-dot.review{background:var(--red)}
+.fz-badge{display:inline-block;padding:6px 14px;border-radius:var(--r-pill);font-size:14px;font-weight:800;letter-spacing:.02em}
+.fz-badge.clear{background:rgba(5,150,105,.12);color:var(--green)}
+.fz-badge.caution{background:rgba(217,119,6,.12);color:var(--amber)}
+.fz-badge.review{background:rgba(220,38,38,.12);color:var(--red)}
+.fz-disc{background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;font-size:11.5px;line-height:1.6;padding:10px 13px;border-radius:10px;margin:12px 0}
+.fz-finding{border:1px solid var(--border);border-left-width:3px;border-radius:10px;padding:11px 13px;margin-bottom:9px}
+.fz-finding.high{border-left-color:var(--red)}
+.fz-finding.medium{border-left-color:var(--amber)}
+.fz-finding.low,.fz-finding.info{border-left-color:var(--t3)}
+.fz-finding .fz-fhead{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.fz-code{font-family:var(--mono);font-size:10.5px;font-weight:700;background:#0F0F1A;color:#A7F3D0;padding:1px 7px;border-radius:6px}
+.fz-sev{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.fz-sev.high{color:var(--red)}.fz-sev.medium{color:var(--amber)}.fz-sev.low,.fz-sev.info{color:var(--t3)}
+.fz-flayer{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);margin:14px 0 8px}
+.fz-todo{background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.25);border-radius:12px;padding:14px;margin:14px 0;font-size:13px;color:var(--t2);line-height:1.6}
+.xck-row{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px}
+.xck-val{font-weight:700}.xck-src{font-size:11px;color:var(--t3)}
+.xck-vs{font-size:11px;font-weight:800;color:var(--t3);text-align:center}
+
 .page-head{margin-bottom:20px}
 .page-head h1{font-size:22px;font-weight:800}
 .page-head p{color:var(--t3);margin-top:3px}
@@ -694,6 +724,7 @@ tr:last-child td{border-bottom:none}
         <button onclick="generateSubmissionPack()" title="Generate Submission Pack" aria-label="Generate Submission Pack">📄</button>
         <button onclick="goTab('aipilot')" title="AI Pilot" aria-label="AI Pilot">✦</button>
         <button onclick="showLenderCompare()" title="Compare Lenders" aria-label="Compare Lenders">⚖</button>
+        <button onclick="scanAllDocs(state.activeDeal)" title="Run integrity scan on all documents" aria-label="Run integrity scan">🛡</button>
       </div>
       <div class="cp-chat">
         <div class="cp-chat-log" id="cpChatLog"></div>
@@ -856,15 +887,31 @@ let DEALS = [
   mkDeal({id:'D-886', name:'Nguyen Trading Pty', lender:'ANZ', amount:3200000, status:'MORE_INFO', lvr:48.7, progress:null, type:'Commercial', referral_source:'partner'})
 ];
 
-/* ---------- Demo documents ---------- */
+/* ---------- Demo documents (seeded with varied forensic results for offline demo) ---------- */
+// forensic: { status:'CLEAR'|'CAUTION'|'REVIEW REQUIRED'|null, integrity, findings:[{layer,severity,code,finding,detail}], scannedAt, reviewed, demo }
+const FZ_CLEAR = ()=>({ status:'CLEAR', integrity:'No tampering signals detected', findings:[], scannedAt:'2026-05-22T10:42', reviewed:false, demo:true });
 let DOCS = [
-  {name:'Mitchell_Payslip_01.pdf', deal:'D-891', type:'Payslip', conf:98, status:'Verified', size:'248 KB', date:'2026-05-20'},
-  {name:'Mitchell_BankStatement.pdf', deal:'D-891', type:'Bank Statement', conf:95, status:'Verified', size:'1.2 MB', date:'2026-05-20'},
-  {name:'Chen_Trust_Deed.pdf', deal:'D-890', type:'Trust Deed', conf:88, status:'Review', size:'820 KB', date:'2026-05-19'},
-  {name:'Okonkwo_Tax_Return.pdf', deal:'D-889', type:'Tax Return', conf:76, status:'Processing', size:'540 KB', date:'2026-05-22'},
-  {name:'Patel_SMSF_Statement.pdf', deal:'D-888', type:'SMSF Statement', conf:91, status:'Verified', size:'670 KB', date:'2026-05-18'},
-  {name:'Torres_ID_Verify.jpg', deal:'D-887', type:'Identity', conf:99, status:'Verified', size:'310 KB', date:'2026-05-15'}
+  {name:'Mitchell_Payslip_01.pdf', deal:'D-891', type:'Payslip', conf:98, status:'Verified', size:'248 KB', date:'2026-05-20', forensic:FZ_CLEAR()},
+  {name:'Mitchell_BankStatement.pdf', deal:'D-891', type:'Bank Statement', conf:95, status:'Verified', size:'1.2 MB', date:'2026-05-20', forensic:FZ_CLEAR()},
+  {name:'Chen_Trust_Deed.pdf', deal:'D-890', type:'Trust Deed', conf:88, status:'Review', size:'820 KB', date:'2026-05-19',
+    forensic:{ status:'CAUTION', integrity:'Minor anomalies — verify manually', scannedAt:'2026-05-22T10:43', reviewed:false, demo:true,
+      findings:[{layer:'metadata', severity:'low', code:'META02', finding:'Modified after creation date', detail:'CreationDate 2026-05-12 → ModDate 2026-05-15 (re-saved 3 days later).'}] }},
+  {name:'Okonkwo_Tax_Return.pdf', deal:'D-889', type:'Tax Return', conf:76, status:'Processing', size:'540 KB', date:'2026-05-22',
+    forensic:{ status:'REVIEW REQUIRED', integrity:'Tampering signals detected', scannedAt:'2026-05-22T10:44', reviewed:false, demo:true,
+      findings:[
+        {layer:'metadata', severity:'high', code:'META01', finding:'Produced by a known editing tool', detail:'PDF Producer string: "Adobe Photoshop". Bank/payroll PDFs are not legitimately produced by image editors.'},
+        {layer:'visual', severity:'high', code:'VIS01', finding:'Salary figure font weight differs from surrounding text', detail:'Area: income summary. The net income value is rendered in a heavier weight than adjacent line items — a common overtyping signal.'}
+      ] }},
+  {name:'Patel_SMSF_Statement.pdf', deal:'D-888', type:'SMSF Statement', conf:91, status:'Verified', size:'670 KB', date:'2026-05-18', forensic:FZ_CLEAR()},
+  {name:'Torres_ID_Verify.jpg', deal:'D-887', type:'Identity', conf:99, status:'Verified', size:'310 KB', date:'2026-05-15', forensic:FZ_CLEAR()}
 ];
+// Demo cross-document consistency results, keyed by deal.
+const DEMO_CROSSCHECK = {
+  'D-889': { status:'CAUTION', integrity:'Minor anomalies — verify manually', checked:2, analysedAt:'2026-05-22T10:45', demo:true,
+    findings:[{ layer:'crosscheck', severity:'medium', code:'XCK01', finding:'Annual income mismatch',
+      detail:'$142,000 (Application) vs $128,400 (Payslip YTD annualised) — 10% discrepancy.',
+      value_a:'$142,000', source_a:'Application', value_b:'$128,400', source_b:'Payslip YTD annualised' }] }
+};
 
 const STATUS_META = {
   BROKER_REVIEW:{label:'Broker Review', cls:'amber'},
@@ -1284,11 +1331,12 @@ function panelDocs(el, d){
 }
 function panelUpload(id, files){
   const arr = [...files];
-  arr.forEach(f=> DOCS.unshift({name:f.name, deal:id, type:'Unclassified', conf:0, status:'Processing', size:(f.size/1024).toFixed(0)+' KB', date:TODAY_STR}));
+  const created = arr.map(f=>{ const doc={name:f.name, deal:id, type:'Unclassified', conf:0, status:'Processing', size:(f.size/1024).toFixed(0)+' KB', date:TODAY_STR, forensic:{status:null}}; DOCS.unshift(doc); return {doc, file:f}; });
   toast(arr.length+' document(s) uploaded', 'ok');
   renderPanel();
   if(aiLive()) extractFiles(arr, 0);            // real OCR when signed in
   else arr.forEach(f=> wizExtract(f.name, 0));  // demo: keyword mock from filename
+  created.forEach(({doc,file})=> scanDoc(doc, file));   // auto integrity scan
 }
 /* ---------- Real OCR via the /api/extract vision function ---------- */
 function fileToB64(file){
@@ -2042,10 +2090,12 @@ function renderDocuments(el){
   const processing = DOCS.filter(d=>d.status==='Processing').length;
   const review = DOCS.filter(d=>d.status==='Review').length;
   const avgConf = Math.round(DOCS.reduce((s,d)=>s+d.conf,0)/DOCS.length);
+  const flagged = DOCS.filter(d=>d.forensic && /REVIEW/i.test(d.forensic.status||'')).length;
   el.innerHTML = `
     <div class="page-head" style="display:flex;justify-content:space-between;align-items:center">
       <div><h1>Documents</h1><p>${DOCS.length} documents across active deals</p></div>
       <div style="display:flex;gap:9px">
+        <button class="btn" onclick="scanAllDocs(state.activeDeal)">🛡 Scan all</button>
         <button class="btn" onclick="classifyAll()">✦ AI Classify All</button>
         <button class="btn primary" onclick="document.getElementById('docInput').click()">⬆ Upload</button>
         <input type="file" id="docInput" multiple style="display:none" onchange="uploadDocs(this.files)">
@@ -2055,32 +2105,34 @@ function renderDocuments(el){
       <div class="kpi" style="border-top-color:var(--green)"><div class="ico" style="background:rgba(5,150,105,.1);color:var(--green)">✓</div><div class="num">${verified}</div><div class="cap">Verified</div></div>
       <div class="kpi" style="border-top-color:var(--brand)"><div class="ico" style="background:rgba(91,79,245,.1);color:var(--brand)">⟳</div><div class="num">${processing}</div><div class="cap">Processing</div></div>
       <div class="kpi" style="border-top-color:var(--amber)"><div class="ico" style="background:rgba(217,119,6,.1);color:var(--amber)">👁</div><div class="num">${review}</div><div class="cap">Needs Review</div></div>
-      <div class="kpi" style="border-top-color:var(--t1)"><div class="ico" style="background:rgba(15,15,26,.08);color:var(--t1)">%</div><div class="num">${avgConf}%</div><div class="cap">Avg Confidence</div></div>
+      <div class="kpi" style="border-top-color:var(--red)"><div class="ico" style="background:rgba(220,38,38,.1);color:var(--red)">🛡</div><div class="num">${flagged}</div><div class="cap">Integrity flags</div></div>
     </div>
     <div class="table-card">
-      <table><thead><tr><th>Document</th><th>Deal</th><th>Type</th><th>Confidence</th><th>Status</th><th>Size</th><th>Date</th><th></th></tr></thead>
+      <table><thead><tr><th>Document</th><th>Deal</th><th>Type</th><th>Confidence</th><th>Status</th><th>Integrity</th><th>Size</th><th>Date</th><th></th></tr></thead>
       <tbody id="docBody"></tbody></table>
-    </div>`;
+    </div>
+    ${consistencySectionHTML(state.activeDeal)}`;
   renderDocBody();
 }
 function renderDocBody(){
   const statusCls = {Verified:'green', Processing:'violet', Review:'amber'};
-  document.getElementById('docBody').innerHTML = DOCS.map((d,i)=>`
+  const body = document.getElementById('docBody'); if(!body) return;
+  body.innerHTML = DOCS.map((d,i)=>`
     <tr>
       <td style="font-weight:600">${d.name}</td>
       <td>${d.deal}</td><td>${d.type}</td>
       <td><div class="conf-bar"><span style="width:${d.conf}%"></span></div> <span class="mono">${d.conf}%</span></td>
       <td><span class="pill ${statusCls[d.status]||'gray'}">${d.status}</span></td>
+      <td>${fzChip(d,i)}</td>
       <td class="mono">${d.size}</td><td>${d.date}</td>
       <td><span class="row-x" style="cursor:pointer" onclick="deleteDoc(${i})">🗑</span></td>
     </tr>`).join('');
 }
 function uploadDocs(files){
-  [...files].forEach(f=>{
-    DOCS.unshift({name:f.name, deal:'D-891', type:'Unclassified', conf:0, status:'Processing', size:(f.size/1024).toFixed(0)+' KB', date:TODAY_STR});
-  });
+  const created = [...files].map(f=>{ const doc={name:f.name, deal:state.activeDeal||'D-891', type:'Unclassified', conf:0, status:'Processing', size:(f.size/1024).toFixed(0)+' KB', date:TODAY_STR, forensic:{status:null}}; DOCS.unshift(doc); return {doc, file:f}; });
   toast(files.length+' document(s) uploaded', 'ok');
   renderDocuments(document.getElementById('page-documents'));
+  created.forEach(({doc,file})=> scanDoc(doc, file));   // auto integrity scan
 }
 function deleteDoc(i){ const n=DOCS[i].name; DOCS.splice(i,1); toast(n+' deleted','info'); renderDocuments(document.getElementById('page-documents')); }
 function classifyAll(){
@@ -2089,6 +2141,196 @@ function classifyAll(){
     DOCS.forEach(d=>{ if(d.type==='Unclassified'){d.type='Bank Statement'; d.conf=92; d.status='Verified';} });
     hideLoader(); toast('All documents classified', 'ok'); renderDocuments(document.getElementById('page-documents'));
   }, 1400);
+}
+
+/* ============================================================
+   DOCUMENT FORENSICS / TAMPER-SIGNAL DETECTION
+   Server-side analysis via /api/forensics. Honest framing: detects
+   TAMPERING SIGNALS, never asserts "genuine"/"authentic".
+   ============================================================ */
+const FORENSIC_DISCLAIMER = 'Signal-based analysis. Absence of signals is not proof of authenticity. A clean result means no tampering indicators were found, not that the document is verified genuine.';
+
+// Lightweight audit trail (FORENSIC_RUN etc.) — also surfaced on the timeline.
+function auditLog(action, detail, actor, role){
+  if(!state.auditTrail) state.auditTrail = [];
+  state.auditTrail.unshift({ at:new Date().toISOString(), action, detail:detail||'', actor:actor||'Broker', role:role||'broker' });
+  if(state.auditTrail.length>200) state.auditTrail.pop();
+  logEvent((role==='ai'?'AI Forensics · ':'')+action.replace(/_/g,' ').toLowerCase()+(detail?' — '+detail:''));
+}
+
+const fzKind = (status)=> !status ? null : /SCAN/i.test(status) ? 'scanning' : /REVIEW/i.test(status) ? 'review' : /CAUTION/i.test(status) ? 'caution' : 'clear';
+function worstForensicStatus(dealId){
+  const fs = DOCS.filter(d=>d.deal===dealId && d.forensic && d.forensic.status);
+  if(fs.some(d=>/REVIEW/i.test(d.forensic.status))) return 'REVIEW';
+  if(fs.some(d=>/CAUTION/i.test(d.forensic.status))) return 'CAUTION';
+  if(fs.some(d=>/CLEAR/i.test(d.forensic.status))) return 'CLEAR';
+  return null;
+}
+function fzChip(doc, idx){
+  const f = doc.forensic;
+  if(!f || !f.status) return `<span class="fz-chip scanning" onclick="scanDocByIndex(${idx})" role="button">Scan</span>`;
+  const k = fzKind(f.status);
+  if(k==='scanning') return `<span class="fz-chip scanning"><span class="fz-spin"></span> Scanning…</span>`;
+  const high = (f.findings||[]).filter(x=>x.severity==='high').length;
+  const label = k==='clear' ? '✓ Clear' : k==='caution' ? '▲ Caution' : `⚠ Review${high?' ('+high+')':''}`;
+  return `<span class="fz-chip ${k}" onclick="openForensicPanel(${idx})" role="button">${label}</span>`;
+}
+
+// Demo mock — filename/type driven so the offline demo shows the full range.
+function mockForensicReport(name, type){
+  const n = (name||'').toLowerCase();
+  let status, findings = [];
+  if(/tax|noa/.test(n)){
+    status = 'REVIEW REQUIRED';
+    findings = [
+      {layer:'metadata', severity:'high', code:'META01', finding:'Produced by a known editing tool', detail:'PDF Producer string: "Adobe Photoshop". Bank/payroll PDFs are not legitimately produced by image editors.'},
+      {layer:'visual', severity:'high', code:'VIS01', finding:'Salary figure font weight differs from surrounding text', detail:'Area: income summary. The net income value is heavier than adjacent rows — a common overtyping signal.'}
+    ];
+  } else if(/deed|trust/.test(n)){
+    status = 'CAUTION';
+    findings = [{layer:'metadata', severity:'low', code:'META02', finding:'Modified after creation date', detail:'ModDate is 3 days after CreationDate — re-saved after initial export.'}];
+  } else {
+    status = 'CLEAR';
+  }
+  const integrity = status==='REVIEW REQUIRED' ? 'Tampering signals detected' : status==='CAUTION' ? 'Minor anomalies — verify manually' : 'No tampering signals detected';
+  return { fileName:name, status, integrity, findings, analysedAt:new Date().toISOString(), disclaimer:FORENSIC_DISCLAIMER, demo:true };
+}
+function mockCrossCheck(dealId){
+  return DEMO_CROSSCHECK[dealId] || { status:'CLEAR', integrity:'No tampering signals detected', findings:[], checked: DOCS.filter(d=>d.deal===dealId).length, analysedAt:new Date().toISOString(), disclaimer:FORENSIC_DISCLAIMER, demo:true };
+}
+
+// Live forensic call — PDF: send raw base64 (Layer 1) + rasterised PNGs (Layer 2); image: send the image.
+async function callForensics(file, dealId){
+  if(!aiLive()){ toast('Demo mode — sample forensic report. Connect backend for live analysis.', 'info'); return mockForensicReport(file.name, ''); }
+  let base64='', images=[];
+  try{
+    if(file.type==='application/pdf'){ base64 = await fileToB64(file); try{ images = await pdfToImages(file, 2); }catch(e){} }
+    else if(file.type && file.type.startsWith('image/')){ images = [{ media_type:file.type, data: await fileToB64(file) }]; }
+  }catch(e){}
+  let token=''; try{ const { data } = await sbClient.auth.getSession(); token = data && data.session && data.session.access_token; }catch(e){}
+  const res = await fetch('/api/forensics', { method:'POST', headers:{ 'content-type':'application/json', ...(token?{Authorization:'Bearer '+token}:{}) },
+    body: JSON.stringify({ fileName:file.name, mimeType:file.type, base64, images, dealId }) });
+  const out = await res.json();
+  if(!res.ok) throw new Error(out.error || 'forensics failed');
+  return out;
+}
+async function runCrossCheck(dealId){
+  if(!aiLive()) return mockCrossCheck(dealId);
+  const docs = DOCS.filter(d=>d.deal===dealId);
+  const deal = DEALS.find(x=>x.id===dealId);
+  const documents = [{ name:'Application', type:'Application', fields:{ declared_loan: state.calc.newLoan.amount, applicant: deal?deal.name:'' } }]
+    .concat(docs.map(d=>({ name:d.name, type:d.type, fields:d.extracted||{} })));
+  if(documents.length<2) return { status:'CLEAR', integrity:'No tampering signals detected', findings:[], checked:documents.length, disclaimer:FORENSIC_DISCLAIMER };
+  let token=''; try{ const { data } = await sbClient.auth.getSession(); token = data && data.session && data.session.access_token; }catch(e){}
+  const res = await fetch('/api/forensics', { method:'POST', headers:{ 'content-type':'application/json', ...(token?{Authorization:'Bearer '+token}:{}) },
+    body: JSON.stringify({ mode:'crosscheck', dealId, documents }) });
+  const out = await res.json();
+  if(!res.ok) throw new Error(out.error || 'crosscheck failed');
+  return out;
+}
+
+function refreshDocViews(){
+  const db = document.getElementById('docBody'); if(db) renderDocBody();
+  updateDealStrip(); updateCopilot();
+}
+async function scanDoc(doc, file){
+  if(!doc) return;
+  // Live re-scan without the original file: keep the prior real result rather than mock over it.
+  if(aiLive() && !file && doc.forensic && doc.forensic.status && !/SCAN/i.test(doc.forensic.status)){ refreshDocViews(); return; }
+  doc.forensic = Object.assign({}, doc.forensic, { status:'SCANNING' });
+  refreshDocViews();
+  let report = null;
+  if(aiLive() && file){ try{ report = await callForensics(file, doc.deal); }catch(e){ report = null; } }
+  if(!report) report = mockForensicReport(doc.name, doc.type);
+  doc.forensic = { status:report.status, integrity:report.integrity, findings:report.findings||[], scannedAt:report.analysedAt||new Date().toISOString(), reviewed:false, disclaimer:report.disclaimer||FORENSIC_DISCLAIMER, demo:report.demo };
+  auditLog('FORENSIC_RUN', doc.name+' → '+doc.forensic.status, 'AI Forensics', 'ai');
+  refreshDocViews();
+  return doc.forensic;
+}
+function scanDocByIndex(i){ scanDoc(DOCS[i]); }
+function scanAllDocs(dealId){
+  const docs = dealId ? DOCS.filter(d=>d.deal===dealId) : DOCS;
+  if(!docs.length){ toast('No documents to scan', 'info'); return; }
+  toast('Running integrity scan on '+docs.length+' document(s)…', 'info');
+  docs.forEach(d=> scanDoc(d));
+}
+
+/* ---------- Forensic report panel (reuses the slide-over #panel) ---------- */
+function openForensicPanel(i){
+  const doc = DOCS[i]; if(!doc) return;
+  document.getElementById('panelName').textContent = '🛡 Integrity report';
+  document.getElementById('panelId').textContent = doc.name;
+  document.getElementById('panelBody').innerHTML = renderForensicReport(doc, i);
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('panel').classList.add('show');
+}
+function renderForensicReport(doc, i){
+  const f = doc.forensic || {};
+  const k = fzKind(f.status) || 'clear';
+  const findings = f.findings || [];
+  const layers = [['metadata','Metadata & structure'],['visual','Visual / content'],['crosscheck','Cross-document']];
+  const grouped = layers.map(([key,label])=>{
+    const items = findings.filter(x=>x.layer===key);
+    if(!items.length) return '';
+    return `<div class="fz-flayer">${label}</div>` + items.map(x=>`
+      <div class="fz-finding ${x.severity}">
+        <div class="fz-fhead"><span class="fz-code">${x.code}</span><span class="fz-sev ${x.severity}">${x.severity}</span></div>
+        <div style="font-weight:600;font-size:13px">${x.finding}</div>
+        ${x.detail?`<div style="font-size:12px;color:var(--t3);margin-top:3px">${x.detail}</div>`:''}
+      </div>`).join('');
+  }).join('');
+  return `
+    <div style="text-align:center"><span class="fz-badge ${k}">${k==='clear'?'CLEAR':k==='caution'?'CAUTION':'REVIEW REQUIRED'}</span></div>
+    <p style="text-align:center;font-weight:700;font-size:15px;margin:10px 0 2px">${f.integrity||'No tampering signals detected'}</p>
+    ${f.demo?`<p style="text-align:center;font-size:11px;color:var(--t3)">Sample report (demo mode)</p>`:''}
+    <div class="fz-disc">${f.disclaimer||FORENSIC_DISCLAIMER}</div>
+    ${findings.length ? grouped : `<p style="color:var(--t2);font-size:13px;padding:6px 0">No tampering signals were found across metadata, visual and cross-document checks. This is not a guarantee of authenticity.</p>`}
+    ${/REVIEW/i.test(f.status||'') ? `<div class="fz-todo"><b>What to do:</b> Request the original document directly from the issuer or via CDR income verification before relying on this figure.</div>` : ''}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+      <button class="btn" onclick="rescanDoc(${i})">↻ Re-scan</button>
+      <button class="btn" onclick="markReviewed(${i})">${f.reviewed?'✓ Reviewed':'Mark reviewed'}</button>
+      <button class="btn" onclick="requestOriginal(${i})">Request original from client</button>
+    </div>`;
+}
+function rescanDoc(i){ scanDoc(DOCS[i]).then(()=> openForensicPanel(i)); toast('Re-scanning…', 'info'); }
+function markReviewed(i){ if(DOCS[i] && DOCS[i].forensic){ DOCS[i].forensic.reviewed=true; auditLog('FORENSIC_REVIEWED', DOCS[i].name, 'Broker','broker'); toast('Marked reviewed', 'ok'); openForensicPanel(i); } }
+function requestOriginal(i){ if(!DOCS[i]) return; toast('Request sent to client for the original document', 'ok'); auditLog('REQUEST_ORIGINAL', DOCS[i].name, 'Broker','broker'); }
+
+/* ---------- Cross-document consistency view ---------- */
+function consistencySectionHTML(dealId){
+  const docs = DOCS.filter(d=>d.deal===dealId);
+  if(!dealId || docs.length<2) return '';
+  return `<div class="card" style="padding:18px;margin-top:18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+      <div><h3 style="font-size:15px;font-weight:700">Cross-document consistency</h3>
+        <p style="font-size:12.5px;color:var(--t3)">Catches fabrication that survives single-document analysis — figures that don't match across this file's ${docs.length} documents.</p></div>
+      <button class="btn primary" onclick="runConsistencyUI('${dealId}')">Run consistency check</button>
+    </div>
+    <div id="xckOut" style="margin-top:14px"></div>
+  </div>`;
+}
+async function runConsistencyUI(dealId){
+  const out = document.getElementById('xckOut');
+  if(out) out.innerHTML = '<p style="color:var(--t3);font-size:13px">Checking…</p>';
+  let rep;
+  try{ rep = await runCrossCheck(dealId); }
+  catch(e){ if(out) out.innerHTML = '<p style="color:var(--red);font-size:13px">Consistency check failed.</p>'; return; }
+  auditLog('CROSSCHECK_RUN', dealId+' → '+(rep.status||'CLEAR'), 'AI Forensics', 'ai');
+  if(!out) return;
+  const cons = rep.findings || [];
+  const disc = `<div class="fz-disc">${rep.disclaimer||FORENSIC_DISCLAIMER}</div>`;
+  const demoTag = rep.demo ? ' <span style="font-size:11px;color:var(--t3)">(demo mode)</span>' : '';
+  if(!cons.length){
+    out.innerHTML = disc + `<p style="color:var(--green);font-weight:700;font-size:13px">✓ All documents consistent — figures cross-checked across ${rep.checked||DOCS.filter(d=>d.deal===dealId).length} documents.${demoTag}</p>`;
+    return;
+  }
+  out.innerHTML = disc + cons.map(c=>`
+    <div class="xck-row">
+      <div><div class="xck-val">${c.value_a||'—'}</div><div class="xck-src">${c.source_a||''}</div></div>
+      <div class="xck-vs">vs<br><span class="fz-sev ${c.severity}">${c.severity}</span></div>
+      <div><div class="xck-val">${c.value_b||'—'}</div><div class="xck-src">${c.source_b||''}</div></div>
+      <div style="grid-column:1/-1;font-size:12px;color:var(--t2);margin-top:4px">${c.finding}: ${c.detail||''}</div>
+    </div>`).join('') + demoTag;
 }
 
 /* ============================================================
@@ -3058,7 +3300,10 @@ function updateDealStrip(){
   document.getElementById('dsStatus').innerHTML = s ? `<span class="pill ${s.cls}" style="margin-left:8px">${s.label}</span>` : '';
   const r = computeServiceability();
   const dsrColor = r.dsr < activeDsrMax()*0.8 ? 'var(--green)' : r.dsr < activeDsrMax() ? 'var(--amber)' : 'var(--red)';
+  const worst = worstForensicStatus(d.id);
+  const fzDot = worst ? `<span class="ds-metric" title="Document integrity: ${worst}" style="display:inline-flex;align-items:center;gap:6px"><span class="fz-dot ${fzKind(worst)}"></span>Integrity</span>` : '';
   document.getElementById('dsMetrics').innerHTML = `
+    ${fzDot}
     <span class="ds-metric" style="color:${dsrColor}">DSR ${r.dsr.toFixed(1)}%</span>
     <span class="ds-metric" style="color:${r.ndi>=0?'var(--green)':'var(--red)'}">NDI ${fmtMoney(r.ndi)}/mo</span>
     <span class="ds-metric" style="color:${r.dti<=6?'var(--green)':r.dti<=9?'var(--amber)':'var(--red)'}">DTI ${r.dti.toFixed(1)}x</span>
@@ -3085,6 +3330,12 @@ function generateCopilotInsights(){
   const deal = DEALS.find(d=>d.id===state.activeDeal);
   const dealDocs = DOCS.filter(d=>d.deal===state.activeDeal);
   if(deal && dealDocs.length===0) insights.push({ type:'error', icon:'📎', text:'No documents uploaded', action:{ label:'Upload', fn:`goTab('documents')` } });
+  if(deal && dealDocs.length){
+    const worst = worstForensicStatus(state.activeDeal);
+    if(worst==='REVIEW'){ const n = dealDocs.filter(d=>d.forensic && /REVIEW/i.test(d.forensic.status||'')).length; insights.push({ type:'urgent', icon:'⚠', text:`Document integrity: ${n} document(s) need review`, action:{ label:'Review', fn:`goTab('documents')` } }); }
+    else if(worst==='CAUTION') insights.push({ type:'warning', icon:'▲', text:'Document integrity: minor anomalies to verify', action:{ label:'Open', fn:`goTab('documents')` } });
+    else if(worst==='CLEAR') insights.push({ type:'success', icon:'✓', text:'All documents passed integrity scan' });
+  }
   const hasSelfEmp = state.calc.entities.some(e=> e.incomes.some(i=> i.type==='self_emp'));
   if(hasSelfEmp && pol && pol.self_employed_min_years) insights.push({ type:'info', icon:'ℹ', text:`${pol.label}: ${pol.self_employed_min_years}yr self-employed docs required` });
   if(r.lvr>90) insights.push({ type:'warning', icon:'⚠', text:`LVR ${r.lvr.toFixed(1)}% — LMI required` });

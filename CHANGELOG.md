@@ -1,5 +1,41 @@
 # DebtIQ v6 — Changelog
 
+## Round (fraud) — document integrity / tamper detection
+
+The wedge feature: tamper-signal detection no AU broker tool ships. All analysis
+runs **server-side** via a new `/api/forensics` Netlify function (Supabase-JWT
+gated, key never in the browser), with a full demo-mode mock fallback.
+
+**Backend (`netlify/functions/forensics.js` → `/api/forensics`)** — three layers:
+1. **PDF metadata/structure forensics (pure JS, no AI):** edit-tool Producer/Creator
+   detection (META01), modified-after-creation (META02), `%%EOF` revision count
+   (META03), `/TouchUp_TextEdit` traces (META04), mixed embedded/system fonts
+   (META05), stripped metadata (META06).
+2. **AI visual forensics (Claude vision):** misaligned baselines, font-weight
+   changes, cloning/whiteout, failed arithmetic (YTD/net/running-balance),
+   impossible dates — returns JSON observations + arithmetic_checks.
+3. **Cross-document consistency (`mode:'crosscheck'`):** contradictions across the
+   file's extracted figures (income vs payslip vs NOA vs salary credits, etc).
+   Scoring → CLEAR / CAUTION / REVIEW REQUIRED.
+
+**Honesty rule:** never renders "Genuine"/"Authentic" — only "No tampering signals
+detected" with a disclaimer that absence of signals is not proof of authenticity.
+
+**Client + UI:** `callForensics(file,dealId)` (PDF → raw base64 for Layer 1 +
+`pdfToImages` PNGs for Layer 2), `runCrossCheck(dealId)`, `auditLog('FORENSIC_RUN')`.
+Auto-scan on upload; an **Integrity column** in the Documents table (✓ Clear /
+▲ Caution / ⚠ Review); a slide-over **forensic report** (findings grouped by
+Metadata/Visual/Cross-document with severity + mono code chips, always-on
+disclaimer, a "what to do" box on REVIEW, and Re-scan/Mark-reviewed/Request-original
+actions); a **Consistency** section showing conflicting values side-by-side; copilot
+integrity insights; a deal-strip integrity dot; and "Scan all" buttons on the
+Documents tab + copilot. Demo seeds vary the demo docs (payslip CLEAR, trust deed
+CAUTION/META02, tax return REVIEW/META01+visual) and a D-889 cross-check discrepancy.
+
+**Verification:** `node --check` clean on `index.html` + `forensics.js`; jsdom smoke
+**51/51 green**, incl. asserting "Genuine"/"Authentic" never appear as a status and
+the disclaimer is present on every report.
+
 ## Round 7 — Floating Policy & Rates drawer (per-file)
 
 - **`#policyDrawer`** — a floating, collapsible panel on the right edge that shows
