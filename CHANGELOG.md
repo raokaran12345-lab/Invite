@@ -1,5 +1,27 @@
 # DebtIQ v6 — Changelog
 
+## Round 7 — Floating Policy & Rates drawer (per-file)
+
+- **`#policyDrawer`** — a floating, collapsible panel on the right edge that shows
+  the **lender policy + rate comparison for the file currently being lodged**.
+  Reuses the engine's `rankLenders()` so it is fully contextual to the active deal:
+  each Australian lender's **buffer, assessed rate, borrowing capacity, OK/FAIL
+  verdict and policy edge**, sorted by approvability then capacity, with the
+  recommended lender (★) and the currently-selected lender highlighted, plus a
+  **policy-detail card** for the active lender (LVR caps, DSR ceiling, genuine
+  savings, self-employed minimum, HECS rule, submission channel, key notes).
+- **Expand / contract:** collapsed it is a thin `⚖ Policy & Rates` handle on the
+  right edge (`togglePolicyDrawer`); expanded it slides out at 440px and a `⤢`
+  control widens it to ~720px (`togglePolicyWide`). Header shows the deal id/name.
+- **Live:** refreshes alongside the deal strip + copilot — wired into
+  `updateStatusStrip()` and `renderWorkspace()`, so it tracks every calculator
+  edit, lender switch and tab change. `Use` on any row switches the assessed lender.
+- Sits below modals/overlays (z-index 650) so it never blocks the wizard/settings.
+
+**Verification:** `node --check` clean; jsdom smoke harness **38/38 green** (7 new
+drawer checks: collapsed→expand, file context, lender rows with assessed rate +
+verdict, policy-detail card, widen, contract).
+
 ## Round 6 — UI architecture rebuild (single-canvas operating system)
 
 Replaced the entire shell, layout and navigation model. **No financial engine,

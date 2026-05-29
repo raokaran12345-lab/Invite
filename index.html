@@ -263,6 +263,24 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
 .settings-panel{background:var(--surface);border-radius:24px;width:min(720px,92vw);max-height:88vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.3);animation:slideUp .3s cubic-bezier(.22,1,.36,1)}
 .settings-head{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:2}
 
+/* Floating Policy & Rates drawer (per-file lender policy + rates) */
+.pd-handle{position:fixed;top:50%;right:0;transform:translateY(-50%);z-index:651;background:var(--brand-grad);color:#fff;border:none;cursor:pointer;writing-mode:vertical-rl;padding:18px 9px;border-radius:12px 0 0 12px;font-weight:700;font-size:12px;letter-spacing:.07em;box-shadow:var(--sh-brand);transition:.15s}
+.pd-handle:hover{filter:brightness(1.08)}
+.pd-handle.hidden{display:none}
+#policyDrawer{position:fixed;top:var(--cmdbar-h);bottom:var(--timeline-h);right:0;width:0;background:var(--surface);border-left:1px solid var(--border);box-shadow:-12px 0 40px rgba(0,0,0,.16);z-index:650;display:flex;flex-direction:column;overflow:hidden;transition:width .28s cubic-bezier(.22,1,.36,1)}
+#policyDrawer.open{width:min(440px,96vw)}
+#policyDrawer.open.wide{width:min(720px,96vw)}
+.pd-head{flex-shrink:0;padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;white-space:nowrap}
+.pd-title{font-size:14px;font-weight:800}
+.pd-sub{font-size:11px;color:var(--t3)}
+.pd-btns{margin-left:auto;display:flex;gap:6px}
+.pd-icon{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--bg);cursor:pointer;color:var(--t2);font-size:15px;display:flex;align-items:center;justify-content:center}
+.pd-icon:hover{background:var(--brand-bg);color:var(--brand)}
+.pd-body{flex:1;overflow-y:auto;padding:14px 16px}
+.pd-ctx{font-size:12px;color:var(--t2);background:var(--bg);border-radius:10px;padding:9px 11px;margin-bottom:12px;line-height:1.6}
+.pd-row-best td{background:rgba(5,150,105,.07)}
+.pd-row-cur td{box-shadow:inset 3px 0 0 var(--brand)}
+
 .page-head{margin-bottom:20px}
 .page-head h1{font-size:22px;font-weight:800}
 .page-head p{color:var(--t3);margin-top:3px}
@@ -695,6 +713,22 @@ tr:last-child td{border-bottom:none}
     <span id="tlEvents"></span>
   </div>
 
+  <!-- FLOATING POLICY & RATES DRAWER (per-file lender policy + rates) -->
+  <button class="pd-handle" id="pdHandle" onclick="togglePolicyDrawer()" aria-label="Open policy and rates">⚖ Policy &amp; Rates</button>
+  <div id="policyDrawer" aria-label="Lender policy and rates for this file">
+    <div class="pd-head">
+      <div>
+        <div class="pd-title">Policy &amp; Rates</div>
+        <div class="pd-sub" id="pdSub">—</div>
+      </div>
+      <div class="pd-btns">
+        <button class="pd-icon" id="pdWideBtn" onclick="togglePolicyWide()" title="Expand / contract width" aria-label="Toggle width">⤢</button>
+        <button class="pd-icon" onclick="togglePolicyDrawer()" title="Collapse" aria-label="Collapse">×</button>
+      </div>
+    </div>
+    <div class="pd-body" id="pdBody"></div>
+  </div>
+
   <!-- SETTINGS OVERLAY -->
   <div id="settingsOverlay" class="settings-overlay" onclick="if(event.target===this)closeSettings()">
     <div class="settings-panel">
@@ -1009,6 +1043,7 @@ function renderWorkspace(page){
   (WS_RENDERERS[page] || renderDashboard)(document.getElementById('page-'+page));
   updateDealStrip();
   updateCopilot();
+  renderPolicyDrawer();
 }
 
 // Back-compat shim — every existing navigate('x') still works.
@@ -1039,7 +1074,7 @@ function setMarket(code){
    ============================================================ */
 // Status strip reimagined: live metrics now live in the Deal Strip + Copilot.
 // Every existing updateStatusStrip() call refreshes both.
-function updateStatusStrip(){ updateDealStrip(); updateCopilot(); }
+function updateStatusStrip(){ updateDealStrip(); updateCopilot(); renderPolicyDrawer(); }
 
 /* ============================================================
    SERVICEABILITY COMPUTATION
@@ -3092,6 +3127,60 @@ async function submitCopilotQuery(){
   if(log) log.scrollTop = log.scrollHeight;
 }
 function showLenderCompare(){ renderWorkspace('compare'); }
+
+/* ---------- Floating Policy & Rates drawer (contextual to the file being lodged) ---------- */
+let policyDrawerOpen = false, policyDrawerWide = false;
+function togglePolicyDrawer(){
+  policyDrawerOpen = !policyDrawerOpen;
+  const d = document.getElementById('policyDrawer'), h = document.getElementById('pdHandle');
+  if(d) d.classList.toggle('open', policyDrawerOpen);
+  if(h) h.classList.toggle('hidden', policyDrawerOpen);
+  if(policyDrawerOpen) renderPolicyDrawer();
+}
+function togglePolicyWide(){
+  policyDrawerWide = !policyDrawerWide;
+  const d = document.getElementById('policyDrawer');
+  if(d) d.classList.toggle('wide', policyDrawerWide);
+}
+function renderPolicyDrawer(){
+  if(!policyDrawerOpen) return;
+  const body = document.getElementById('pdBody'); if(!body) return;
+  const deal = DEALS.find(x=>x.id===state.activeDeal);
+  const sub = document.getElementById('pdSub');
+  if(sub) sub.textContent = deal ? `${deal.id} · ${deal.name}` : 'Current calculation';
+  const loan = parseFloat(state.calc.newLoan.amount)||0, term = state.calc.newLoan.term;
+  const rows = rankLenders();
+  const recommended = rows.find(x=>x.serviceable);
+  const pol = activePolicy();
+  body.innerHTML = `
+    <div class="pd-ctx">Assessing <b>${fmtMoney(loan)}</b> over <b>${term} yrs</b> · ${m().flag} ${m().label}${deal?` · <b>${deal.type}</b>`:''}<br>
+      Active lender: <b>${pol?pol.label:state.lender}</b> · buffer ${(activeBuffer()*100).toFixed(0)}% · sorted by approvability then capacity.</div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Lender</th><th>Buffer</th><th>Assessed</th><th>Capacity</th><th>Verdict</th><th></th></tr></thead>
+      <tbody>${rows.map(x=>`
+        <tr class="${x===recommended?'pd-row-best':''} ${x.l===state.lender?'pd-row-cur':''}">
+          <td style="font-weight:700"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${x.color||'var(--brand)'};margin-right:6px"></span>${x.label}${x===recommended?' ★':''}<div style="font-weight:500;color:var(--t3);font-size:10.5px">${x.isAdi?'ADI':'Non-bank'}</div></td>
+          <td class="mono">${(x.buffer*100).toFixed(0)}%</td>
+          <td class="mono">${x.aRate.toFixed(2)}%</td>
+          <td class="mono">${x.capacity!=null?fmtMoney(x.capacity):'—'}</td>
+          <td><span class="pill ${x.serviceable?'green':'red'}">${x.serviceable?'OK':'FAIL'}</span></td>
+          <td><button class="mini-btn" onclick="useLender('${x.l}')">Use</button></td>
+        </tr>
+        ${x.edge?`<tr><td colspan="6" style="padding:0 6px 8px 22px;color:var(--t2);font-size:11px;border-bottom:1px solid var(--border)">${x.edge}</td></tr>`:''}`).join('')}
+      </tbody>
+    </table></div>
+    ${pol?`<div class="card" style="padding:14px;margin-top:14px">
+      <div style="font-weight:700;margin-bottom:8px">${pol.label} — policy detail</div>
+      <div class="detail-row"><span class="dl">Type</span><span class="dv">${pol.apra_regulated?'ADI (APRA)':'Non-bank'}</span></div>
+      <div class="detail-row"><span class="dl">Buffer / DSR ceiling</span><span class="dv mono">${(pol.buffer*100).toFixed(0)}% / ${pol.dsr_max}%</span></div>
+      <div class="detail-row"><span class="dl">Max LVR (OO P&amp;I)</span><span class="dv mono">${pol.max_lvr_owner_occ_pi||'—'}%</span></div>
+      <div class="detail-row"><span class="dl">Genuine savings</span><span class="dv">${pol.genuine_savings_required?('>'+(pol.genuine_savings_threshold_lvr||85)+'% LVR'):'Not required'}</span></div>
+      ${pol.self_employed_min_years?`<div class="detail-row"><span class="dl">Self-employed</span><span class="dv">${pol.self_employed_min_years}yr min</span></div>`:''}
+      ${pol.income_shading&&pol.income_shading.hecs?`<div class="detail-row"><span class="dl">HECS rule</span><span class="dv">${pol.income_shading.hecs==='exclude_under_20k'?'Ignored if < $20k':'Excluded if repayable <12mo'}</span></div>`:''}
+      <div class="detail-row"><span class="dl">Submission</span><span class="dv" style="font-size:12px">${pol.submission_channel||'—'}</span></div>
+      ${pol.notes&&pol.notes.length?`<ul style="margin:9px 0 0;padding-left:16px;color:var(--t2);font-size:11.5px;line-height:1.6">${pol.notes.slice(0,3).map(n=>`<li>${n}</li>`).join('')}</ul>`:''}
+    </div>`:'<p style="color:var(--t3);font-size:12px;margin-top:12px">Per-lender policy detail is available for Australian lenders.</p>'}`;
+}
 
 /* ---------- Live timeline ---------- */
 let timelineExpanded = false;
