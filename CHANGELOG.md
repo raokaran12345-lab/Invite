@@ -43,6 +43,11 @@ insights for reviews, conflicts and **missing document types** by deal type
 **Demo (Part 8):** demo docs are pre-classified/extracted with provenance; a D-889
 income conflict is seeded; bulk-drop animates the full pipeline offline.
 
+**Hardening:** uploaded filenames and extracted values are user-controlled, so all
+render paths that emit them (document table, provenance badges, conflict cards,
+review workspace) now escape via `escHtml` (HTML) / `escArg` (onclick JS-string +
+attribute), closing a markup/onclick-injection vector flagged in review.
+
 **Verification:** `node --check` clean on `index.html`, `classify.js`, `extract.js`,
 `forensics.js`; jsdom smoke **69/69 green** (bulk ingest + concurrency, pipeline
 stages, classification, typed extraction w/ confidence+source_text, reconciliation

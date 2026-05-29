@@ -2150,10 +2150,10 @@ function renderDocBody(){
   const body = document.getElementById('docBody'); if(!body) return;
   body.innerHTML = DOCS.map((d,i)=>`
     <tr>
-      <td style="font-weight:600">${d.name}</td>
-      <td>${d.deal}</td><td>${d.type}</td>
+      <td style="font-weight:600">${escHtml(d.name)}</td>
+      <td>${escHtml(d.deal)}</td><td>${escHtml(d.type)}</td>
       <td><div class="conf-bar"><span style="width:${d.conf}%"></span></div> <span class="mono">${d.conf}%</span></td>
-      <td><span class="pill ${statusCls[d.status]||'gray'}">${d.status}</span></td>
+      <td><span class="pill ${statusCls[d.status]||'gray'}">${escHtml(d.status)}</span></td>
       <td>${fzChip(d,i)}</td>
       <td class="mono">${d.size}</td><td>${d.date}</td>
       <td><span class="row-x" style="cursor:pointer" onclick="deleteDoc(${i})">🗑</span></td>
@@ -2396,6 +2396,10 @@ const EXTRACT_SCHEMAS = {
   rental_statement: ['property_address','managing_agent','gross_rent','frequency','management_fee','net_rent','period'],
   existing_loan_statement: ['lender','account_number','limit','current_balance','interest_rate','repayment','frequency','io_expiry','loan_type']
 };
+// Escape user-controlled strings (filenames, extracted values) for safe rendering.
+function escHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// For a value placed inside a single-quoted JS string within a double-quoted HTML attribute (onclick handlers).
+function escArg(s){ return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/[&"<>]/g, c=>({'&':'&amp;','"':'&quot;','<':'&lt;','>':'&gt;'}[c])); }
 const wait = ms => new Promise(r=>setTimeout(r, ms));
 function freqMult(freq){ const f=(freq||'').toLowerCase(); if(/fortn/.test(f)) return 26; if(/week/.test(f)) return 52; if(/month/.test(f)) return 12; if(/year|ann/.test(f)) return 1; if(/quarter/.test(f)) return 4; return 12; }
 const numOf = v => { const n=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
@@ -2590,7 +2594,7 @@ function showProv(docName, field){
   const p=collectProvenance().find(x=>x.doc===docName && x.field===field) || { doc:docName, field };
   toast(`from ${p.doc} · "${p.source_text||'—'}" · ${p.confidence||0}% confidence${p.verified?(' · verified '+(p.verifiedAt||'')):''}`, 'info');
 }
-function provBadge(prov){ if(!prov) return ''; return ` <span class="prov" role="button" title="Source: ${prov.doc}" onclick="event.stopPropagation();showProv('${(prov.doc||'').replace(/'/g,'')}','${(prov.field||'').replace(/'/g,'')}')">ⓘ</span>`; }
+function provBadge(prov){ if(!prov) return ''; return ` <span class="prov" role="button" title="Source: ${escHtml(prov.doc)}" onclick="event.stopPropagation();showProv('${escArg(prov.doc)}','${escArg(prov.field)}')">ⓘ</span>`; }
 
 /* ---------- missing-document intelligence ---------- */
 const REQUIRED_DOCS={ base:['payslip','bank_statement','id_document'], selfEmployed:['tax_return','noa','company_financials'], investment:['rental_statement'] };
@@ -2636,10 +2640,10 @@ function conflictsHTML(dealId){
     <h3 style="font-size:15px;font-weight:700;margin-bottom:4px">Conflicts to resolve</h3>
     <p style="font-size:12.5px;color:var(--t3);margin-bottom:12px">Two documents disagree — choose the authoritative source (logged to the audit trail). Values are not overwritten silently.</p>
     ${cs.map(c=>`<div class="xck-row">
-      <div><div class="xck-val">${c.value_a}</div><div class="xck-src">${c.source_a}</div><button class="mini-btn" style="margin-top:6px" onclick="resolveConflict('${dealId}','${(c.field||'').replace(/'/g,'')}','a')">Use this</button></div>
+      <div><div class="xck-val">${escHtml(c.value_a)}</div><div class="xck-src">${escHtml(c.source_a)}</div><button class="mini-btn" style="margin-top:6px" onclick="resolveConflict('${escArg(dealId)}','${escArg(c.field)}','a')">Use this</button></div>
       <div class="xck-vs">vs<br><span class="fz-sev ${c.severity}">${c.severity}</span></div>
-      <div><div class="xck-val">${c.value_b}</div><div class="xck-src">${c.source_b}</div><button class="mini-btn" style="margin-top:6px" onclick="resolveConflict('${dealId}','${(c.field||'').replace(/'/g,'')}','b')">Use this</button></div>
-      <div style="grid-column:1/-1;font-size:12px;color:var(--t2);margin-top:4px">${c.field}${c.pct?` — ${c.pct}% discrepancy`:''}</div>
+      <div><div class="xck-val">${escHtml(c.value_b)}</div><div class="xck-src">${escHtml(c.source_b)}</div><button class="mini-btn" style="margin-top:6px" onclick="resolveConflict('${escArg(dealId)}','${escArg(c.field)}','b')">Use this</button></div>
+      <div style="grid-column:1/-1;font-size:12px;color:var(--t2);margin-top:4px">${escHtml(c.field)}${c.pct?` — ${c.pct}% discrepancy`:''}</div>
     </div>`).join('')}
   </div>`;
 }
@@ -2669,13 +2673,13 @@ function renderReview(el){
       <button class="btn" onclick="trustAllHighConf()">Trust all high-confidence</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
-      ${docs.map((d,i)=>`<button class="chip ${i===state.reviewDoc?'active':''}" onclick="state.reviewDoc=${i};renderWorkspace('review')">${d.reviewed?'✓ ':''}${d.name}</button>`).join('')}
+      ${docs.map((d,i)=>`<button class="chip ${i===state.reviewDoc?'active':''}" onclick="state.reviewDoc=${i};renderWorkspace('review')">${d.reviewed?'✓ ':''}${escHtml(d.name)}</button>`).join('')}
     </div>
     <div class="rev-split">
       <div class="card" style="padding:0;overflow:hidden">
         <div class="rev-docprev">
           <div style="text-align:center"><div style="font-size:46px;opacity:.2">${dt.icon||'📄'}</div>
-          <div style="font-weight:700;margin-top:8px">${doc.name}</div>
+          <div style="font-weight:700;margin-top:8px">${escHtml(doc.name)}</div>
           <div style="color:var(--t3);font-size:12px;margin-top:4px">${dt.label||'Document'} · ${doc.classified?doc.classified.confidence:0}% classified</div>
           <div style="color:var(--t3);font-size:11px;margin-top:12px">Document preview (demo mode)</div></div>
         </div>
@@ -2686,11 +2690,11 @@ function renderReview(el){
           <h3 style="font-size:14px;font-weight:700;margin-bottom:10px">Extracted fields — click a value's quote to see its source</h3>
           ${Object.entries(doc.extracted.fields).map(([k,v])=>{ const conf=(v&&v.confidence)||0; const low=conf<80; return `
             <div class="rev-field ${low?'low':''}">
-              <label>${k.replace(/_/g,' ')}${low?' <span style="color:var(--amber)">⚠ low</span>':''}</label>
-              <input value="${v&&v.value!=null?String(v.value).replace(/"/g,'&quot;'):''}" onchange="editExtract('${doc.name}','${k}',this.value)">
-              <div class="rev-meta"><div class="conf-bar"><span style="width:${conf}%"></span></div><span class="mono">${conf}%</span>${v&&v.source_text?`<span class="rev-src" onclick="toast('Read from: ${(v.source_text||'').replace(/'/g,'').replace(/"/g,'')}','info')">“${(v.source_text||'').slice(0,30)}”</span>`:''}</div>
+              <label>${escHtml(k.replace(/_/g,' '))}${low?' <span style="color:var(--amber)">⚠ low</span>':''}</label>
+              <input value="${escHtml(v&&v.value!=null?v.value:'')}" onchange="editExtract('${escArg(doc.name)}','${escArg(k)}',this.value)">
+              <div class="rev-meta"><div class="conf-bar"><span style="width:${conf}%"></span></div><span class="mono">${conf}%</span>${v&&v.source_text?`<span class="rev-src" onclick="toast('Read from: ${escArg((v.source_text||'').slice(0,120))}','info')">“${escHtml((v.source_text||'').slice(0,30))}”</span>`:''}</div>
             </div>`; }).join('')}
-          <div style="margin-top:14px"><button class="btn primary" onclick="approveDoc('${doc.name}')">${doc.reviewed?'✓ Approved':'Approve extraction'}</button></div>
+          <div style="margin-top:14px"><button class="btn primary" onclick="approveDoc('${escArg(doc.name)}')">${doc.reviewed?'✓ Approved':'Approve extraction'}</button></div>
         </div>
       </div>
     </div>`;
