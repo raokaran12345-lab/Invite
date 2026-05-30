@@ -1,5 +1,55 @@
 # DebtIQ v6 — Changelog
 
+## Round (lender side · Pass 4) — Provenance reveals (worksheet + submission pack)
+
+Both sides now see the same evidence the broker built. Every figure in
+the worksheet (and in the Submission Pack) reveals its source on hover
+or focus — no toast, no modal, no extra navigation.
+
+- **New `provReveal(value, prov)` primitive.** Wraps a numeric/text
+  value in a focusable `<span>` (`tabindex="0"`,
+  `aria-describedby="pr-tt-N"`). A pure-CSS popover anchored above the
+  value shows:
+  - Source document name (`MITCHELL_PAYSLIP_01.PDF`)
+  - Source field (`gross_period`, mono)
+  - Source-text quote (serif italic, "Gross (annualised) $142,000")
+  - Confidence percentage with a verified flag where present
+    (`97% confidence · Verified 2026-05-20`, green)
+- **System-source variant** for engine/policy values that aren't
+  document-backed (buffer, HEM benchmark, ratio ceilings, loan amount,
+  contract rate). Same chassis, slate-italic source line, brass dotted
+  underline so the assessor can tell at a glance which figures are
+  doc-backed and which are policy/engine.
+- **Wired into the worksheet:**
+  - Step 1 — declared income per line (doc prov on file, fallback to
+    "Applicant declaration" otherwise).
+  - Step 2 — liability balance per line (same fallback rule).
+  - Step 3 — buffer percentage (system: lender policy) +
+    loan amount (application) + contract rate (lender pricing).
+  - Step 4 — HEM benchmark (system: Melbourne Institute table).
+  - Step 6 — each policy ceiling (system: `activePolicy()`).
+- **Wired into the Submission Pack** (`buildPackHTML`). Same prov CSS
+  inlined into the pack's stylesheet so the standalone HTML stays
+  self-contained. Income FY-current and liability balance/limit
+  columns both trigger the reveal.
+- **Keyboard-accessible, not hover-only.** `tabindex="0"` makes every
+  wrapper tab-reachable; the popover opens on `:focus`,
+  `:focus-within`, and `:hover`; `aria-describedby` points to the
+  popover with `role="tooltip"`; reduced-motion neutralises the
+  opacity transition.
+- **Clipping fixed**: `.ws-table td`, `.ws-ratio td`, and the
+  `.ac-card` shells set `overflow:visible` so the popover renders
+  above the table edge.
+- **Smoke harness +10 checks** (188/188 total): doc-prov on income
+  row, doc-prov on liability row, system-prov on policy values,
+  keyboard accessibility attributes, `role="tooltip"`, confidence text,
+  verified flag, pack inlines prov CSS, pack income + liability
+  rows use provReveal.
+
+Files touched: `index.html` (CSS for `.prov-*` + JS `provReveal()` +
+worksheet wiring + pack wiring + pack CSS). No backend, schema, or
+`lenders.js` changes.
+
 ## Round (lender side · Pass 3) — Serviceability Worksheet (line-for-line working)
 
 The centrepiece of the lender side — an exhaustive, traceable view of

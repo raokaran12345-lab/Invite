@@ -1260,6 +1260,49 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
 #calcWorking.open{display:block;}
 
 /* ============================================================
+   PASS 4 — PROVENANCE REVEALS
+   Wraps any figure so hover/focus surfaces its source doc + confidence.
+   Keyboard-accessible (tabindex=0, aria-describedby → tooltip).
+   Pure-CSS popover so the same markup also drops into the
+   self-contained Submission Pack document.
+   ============================================================ */
+.prov-reveal{position:relative;display:inline;cursor:help;border-bottom:1px dotted rgba(59,111,181,.45);}
+.prov-reveal.system{border-bottom-color:rgba(138,130,112,.45);}
+.prov-reveal .prov-ind{font-family:var(--mono);font-size:9.5px;color:var(--steel);margin-left:3px;opacity:.65;font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:0;}
+.prov-reveal.system .prov-ind{color:var(--t3);}
+.prov-reveal:focus{outline:none;}
+.prov-reveal:focus-visible{box-shadow:0 0 0 2px rgba(59,111,181,.35);border-radius:2px;background:rgba(59,111,181,.06);}
+.prov-pop{
+  position:absolute;bottom:100%;left:50%;transform:translateX(-50%) translateY(-8px);
+  background:var(--ink);color:#fff;padding:11px 14px;border-radius:6px;
+  font-family:var(--sans);font-style:normal;font-size:11.5px;line-height:1.45;
+  width:280px;text-align:left;
+  opacity:0;pointer-events:none;transition:opacity .14s;
+  z-index:1000;
+  box-shadow:0 8px 24px rgba(15,23,42,.18);
+}
+.prov-reveal:hover .prov-pop,
+.prov-reveal:focus .prov-pop,
+.prov-reveal:focus-within .prov-pop{opacity:1;pointer-events:auto;}
+.prov-pop-doc{display:block;font-weight:700;color:#fff;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;}
+.prov-pop-field{display:block;font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.55);margin-top:1px;letter-spacing:.04em;}
+.prov-pop-text{display:block;font-family:var(--serif);font-style:italic;color:rgba(255,255,255,.88);margin-top:7px;font-size:12px;}
+.prov-pop-meta{display:block;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:10.5px;color:rgba(255,255,255,.62);margin-top:8px;padding-top:6px;border-top:1px solid rgba(255,255,255,.14);}
+.prov-pop-verified{color:#9FE0BB;}
+.prov-pop-low{color:#F4D193;}
+.prov-pop-system{color:rgba(167,194,232,.85);font-family:var(--serif);font-style:italic;}
+.prov-pop::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--ink);}
+/* Don't let a clipping ancestor (table cell, scrollable card) hide the popover. */
+.ws-table td,.ws-ratio td,.ws-stat,.ws-hem-cell,.ac-card{overflow:visible;}
+@media (max-width:760px){
+  .prov-pop{width:240px;left:auto;right:0;transform:translateY(-8px);}
+  .prov-pop::after{left:auto;right:18px;transform:none;}
+}
+@media (prefers-reduced-motion: reduce){
+  .prov-pop{transition:none !important;}
+}
+
+/* ============================================================
    Global reduced-motion override — neutralise page animations.
    ============================================================ */
 @media (prefers-reduced-motion: reduce){
@@ -4643,6 +4686,30 @@ td.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-num
 tr:last-child td{border-bottom:none}
 tr.total td{border-top:1.5px solid var(--ink);border-bottom:none;font-weight:700;color:var(--t1);padding-top:9px}
 
+/* Provenance reveals — same primitive used in the live worksheet. */
+.prov-reveal{position:relative;display:inline;cursor:help;border-bottom:1px dotted rgba(59,111,181,.45);}
+.prov-reveal.system{border-bottom-color:rgba(138,130,112,.45);}
+.prov-reveal .prov-ind{font-family:var(--mono);font-size:8pt;color:var(--steel);margin-left:3px;opacity:.65;font-weight:600;}
+.prov-reveal.system .prov-ind{color:var(--t3);}
+.prov-reveal:focus{outline:none;}
+.prov-reveal:focus-visible{box-shadow:0 0 0 2px rgba(59,111,181,.35);border-radius:2px;background:rgba(59,111,181,.06);}
+.prov-pop{position:absolute;bottom:100%;left:50%;transform:translateX(-50%) translateY(-8px);
+  background:var(--ink);color:#fff;padding:11px 14px;border-radius:6px;font-style:normal;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:10pt;line-height:1.45;
+  width:280px;text-align:left;opacity:0;pointer-events:none;transition:opacity .14s;z-index:1000;
+  box-shadow:0 8px 24px rgba(15,23,42,.18);}
+.prov-reveal:hover .prov-pop,
+.prov-reveal:focus .prov-pop,
+.prov-reveal:focus-within .prov-pop{opacity:1;pointer-events:auto;}
+.prov-pop-doc{display:block;font-weight:700;color:#fff;font-size:9pt;letter-spacing:.06em;text-transform:uppercase;}
+.prov-pop-field{display:block;font-family:var(--mono);font-size:8.5pt;color:rgba(255,255,255,.55);margin-top:1px;letter-spacing:.04em;}
+.prov-pop-text{display:block;font-family:var(--serif);font-style:italic;color:rgba(255,255,255,.88);margin-top:7px;font-size:10.5pt;}
+.prov-pop-meta{display:block;font-family:var(--mono);font-size:9pt;color:rgba(255,255,255,.62);margin-top:8px;padding-top:6px;border-top:1px solid rgba(255,255,255,.14);}
+.prov-pop-verified{color:#9FE0BB;}
+.prov-pop-system{color:rgba(167,194,232,.85);font-family:var(--serif);font-style:italic;}
+.prov-pop::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--ink);}
+td,th{overflow:visible;}
+
 .kv{display:grid;grid-template-columns:1fr 1fr;gap:18px 32px}
 .kv-row{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line)}
 .kv-row:last-child{border-bottom:none}
@@ -4792,7 +4859,8 @@ ${((state.calc.securities||[]).length||totalSec>0) ? `<section class="section">
       <thead><tr><th>Income type</th><th class="right">FY current</th><th class="right">FY prior</th><th class="right">Shade</th><th class="right">Assessed</th></tr></thead>
       <tbody>
         ${(e.incomes||[]).map(inc=>{ const shaded=getShadedIncome(inc,state.lender); const raw=parseFloat(inc.amount_y1||inc.amount)||0; const pct=raw>0?Math.round(shaded/raw*100):100;
-          return `<tr><td>${esc(INCOME_TYPES[inc.type]||inc.type)}</td><td class="num">${fmtMoney(inc.amount_y1||inc.amount||0)}</td><td class="num">${inc.amount_y2?fmtMoney(inc.amount_y2):'—'}</td><td class="num">${pct}%</td><td class="num" style="font-weight:600">${fmtMoney(shaded)}</td></tr>${inc.type==='self_emp'&&(inc.addback_depreciation||inc.addback_interest||inc.addback_lease)?`<tr><td colspan="5" class="serif-italic" style="padding-left:14px;color:var(--t2);font-size:10pt;border-bottom:1px dotted var(--line)">Add-backs: depreciation ${fmtMoney(inc.addback_depreciation||0)} · interest ${fmtMoney(inc.addback_interest||0)} · lease ${fmtMoney(inc.addback_lease||0)} less business loan repayments ${fmtMoney(inc.business_loan_repayments||0)}.</td></tr>`:''}`;}).join('')}
+          const fyCurProv = inc._prov || { system:true, doc:'Applicant declaration', source:'Entered on the file — no source document linked yet.' };
+          return `<tr><td>${esc(INCOME_TYPES[inc.type]||inc.type)}</td><td class="num">${provReveal(fmtMoney(inc.amount_y1||inc.amount||0), fyCurProv)}</td><td class="num">${inc.amount_y2?fmtMoney(inc.amount_y2):'—'}</td><td class="num">${pct}%</td><td class="num" style="font-weight:600">${fmtMoney(shaded)}</td></tr>${inc.type==='self_emp'&&(inc.addback_depreciation||inc.addback_interest||inc.addback_lease)?`<tr><td colspan="5" class="serif-italic" style="padding-left:14px;color:var(--t2);font-size:10pt;border-bottom:1px dotted var(--line)">Add-backs: depreciation ${fmtMoney(inc.addback_depreciation||0)} · interest ${fmtMoney(inc.addback_interest||0)} · lease ${fmtMoney(inc.addback_lease||0)} less business loan repayments ${fmtMoney(inc.business_loan_repayments||0)}.</td></tr>`:''}`;}).join('')}
         <tr class="total"><td colspan="4">Total assessed annual income</td><td class="num">${fmtMoney((e.incomes||[]).reduce((s,inc)=>s+getShadedIncome(inc,state.lender),0))}</td></tr>
       </tbody>
     </table>
@@ -4806,7 +4874,9 @@ ${((state.calc.securities||[]).length||totalSec>0) ? `<section class="section">
     ${(e.liabilities||[]).length===0?'<p class="serif-italic" style="color:var(--t3);font-size:10pt">No liabilities declared.</p>':`<table>
       <thead><tr><th>Type</th><th class="right">Balance / Limit</th><th class="right">Rate</th><th class="right">Term</th><th class="right">Assessed</th></tr></thead>
       <tbody>
-        ${(e.liabilities||[]).map(l=>{ const a=assessLiability(l,pol?pol.buffer:0.03); return `<tr><td>${esc(LIAB_TYPES[l.type]||l.type)}</td><td class="num">${fmtMoney(l.balance||0)}</td><td class="num">${(l.rate||0).toFixed(2)}%</td><td class="num">${l.term||'—'} yrs</td><td class="num" style="font-weight:600">${fmtMoney(a)}/mo</td></tr>`;}).join('')}
+        ${(e.liabilities||[]).map(l=>{ const a=assessLiability(l,pol?pol.buffer:0.03);
+          const balProv = l._prov || { system:true, doc:'Applicant declaration', source:'Entered on the file — no source document linked yet.' };
+          return `<tr><td>${esc(LIAB_TYPES[l.type]||l.type)}</td><td class="num">${provReveal(fmtMoney(l.balance||0), balProv)}</td><td class="num">${(l.rate||0).toFixed(2)}%</td><td class="num">${l.term||'—'} yrs</td><td class="num" style="font-weight:600">${fmtMoney(a)}/mo</td></tr>`;}).join('')}
         <tr class="total"><td colspan="4">Total monthly commitments</td><td class="num">${fmtMoney((e.liabilities||[]).reduce((s,l)=>s+assessLiability(l,pol?pol.buffer:0.03),0))}/mo</td></tr>
       </tbody>
     </table>`}
@@ -6037,6 +6107,37 @@ function renderAssessAudit(){
 }
 
 /* ============================================================
+   PASS 4 — PROVENANCE REVEAL PRIMITIVE
+   Wraps a numeric/text value with a hover + focus reveal of its
+   source document, source quote, and extraction confidence. For
+   policy/engine values (no document), use provReveal with a
+   `system: true` source object.
+   ============================================================ */
+let _provReveal_n = 0;
+function provReveal(value, prov){
+  if(!prov) return value;
+  _provReveal_n++;
+  const id = 'pr-tt-'+_provReveal_n;
+  const sys = !!prov.system;
+  const confTone = (prov.confidence||0) >= 80 ? '' : 'prov-pop-low';
+  const verifiedFrag = prov.verified
+    ? ` · <span class="prov-pop-verified">Verified${prov.verifiedAt?(' '+escHtml(prov.verifiedAt)):''}</span>`
+    : '';
+  const metaLine = sys
+    ? `<span class="prov-pop-meta prov-pop-system">${escHtml(prov.source||'Engine / policy source')}</span>`
+    : (typeof prov.confidence==='number'
+        ? `<span class="prov-pop-meta"><span class="${confTone}">${prov.confidence||0}% confidence</span>${verifiedFrag}</span>`
+        : `<span class="prov-pop-meta">Source-traced.</span>`);
+  return `<span class="prov-reveal${sys?' system':''}" tabindex="0" aria-describedby="${id}">${value}<span class="prov-ind" aria-hidden="true">ⓘ</span>` +
+    `<span class="prov-pop" id="${id}" role="tooltip">` +
+      `<span class="prov-pop-doc">${escHtml(prov.doc||prov.source||'Source')}</span>` +
+      (prov.field?`<span class="prov-pop-field">${escHtml(prov.field)}</span>`:'') +
+      (prov.source_text?`<span class="prov-pop-text">"${escHtml(prov.source_text)}"</span>`:'') +
+      metaLine +
+    `</span></span>`;
+}
+
+/* ============================================================
    PASS 3 — SERVICEABILITY WORKSHEET
    Generated entirely from computeServiceability() and the same
    primitives the engine uses — getShadedIncome, assessLiability,
@@ -6106,7 +6207,8 @@ function buildWorksheetData(){
         entity:e.name, kind:inc.type, label:INCOME_TYPES[inc.type]||inc.type,
         declared, averaging:!!inc.use_average,
         amount_y1: parseFloat(inc.amount_y1)||0, amount_y2: parseFloat(inc.amount_y2)||0,
-        shadePct, shaded, assessed, weight:w
+        shadePct, shaded, assessed, weight:w,
+        prov: inc._prov || null
       });
     });
   });
@@ -6123,7 +6225,8 @@ function buildWorksheetData(){
       liabRows.push({
         entity:e.name, kind:l.type, label:LIAB_TYPES[l.type]||l.type,
         balance: parseFloat(l.balance)||0, rate: parseFloat(l.rate)||0,
-        term: parseFloat(l.term)||0, monthly, excl
+        term: parseFloat(l.term)||0, monthly, excl,
+        prov: l._prov || null
       });
     });
   });
@@ -6229,16 +6332,19 @@ function renderWsStep1(d){
     const shaded = row.shadePct < 1;
     const ent = (state.calc.entities.find(e=>e.name===row.entity)||{});
     const w = entityWeight(ent);
-    const declaredText = row.averaging && row.amount_y2
+    const declaredRaw = row.averaging && row.amount_y2
       ? `${fmtMoney(row.amount_y1)} & ${fmtMoney(row.amount_y2)} avg`
       : fmtMoney(row.declared);
+    // Provenance: source document if extracted/verified, else fall back to an applicant-declared synthetic source.
+    const declaredProv = row.prov || { system:true, doc:'Applicant declaration', source:'Entered by broker on the file — no source document linked yet.' };
+    const declaredText = provReveal(declaredRaw, declaredProv);
     const annot = shaded
       ? `<span class="ws-rule amber">Shaded to ${(row.shadePct*100).toFixed(0)}% — ${shadeRuleNote(row.kind, d.policy)}</span>`
       : `<span class="ws-rule">Full credit — no shading rule applies.</span>`;
     const ownership = w<1 ? ` <span class="ws-rule">× ${Math.round(w*100)}% ownership</span>` : '';
     return `<tr class="${shaded?'ws-shaded':''}">
       <td class="label">
-        <span data-prov="income" data-entity="${escArg(row.entity)}" data-kind="${escArg(row.kind)}">${esc(row.label)}</span>
+        ${esc(row.label)}
         <span class="ws-rule">${esc(row.entity)}${ownership}</span>
         ${annot}
       </td>
@@ -6290,12 +6396,14 @@ function renderWsStep2(d){
     const formula = liabFormulaText(row, d.buffer);
     const afterExcl = Math.max(0, row.monthly - (row.excl||0));
     const stressed = row.kind!=='credit_card' && row.kind!=='hecs';
+    const balanceProv = row.prov || { system:true, doc:'Applicant declaration', source:'Entered by broker on the file — no source document linked yet.' };
+    const balanceText = provReveal(fmtMoney(row.balance), balanceProv);
     return `<tr class="${stressed?'ws-shaded':''}">
       <td class="label">
-        <span data-prov="liability" data-entity="${escArg(row.entity)}" data-kind="${escArg(row.kind)}">${esc(row.label)}</span>
+        ${esc(row.label)}
         <span class="ws-rule">${esc(row.entity)} · ${esc(annot)}</span>
       </td>
-      <td class="num">${fmtMoney(row.balance)}</td>
+      <td class="num">${balanceText}</td>
       <td class="num">${row.rate?row.rate.toFixed(2)+'%':'—'}</td>
       <td class="num">${row.term?row.term+'y':'—'}</td>
       <td class="num">${fmtMoney(afterExcl)}/mo</td>
@@ -6324,6 +6432,10 @@ function renderWsStep2(d){
 }
 
 function renderWsStep3(d){
+  const dealLabel = state.activeDeal || 'this file';
+  const loanProv  = { system:true, doc:'Loan application', source:`Loan amount captured on the application for ${dealLabel}.` };
+  const rateProv  = { system:true, doc:'Lender pricing', source:`Contract rate as priced by ${d.policy?d.policy.label:lenderLabel(d.lender)} on this file.` };
+  const bufferProv= { system:true, doc:'Lender policy', source:`${d.policy?d.policy.label:lenderLabel(d.lender)} — ${(d.buffer*100).toFixed(0)}% APRA assessment buffer (activeBuffer()).` };
   return `<section class="ws-step">
     <header class="ws-step-head">
       <span class="ws-step-num">3</span>
@@ -6331,11 +6443,11 @@ function renderWsStep3(d){
       <span class="ws-step-sub">Contract rate + active lender buffer.</span>
     </header>
     <div class="ws-loan-grid">
-      <div class="ws-stat"><div class="ws-stat-label">Loan amount</div><div class="ws-stat-value">${fmtMoney(d.amount)}</div><div class="ws-stat-sub">Over ${d.term} years.</div></div>
-      <div class="ws-stat"><div class="ws-stat-label">Contract rate</div><div class="ws-stat-value">${d.contractRate.toFixed(2)}%</div><div class="ws-stat-sub">As priced by the lender.</div></div>
+      <div class="ws-stat"><div class="ws-stat-label">Loan amount</div><div class="ws-stat-value">${provReveal(fmtMoney(d.amount), loanProv)}</div><div class="ws-stat-sub">Over ${d.term} years.</div></div>
+      <div class="ws-stat"><div class="ws-stat-label">Contract rate</div><div class="ws-stat-value">${provReveal(d.contractRate.toFixed(2)+'%', rateProv)}</div><div class="ws-stat-sub">As priced by the lender.</div></div>
     </div>
     <div class="ws-formula amber">
-      <b>${d.contractRate.toFixed(2)}%</b> <span class="ws-op">+</span> buffer <b>${(d.buffer*100).toFixed(2)}%</b> <span class="ws-op">=</span>
+      <b>${d.contractRate.toFixed(2)}%</b> <span class="ws-op">+</span> buffer <b>${provReveal((d.buffer*100).toFixed(2)+'%', bufferProv)}</b> <span class="ws-op">=</span>
       <b>Assessment rate ${d.assessedRate.toFixed(2)}%</b>
       <span class="res">PMT(${fmtMoney(d.amount)}, ${d.assessedRate.toFixed(2)}%, ${d.term}y) = ${fmtMoney(d.stressedPMT)}/mo</span>
     </div>
@@ -6344,6 +6456,7 @@ function renderWsStep3(d){
 }
 
 function renderWsStep4(d){
+  const hemProv = { system:true, doc:'Melbourne Institute HEM', source:`HEM benchmark — ${d.household} · income band ${d.band}. Engine: getHEM(grossAnnualHousehold, adults, dependants).` };
   const declaredCell = d.declaredExpensesMonthly!=null
     ? `<div class="ws-hem-cell"><div class="lbl">Declared monthly</div><div class="val">${fmtMoney(d.declaredExpensesMonthly)}</div></div>`
     : `<div class="ws-hem-cell"><div class="lbl">Declared monthly</div><div class="val" style="color:var(--t3-cool);font-style:italic;font-family:var(--serif);font-size:13px">— not declared —</div></div>`;
@@ -6360,7 +6473,7 @@ function renderWsStep4(d){
       <div class="ws-hem-cell"><div class="lbl">Household</div><div class="val">${esc(d.household)}</div></div>
       <div class="ws-hem-cell"><div class="lbl">Income band</div><div class="val">${esc(d.band)}</div></div>
       ${declaredCell}
-      <div class="ws-hem-cell floor"><div class="lbl">HEM benchmark</div><div class="val">${fmtMoney(d.HEM)}/mo</div></div>
+      <div class="ws-hem-cell floor"><div class="lbl">HEM benchmark</div><div class="val">${provReveal(fmtMoney(d.HEM)+'/mo', hemProv)}</div></div>
     </div>
     <div class="ws-formula">
       getHEM(<b>${fmtMoney(d.r.shadedAnnual)}</b>/yr, <b>${d.adults}</b> adult${d.adults>1?'s':''}, <b>${d.deps}</b> dep${d.deps===1?'':'s'}) <span class="ws-op">=</span> <b>${fmtMoney(d.HEM)}/mo</b>
@@ -6442,11 +6555,13 @@ function renderWsStep6(d){
       kind: r.dti < d.dtiCeil*0.85 ? 'pass' : r.dti <= d.dtiCeil ? 'borderline' : 'fail'
     }
   ];
+  const policyLabel = d.policy?d.policy.label:lenderLabel(d.lender);
+  const ceilProv = (ratio, val)=>({ system:true, doc:'Lender policy', source:`${policyLabel} — ${ratio} ceiling ${val} (from activePolicy()).` });
   return `<section class="ws-step">
     <header class="ws-step-head">
       <span class="ws-step-num">6</span>
       <span class="ws-step-title">Policy ratios</span>
-      <span class="ws-step-sub">Live ceilings from <b>${esc(d.policy?d.policy.label:lenderLabel(d.lender))}</b>.</span>
+      <span class="ws-step-sub">Live ceilings from <b>${esc(policyLabel)}</b>.</span>
     </header>
     <table class="ws-ratio">
       <thead><tr><th>Ratio</th><th>Formula</th><th class="num">Result</th><th class="num">Ceiling</th><th class="num">Headroom</th></tr></thead>
@@ -6455,7 +6570,7 @@ function renderWsStep6(d){
           <td class="ws-r-name">${esc(rw.name)}</td>
           <td class="ws-r-formula">${esc(rw.formula)}</td>
           <td class="num result">${rw.resultText}</td>
-          <td class="num">${rw.ceilText}</td>
+          <td class="num">${provReveal(rw.ceilText, ceilProv(rw.name, rw.ceilText))}</td>
           <td class="num"><span class="ws-r-head ${rw.kind==='fail'?'red':rw.kind==='borderline'?'amber':''}">${rw.headroom==null?'—':rw.headFmt(rw.headroom)}</span></td>
         </tr>`).join('')}
       </tbody>
