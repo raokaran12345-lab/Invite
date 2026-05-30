@@ -263,6 +263,16 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
 .settings-panel{background:var(--surface);border-radius:24px;width:min(720px,92vw);max-height:88vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.3);animation:slideUp .3s cubic-bezier(.22,1,.36,1)}
 .settings-head{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:2}
 
+/* Wizard step 1 — grouped lender list */
+.lender-group-head{font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px}
+.lender-tile .ts{font-size:11px}
+
+/* Floating "reopen deal" pill (visible when activeDeal set + panel closed) */
+.deal-pill{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:600;background:var(--brand-grad);color:#fff;border:none;cursor:pointer;padding:14px 10px;border-radius:14px 0 0 14px;font-weight:700;font-size:12.5px;letter-spacing:.02em;box-shadow:var(--sh-2);max-width:200px;text-align:left;line-height:1.3;transition:filter .15s}
+.deal-pill:hover{filter:brightness(1.08)}
+.deal-pill .dp-arrow{margin-right:4px;opacity:.85}
+.deal-pill .dp-id{display:block;font-size:10px;font-weight:600;opacity:.85;margin-top:2px}
+
 /* Floating Policy & Rates drawer (per-file lender policy + rates) */
 .pd-handle{position:fixed;top:50%;right:0;transform:translateY(-50%);z-index:651;background:var(--brand-grad);color:#fff;border:none;cursor:pointer;writing-mode:vertical-rl;padding:18px 9px;border-radius:12px 0 0 12px;font-weight:700;font-size:12px;letter-spacing:.07em;box-shadow:var(--sh-brand);transition:.15s}
 .pd-handle:hover{filter:brightness(1.08)}
@@ -705,6 +715,7 @@ tr:last-child td{border-bottom:none}
   <!-- DEAL STRIP (hidden until a deal is active) -->
   <div id="dealStrip" style="display:none">
     <button class="deal-back" onclick="clearActiveDeal()" aria-label="Back to pipeline">←</button>
+    <button class="deal-back" onclick="togglePanel()" aria-label="Open deal details" title="Open deal details">⛶</button>
     <span id="dsId" class="ds-id"></span>
     <span class="ds-sep">·</span>
     <span id="dsName" class="ds-name"></span>
@@ -761,6 +772,9 @@ tr:last-child td{border-bottom:none}
     <span class="tl-label">Timeline</span>
     <span id="tlEvents"></span>
   </div>
+
+  <!-- FLOATING REOPEN PILL — visible when a deal is active and the panel is closed -->
+  <button id="dealPill" class="deal-pill" style="display:none" onclick="togglePanel()" aria-label="Reopen deal panel"></button>
 
   <!-- FLOATING POLICY & RATES DRAWER (per-file lender policy + rates) -->
   <button class="pd-handle" id="pdHandle" onclick="togglePolicyDrawer()" aria-label="Open policy and rates">⚖ Policy &amp; Rates</button>
@@ -954,10 +968,12 @@ const state = {
   wizData:{lender:null, dealType:null, propValue:1000000},
   calc:{
     entities:[
-      {name:'Primary Borrower', open:true,
+      {id:'e_1', kind:'individual', name:'Primary Borrower', role:'borrower', abn:'', trustee_name:'',
+       ownership_pct:100, included:true, open:true,
        incomes:[{type:'salary_ft', amount:142000, amount_y1:142000, amount_y2:138000, use_average:false, evidence_years:2}],
        liabilities:[{type:'credit_card', balance:15000, rate:21.9, term:0}]}
     ],
+    securities:[],         // multi-security model; falls back to wizData.propValue when empty
     dependants:0,
     adults:1,
     newLoan:{amount:785000, rate:6.24, term:30}
@@ -1142,33 +1158,79 @@ function setMarket(code){
 function updateStatusStrip(){ updateDealStrip(); updateCopilot(); renderPolicyDrawer(); }
 
 /* ============================================================
+   MULTI-ENTITY + MULTI-SECURITY HELPERS
+   ============================================================ */
+const ENTITY_KINDS = { individual:'Individual', joint:'Joint', company:'Company', trust:'Trust', smsf:'SMSF', partnership:'Partnership' };
+const ENTITY_ROLES = { borrower:'Borrower', 'co-borrower':'Co-borrower', guarantor:'Guarantor', trustee:'Trustee', director:'Director' };
+const PROP_TYPES = ['House','Unit/Apartment','Townhouse','Land','Rural','Commercial','Off-the-plan'];
+const PROP_PURPOSES = ['Owner Occupied','Investment'];
+const PROP_TXN = ['Purchasing','Refinancing','Owned (additional security)'];
+const PROP_BASIS = ['Applicant Estimate','Contract of Sale','Certified Valuation','AVM'];
+const PROP_ZONING = ['Residential','Commercial','Rural'];
+const FREQ_OPTS = ['Weekly','Monthly','Yearly'];
+const AU_STATES = ['NSW','VIC','QLD','WA','SA','TAS','ACT','NT'];
+
+function newEntity(kind){
+  return { id:'e_'+Math.random().toString(36).slice(2,8), kind:kind||'individual', name:'',
+    role:'borrower', abn:'', trustee_name:'', ownership_pct:100, included:true, open:true,
+    incomes:[{type:'salary_ft', amount:0, amount_y1:0, amount_y2:0, use_average:false, evidence_years:2}],
+    liabilities:[] };
+}
+function newSecurity(){
+  return { id:'s_'+Math.random().toString(36).slice(2,8), address:'', suburb:'', state:'NSW', postcode:'',
+    property_type:'House', purpose:'Owner Occupied', transaction:'Purchasing',
+    value:0, value_basis:'Applicant Estimate', zoning:'Residential',
+    first_mortgage:true, existing_mortgage:0, existing_lender:'',
+    rental_income:0, rental_frequency:'Weekly',
+    owner_entity_id:null, title:{ folio:'', section:'', block:'' } };
+}
+// Each entity contributes a weight: 0 if excluded, else ownership_pct/100 (default 100%).
+function entityWeight(ent){ if(!ent || ent.included===false) return 0; const p=parseFloat(ent.ownership_pct); return isNaN(p)?1:Math.max(0,Math.min(1,p/100)); }
+// Sum across active securities; fall back to wizData.propValue when securities[] is empty.
+function totalSecurityValue(){
+  const secs=state.calc.securities||[];
+  const sum=secs.reduce((s,x)=>s+(parseFloat(x.value)||0),0);
+  if(sum>0) return sum;
+  return parseFloat(state.wizData.propValue)||0;
+}
+function existingPropertyDebt(){
+  return (state.calc.securities||[]).reduce((s,x)=>s+(parseFloat(x.existing_mortgage)||0),0);
+}
+
+/* ============================================================
    SERVICEABILITY COMPUTATION
    ============================================================ */
 function computeServiceability(){
   const buffer = activeBuffer(), mk = m(), dsrMax = activeDsrMax();
   let shadedAnnual = 0, totalLiab = 0, existingDebt = 0;
   const breakdown = {};
-  // First pass for income (needed to evaluate the income-based HECS exclusion).
-  state.calc.entities.forEach(ent=> ent.incomes.forEach(inc=>{
-    const shaded = getShadedIncome(inc);
-    shadedAnnual += shaded;
-    breakdown[inc.type] = (breakdown[inc.type]||0) + shaded;
-  }));
+  // Each entity contributes weighted by entityWeight (skips excluded; applies ownership %).
+  state.calc.entities.forEach(ent=>{
+    const w=entityWeight(ent); if(!w) return;
+    ent.incomes.forEach(inc=>{
+      const shaded = getShadedIncome(inc) * w;
+      shadedAnnual += shaded;
+      breakdown[inc.type] = (breakdown[inc.type]||0) + shaded;
+    });
+  });
   const income = shadedAnnual/12;
-  state.calc.entities.forEach(ent=> ent.liabilities.forEach(l=>{
-    let assessed = assessLiability(l, buffer);
-    if(l.type==='hecs') assessed -= hecsExclusion(l, income);  // lender HECS rule
-    existingDebt += Math.max(0, assessed);
-    totalLiab += parseFloat(l.balance)||0;
-  }));
+  state.calc.entities.forEach(ent=>{
+    if(!entityWeight(ent)) return;
+    ent.liabilities.forEach(l=>{
+      let assessed = assessLiability(l, buffer);
+      if(l.type==='hecs') assessed -= hecsExclusion(l, income);  // lender HECS rule
+      existingDebt += Math.max(0, assessed);
+      totalLiab += parseFloat(l.balance)||0;
+    });
+  });
   const nl = state.calc.newLoan;
   const newLoanMo = PMT(parseFloat(nl.amount)||0, ((parseFloat(nl.rate)||0)+buffer*100)/100, parseFloat(nl.term)||30);
   const totalDebt = existingDebt + newLoanMo;
   const HEM = Math.max(getHEM(shadedAnnual, state.calc.adults||1, state.calc.dependants), income*0.28);
   const ndi = income - totalDebt - HEM;
   const dsr = income>0 ? totalDebt/income*100 : 0;
-  // LVR: new loan + existing property debt vs property value (assets)
-  const propValue = parseFloat(state.wizData.propValue)|| (parseFloat(nl.amount)/0.8) || 1;
+  // LVR uses aggregate security value (sum of securities[].value, fallback to wizData.propValue).
+  const propValue = totalSecurityValue() || (parseFloat(nl.amount)/0.8) || 1;
   const lvr = propValue>0 ? (parseFloat(nl.amount)||0)/propValue*100 : 0;
   // DTI: total debt balance (existing + new loan) vs gross shaded annual income (APRA 2026 cap).
   const dti = shadedAnnual>0 ? (totalLiab + (parseFloat(nl.amount)||0))/shadedAnnual : 0;
@@ -1289,10 +1351,26 @@ function openPanel(id){
   document.getElementById('overlay').classList.add('show');
   document.getElementById('panel').classList.add('show');
   renderPanel();
+  renderDealPill();
 }
 function closePanel(){
   document.getElementById('overlay').classList.remove('show');
   document.getElementById('panel').classList.remove('show');
+  renderDealPill();
+}
+function togglePanel(){
+  const p = document.getElementById('panel');
+  if(p && p.classList.contains('show')) closePanel();
+  else if(state.activeDeal) openPanel(state.activeDeal);
+}
+function renderDealPill(){
+  const pill = document.getElementById('dealPill'); if(!pill) return;
+  const d = DEALS.find(x=>x.id===state.activeDeal);
+  const panel = document.getElementById('panel');
+  const panelOpen = panel && panel.classList.contains('show');
+  if(!d || panelOpen){ pill.style.display='none'; return; }
+  pill.style.display='block';
+  pill.innerHTML = `<span class="dp-arrow">⟨</span> ${escHtml(d.name)}<span class="dp-id">${escHtml(d.id)} · ${escHtml((STATUS_META[d.status]||{}).label||'')}</span>`;
 }
 function renderPanel(){
   const d = DEALS.find(x=>x.id===state.activeDeal); if(!d) return;
@@ -1520,13 +1598,22 @@ function wizGo(dir){
   const host = document.getElementById('wizModalContent') || document.getElementById('page-wizard');
   if(host) renderWizard(host);
 }
+// Hide/show lender tiles by label/type — no re-render, so the search input keeps focus.
+function filterLenderTiles(q){
+  const term=(q||'').toLowerCase().trim();
+  document.querySelectorAll('#lenderTiles .lender-tile').forEach(el=>{
+    const tag=el.getAttribute('data-lender-tag')||'';
+    el.style.display = (!term || tag.indexOf(term)>=0) ? '' : 'none';
+  });
+}
+
 /* Update LVR badge in place so the input keeps focus while typing */
 function updateWizLVR(){
-  const pv = parseFloat(state.wizData.propValue)||0, amt = parseFloat(state.calc.newLoan.amount)||0;
-  const lvr = pv>0 ? (amt/pv*100) : 0;
+  const tv = totalSecurityValue(), amt = parseFloat(state.calc.newLoan.amount)||0;
+  const lvr = tv>0 ? (amt/tv*100) : 0;
   const color = lvr<=80?'var(--green)':lvr<=90?'var(--amber)':'var(--red)';
   const el = document.getElementById('wizLvr');
-  if(el){ el.textContent='LVR '+lvr.toFixed(1)+'%'; el.style.background=color+'1a'; el.style.color=color; }
+  if(el){ el.textContent='LVR '+lvr.toFixed(1)+'% · Loan '+fmtMoney(amt)+' / Security '+fmtMoney(tv); el.style.background=color+'1a'; el.style.color=color; }
 }
 // Checklist generator — selected lender's required docs, extended by deal type.
 function lenderChecklist(id, dealType){
@@ -1544,24 +1631,39 @@ function renderWizStep(){
   if(state.wizStep===1){
     const useDB = state.market==='AU' && Object.keys(lenderDB()).length;
     const lenderIds = useDB ? Object.keys(lenderDB()) : m().lenders;
-    const tiles = lenderIds.map(l=>{
+    // Show ALL lenders here — accreditation filtering belongs in the calculator/compare, not deal creation.
+    const tileFor = (l)=>{
       const p = useDB ? lenderDB()[l] : null;
-      const sub = p ? `${p.apra_regulated?'ADI':'Non-bank'} · ${(p.buffer*100).toFixed(0)}% buffer` : '';
-      return `<div class="tile ${d.lender===l?'sel':''}" onclick="state.wizData.lender='${l}';state.lender='${l}';renderWizStep()"><div class="tt">${p?(p.label||l):l}</div>${sub?`<div class="ts">${sub}</div>`:''}</div>`;
-    }).join('');
+      const type = p ? (p.apra_regulated?'ADI':'Non-bank') : '';
+      const buffer = p ? (p.buffer*100).toFixed(0)+'%' : '';
+      const maxLvr = p ? (p.max_lvr_owner_occ_pi||p.max_lvr_owner_occ||'')+'%' : '';
+      const tag = (type+' '+(p?(p.label||l):l)+' '+l).toLowerCase();
+      const meta = p ? `<div class="ts">${type} · <span title="Buffer = % added to the rate to stress-test repayments">${buffer} buffer</span> · max LVR ${maxLvr}</div>` : '';
+      return `<div class="tile lender-tile ${d.lender===l?'sel':''}" data-lender-tag="${escHtml(tag)}" data-lender-type="${type.toLowerCase()}" onclick="state.wizData.lender='${l}';state.lender='${l}';renderWizStep()"><div class="tt">${escHtml(p?(p.label||l):l)}</div>${meta}</div>`;
+    };
+    const adiIds = useDB ? lenderIds.filter(l=> lenderDB()[l] && lenderDB()[l].apra_regulated) : lenderIds;
+    const nbIds  = useDB ? lenderIds.filter(l=> lenderDB()[l] && !lenderDB()[l].apra_regulated) : [];
+    const sortByLabel = (a,b)=> ((lenderDB()[a]||{}).label||a).localeCompare((lenderDB()[b]||{}).label||b);
+    adiIds.sort(sortByLabel); nbIds.sort(sortByLabel);
+    const groupsHtml = useDB
+      ? `<div class="lender-group-head">Banks (ADI)</div><div class="tile-grid lender-group">${adiIds.map(tileFor).join('')}</div>
+         <div class="lender-group-head">Non-bank lenders</div><div class="tile-grid lender-group">${nbIds.map(tileFor).join('')}</div>`
+      : `<div class="tile-grid">${lenderIds.map(tileFor).join('')}</div>`;
     const pol = useDB ? lenderDB()[d.lender] : null;
     const reqCard = pol ? `<div class="card" style="padding:16px;margin-top:16px;border-left:4px solid ${pol.lender_color||'var(--brand)'}">
-        <div style="font-weight:700;margin-bottom:8px">${pol.label} — lender requirements</div>
-        <div class="detail-row"><span class="dl">Submission</span><span class="dv">${pol.submission_channel||'—'}</span></div>
+        <div style="font-weight:700;margin-bottom:8px">${escHtml(pol.label)} — lender requirements</div>
+        <div class="detail-row"><span class="dl">Submission</span><span class="dv">${escHtml(pol.submission_channel||'—')}</span></div>
         <div class="detail-row"><span class="dl">Conditional SLA</span><span class="dv">${pol.sla_conditional?pol.sla_conditional+' business days':'—'}</span></div>
         <div class="detail-row"><span class="dl">Buffer / Max DSR</span><span class="dv mono">${(pol.buffer*100).toFixed(0)}% / ${pol.dsr_max}%</span></div>
         <div class="detail-row"><span class="dl">Max LVR (OO P&I)</span><span class="dv mono">${pol.max_lvr_owner_occ_pi||'—'}%</span></div>
         <div class="detail-row"><span class="dl">Genuine savings</span><span class="dv">${pol.genuine_savings_required?('Required >'+(pol.genuine_savings_threshold_lvr||85)+'% LVR'):'Not required'}</span></div>
-        <ul style="margin:10px 0 0;padding-left:18px;color:var(--t2);font-size:12.5px">${(pol.notes||[]).slice(0,4).map(n=>`<li style="margin-bottom:3px">${n}</li>`).join('')}</ul>
+        <ul style="margin:10px 0 0;padding-left:18px;color:var(--t2);font-size:12.5px">${(pol.notes||[]).slice(0,4).map(n=>`<li style="margin-bottom:3px">${escHtml(n)}</li>`).join('')}</ul>
       </div>` : '';
-    html = `<div class="wiz-card active"><h3>Select Lender & Deal Type</h3><p class="desc">Choose the lender and product — policy loads from the lender database.</p>
+    html = `<div class="wiz-card active"><h3>Select Lender & Deal Type</h3><p class="desc">Choose the lender and product — policy loads from the lender database. All ${useDB?Object.keys(lenderDB()).length:lenderIds.length} ${useDB?'Australian ':''}lenders are shown.</p>
       <div class="subsec">Lender</div>
-      <div class="tile-grid">${tiles}</div>
+      <p style="font-size:12px;color:var(--t3);margin:-4px 0 10px;line-height:1.5"><b>Buffer</b> = the % added to the actual interest rate to stress-test repayments. APRA requires 3% for banks; some non-banks use 1–2%. <b>Lower buffer = higher borrowing capacity.</b></p>
+      <div style="margin-bottom:12px"><input id="lenderSearch" placeholder="Search lenders (e.g. CBA, Liberty, non-bank)…" oninput="filterLenderTiles(this.value)" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:var(--r-pill);font-size:13.5px;background:var(--bg)"></div>
+      <div id="lenderTiles">${groupsHtml}</div>
       <div class="subsec">Deal Type</div>
       <div class="tile-grid">${['Owner Occupier','Investment','First Home','SMSF','Commercial','Refinance'].map(t=>`<div class="tile ${d.dealType===t?'sel':''}" onclick="state.wizData.dealType='${t}';renderWizStep()"><div class="tt">${t}</div></div>`).join('')}</div>
       ${reqCard}
@@ -1577,21 +1679,61 @@ function renderWizStep(){
         <div class="inp"><label>Dependants</label><input type="number" value="2"></div>
       </div>${wizNav()}</div>`;
   } else if(state.wizStep===3){
-    html = `<div class="wiz-card active"><h3>Entity Structure</h3><p class="desc">Define borrowing entities and ownership.</p>
-      <div class="tile-grid">${['Individual','Joint','Company','Trust','SMSF','Partnership'].map(t=>`<div class="tile ${d.entity===t?'sel':''}" onclick="state.wizData.entity='${t}';renderWizStep()"><div class="tt">${t}</div></div>`).join('')}</div>
+    const ents = state.calc.entities;
+    const entCard = (ent, idx)=>{
+      const kindNeedsBiz = /trust|company|smsf|partnership/.test(ent.kind||'individual');
+      return `<div class="card" style="padding:14px 16px;margin-bottom:10px">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+          <select onchange="setEntityKind(${idx}, this.value)" style="padding:6px 9px;border:1px solid var(--border);border-radius:8px;font-weight:600">
+            ${Object.entries(ENTITY_KINDS).map(([k,l])=>`<option value="${k}" ${(ent.kind||'individual')===k?'selected':''}>${l}</option>`).join('')}
+          </select>
+          <input placeholder="${kindNeedsBiz?'Entity name':'Applicant name'}" value="${escHtml(ent.name||'')}" oninput="updateEntityField(${idx},'name',this.value)" style="flex:1;min-width:160px;padding:6px 10px;border:1px solid var(--border);border-radius:8px">
+          <select onchange="updateEntityField(${idx},'role',this.value)" style="padding:6px 9px;border:1px solid var(--border);border-radius:8px">
+            ${Object.entries(ENTITY_ROLES).map(([k,l])=>`<option value="${k}" ${(ent.role||'borrower')===k?'selected':''}>${l}</option>`).join('')}
+          </select>
+          ${ents.length>1?`<button onclick="removeEntity(${idx})" title="Remove entity" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:18px" aria-label="Remove">×</button>`:''}
+        </div>
+        ${kindNeedsBiz?`<div class="form-grid" style="margin-bottom:8px">
+          <div class="inp"><label>ABN</label><input value="${escHtml(ent.abn||'')}" oninput="updateEntityField(${idx},'abn',this.value)"></div>
+          <div class="inp"><label>${(ent.kind==='trust'||ent.kind==='smsf')?'Trustee':'Director / contact'}</label><input value="${escHtml(ent.trustee_name||'')}" oninput="updateEntityField(${idx},'trustee_name',this.value)"></div>
+        </div>`:''}
+        <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+          <label style="font-size:12px;color:var(--t2);display:flex;gap:6px;align-items:center">Ownership %
+            <input type="number" min="0" max="100" value="${ent.ownership_pct==null?100:ent.ownership_pct}" oninput="updateEntityField(${idx},'ownership_pct',+this.value)" style="width:70px;padding:4px 7px;border:1px solid var(--border);border-radius:7px"></label>
+          <label style="font-size:12px;color:var(--t2);display:flex;gap:6px;align-items:center">
+            <input type="checkbox" ${ent.included===false?'':'checked'} onchange="setEntityIncluded(${idx},this.checked)"> Include in serviceability
+          </label>
+          <span style="font-size:11.5px;color:var(--t3)">${(ent.incomes||[]).length} income · ${(ent.liabilities||[]).length} liability</span>
+          <a style="margin-left:auto;font-size:12px;color:var(--brand);cursor:pointer;font-weight:600" onclick="closeWizardModal();state.svcTab='detailed';navigate('serviceability')">Edit financials →</a>
+        </div>
+      </div>`;
+    };
+    html = `<div class="wiz-card active"><h3>Applicants &amp; entities</h3><p class="desc">Add every borrowing entity and guarantor. Real deals often have multiple — e.g. two individuals + a trust + its corporate trustee. The output stays a single consolidated verdict.</p>
+      ${ents.map(entCard).join('')}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px">
+        <button class="btn" onclick="addEntity('individual')">+ Individual</button>
+        <button class="btn" onclick="addEntity('joint')">+ Joint</button>
+        <button class="btn" onclick="addEntity('company')">+ Company</button>
+        <button class="btn" onclick="addEntity('trust')">+ Trust</button>
+        <button class="btn" onclick="addEntity('smsf')">+ SMSF</button>
+        <button class="btn" onclick="addEntity('partnership')">+ Partnership</button>
+      </div>
       ${wizNav()}</div>`;
   } else if(state.wizStep===4){
-    const nl = state.calc.newLoan, pv = parseFloat(d.propValue)||0;
-    const lvr = pv>0 ? ((parseFloat(nl.amount)||0)/pv*100) : 0;
+    const nl = state.calc.newLoan;
+    const tv = totalSecurityValue(), amt = parseFloat(nl.amount)||0;
+    const lvr = tv>0 ? (amt/tv*100) : 0;
     const lvrColor = lvr<=80?'var(--green)':lvr<=90?'var(--amber)':'var(--red)';
-    html = `<div class="wiz-card active"><h3>Loan Structure</h3><p class="desc">Writes straight into the calculator — no re-entry later.</p>
+    html = `<div class="wiz-card active"><h3>Securities &amp; loan</h3><p class="desc">Part A captures every property securing the loan (multi-security supported, like AOL). Part B is the loan structure. LVR uses the aggregate security value.</p>
+      <div class="subsec">Part A — Securities</div>
+      ${securitiesBuilderHTML()}
+      <div class="subsec" style="margin-top:16px">Part B — Loan structure</div>
       <div class="form-grid">
-        <div class="inp"><label for="wzPv">Property Value</label><input id="wzPv" type="number" value="${d.propValue}" oninput="state.wizData.propValue=+this.value;updateWizLVR()"></div>
-        <div class="inp"><label for="wzLoan">Loan Amount</label><input id="wzLoan" type="number" value="${nl.amount}" oninput="state.calc.newLoan.amount=+this.value;updateWizLVR()"></div>
-        <div class="inp"><label for="wzRate">Interest Rate (%)</label><input id="wzRate" type="number" step="0.01" value="${nl.rate}" oninput="state.calc.newLoan.rate=+this.value"></div>
-        <div class="inp"><label for="wzTerm">Term (years)</label><input id="wzTerm" type="number" value="${nl.term}" oninput="state.calc.newLoan.term=+this.value"></div>
+        <div class="inp"><label for="wzLoan">Loan amount (${m().sym})</label><input id="wzLoan" type="number" value="${nl.amount}" oninput="state.calc.newLoan.amount=+this.value;updateWizLVR();updateStatusStrip()"></div>
+        <div class="inp"><label for="wzRate">Interest rate (%)</label><input id="wzRate" type="number" step="0.01" value="${nl.rate}" oninput="state.calc.newLoan.rate=+this.value;updateStatusStrip()"></div>
+        <div class="inp"><label for="wzTerm">Term (years)</label><input id="wzTerm" type="number" value="${nl.term}" oninput="state.calc.newLoan.term=+this.value;updateStatusStrip()"></div>
       </div>
-      <div class="lvr-badge" id="wizLvr" style="background:${lvrColor}1a;color:${lvrColor}">LVR ${lvr.toFixed(1)}%</div>
+      <div class="lvr-badge" id="wizLvr" style="background:${lvrColor}1a;color:${lvrColor}">LVR ${lvr.toFixed(1)}% · Loan ${fmtMoney(amt)} / Security ${fmtMoney(tv)}</div>
       ${wizNav()}</div>`;
   } else if(state.wizStep===5){
     const docs = lenderChecklist(d.lender, d.dealType);
@@ -1625,7 +1767,7 @@ function renderWizStep(){
       <div class="detail-row"><span class="dl">Genuine savings</span><span class="dv">${pol.genuine_savings_required?('Required >'+(pol.genuine_savings_threshold_lvr||85)+'% LVR'):'Not required'}</span></div>
       <ul style="margin:10px 0 0;padding-left:18px;color:var(--t2);font-size:12.5px">${(pol.notes||[]).slice(0,3).map(n=>`<li style="margin-bottom:3px">${n}</li>`).join('')}</ul>` : '';
     html = `<div class="wiz-card active"><h3>Review & Submit</h3><p class="desc">Submission pack cover — verified against ${lenderName} policy.</p>
-      ${[['Lender selected', lenderName],['Deal type', d.dealType||'Owner Occupier'],['Loan amount', fmtMoney(state.calc.newLoan.amount)],['LVR', ((parseFloat(state.calc.newLoan.amount)||0)/(parseFloat(d.propValue)||1)*100).toFixed(1)+'%'],['Documents requested', lenderChecklist(d.lender,d.dealType).length+' items'],['Commentary generated','Complete']].map(r=>
+      ${[['Lender selected', lenderName],['Deal type', d.dealType||'Owner Occupier'],['Applicants/entities', state.calc.entities.length],['Securities', (state.calc.securities||[]).length||'1 implicit'],['Loan amount', fmtMoney(state.calc.newLoan.amount)],['LVR', ((parseFloat(state.calc.newLoan.amount)||0)/(totalSecurityValue()||1)*100).toFixed(1)+'%'],['Documents requested', lenderChecklist(d.lender,d.dealType).length+' items'],['Commentary generated','Complete']].map(r=>
         `<div class="detail-row"><span class="dl">✓ ${r[0]}</span><span class="dv">${r[1]}</span></div>`).join('')}
       ${reqs}
       <div class="assessed-note" style="background:rgba(5,150,105,.08);color:var(--green);margin:16px 0">✓ All requirements satisfied. Ready to submit to ${lenderName}${pol?(' via '+(pol.submission_channel||'broker portal')):''}.</div>
@@ -1663,8 +1805,9 @@ function submitDeal(){
   setTimeout(()=>{
     hideLoader();
     const id = 'D-'+(892+Math.floor(Math.random()*100));
-    const amt = parseFloat(state.calc.newLoan.amount)||0, pv = parseFloat(state.wizData.propValue)||1;
+    const amt = parseFloat(state.calc.newLoan.amount)||0, pv = totalSecurityValue()||1;
     const newDeal = mkDeal({id, name:'New Application', lender:state.wizData.lender||'CBA', amount:amt, status:'SUBMITTED', lvr:+(amt/pv*100).toFixed(1), progress:null, type:state.wizData.dealType||'Owner Occupier'});
+    persistDealIntel(id);  // persist entities + securities + provenance onto the new deal
     DEALS.unshift(newDeal);
     DOCS.forEach(x=>{ if(x.deal==='NEW') x.deal=id; });   // retag wizard docs to the new deal
     saveDeal(newDeal);                                    // persist when signed in
@@ -1792,8 +1935,97 @@ function renderCalcEditor(){
   <button class="btn ghost" style="margin-top:4px" onclick="addEntity()">+ Add Entity</button>`;
   ed.innerHTML = html;
 }
-function addEntity(){ state.calc.entities.push({name:'Entity '+(state.calc.entities.length+1), open:true, incomes:[{type:'salary_ft',amount:0}], liabilities:[]}); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
-function removeEntity(i){ state.calc.entities.splice(i,1); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
+function addEntity(kind){
+  state.calc.entities.push(newEntity(kind));
+  auditLog('ENTITY_ADDED', kind||'individual', 'Broker','broker');
+  if(document.getElementById('wizContent')) renderWizStep();
+  if(document.getElementById('calcEditor')){ renderCalcEditor(); renderCalcResults(); }
+  updateStatusStrip();
+}
+function removeEntity(i){
+  if(state.calc.entities.length<=1){ toast('At least one entity is required','info'); return; }
+  const removed = state.calc.entities.splice(i,1)[0];
+  auditLog('ENTITY_REMOVED', (removed&&(removed.name||removed.kind))||'entity', 'Broker','broker');
+  if(document.getElementById('wizContent')) renderWizStep();
+  if(document.getElementById('calcEditor')){ renderCalcEditor(); renderCalcResults(); }
+  updateStatusStrip();
+}
+function setEntityKind(i, kind){ const e=state.calc.entities[i]; if(!e) return; e.kind=kind; renderWizStep(); }
+function setEntityIncluded(i, v){ const e=state.calc.entities[i]; if(!e) return; e.included=!!v; updateStatusStrip(); }
+function updateEntityField(i, field, val){ const e=state.calc.entities[i]; if(!e) return; e[field]=val; if(field==='ownership_pct') updateStatusStrip(); }
+
+/* ---------- securities ---------- */
+function addSecurity(){
+  state.calc.securities = state.calc.securities || [];
+  state.calc.securities.push(newSecurity());
+  auditLog('SECURITY_ADDED','', 'Broker','broker');
+  if(document.getElementById('wizContent')) renderWizStep();
+  const lp = document.getElementById('page-loan'); if(lp) renderLoanTab(lp);
+  updateStatusStrip();
+}
+function removeSecurity(i){
+  if(!state.calc.securities) return;
+  const r = state.calc.securities.splice(i,1)[0];
+  auditLog('SECURITY_REMOVED', r?(r.address||'security'):'security', 'Broker','broker');
+  if(document.getElementById('wizContent')) renderWizStep();
+  const lp = document.getElementById('page-loan'); if(lp) renderLoanTab(lp);
+  updateStatusStrip();
+}
+function updateSecurityField(i, field, val){
+  const s = (state.calc.securities||[])[i]; if(!s) return;
+  s[field] = val;
+  if(['value','existing_mortgage','rental_income','rental_frequency','purpose','transaction'].includes(field)) updateStatusStrip();
+}
+function updateSecurityTitle(i, field, val){ const s=(state.calc.securities||[])[i]; if(!s) return; s.title=s.title||{}; s.title[field]=val; }
+function toggleSecurityTitle(i){
+  const s=(state.calc.securities||[])[i]; if(!s) return; s._titleOpen=!s._titleOpen;
+  if(document.getElementById('wizContent')) renderWizStep();
+  const lp=document.getElementById('page-loan'); if(lp) renderLoanTab(lp);
+}
+function securitiesBuilderHTML(){
+  state.calc.securities = state.calc.securities || [];
+  const secs = state.calc.securities;
+  const total = secs.reduce((s,x)=>s+(parseFloat(x.value)||0),0);
+  const ents = state.calc.entities;
+  if(!secs.length) return `<div class="card" style="padding:16px;border:1.5px dashed var(--border);text-align:center;margin-bottom:10px">
+    <p style="color:var(--t3);font-size:13px;margin-bottom:8px">No securities yet — every deal needs at least one. Property Value of <b class="mono">${fmtMoney(parseFloat(state.wizData.propValue)||0)}</b> is being used as a single implicit security until you add one.</p>
+    <button class="btn primary" onclick="addSecurity()">+ Add the first security</button></div>`;
+  const secCard = (sec, idx)=>`<div class="card" style="padding:14px 16px;margin-bottom:10px">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+      <b style="font-size:13px">Security ${idx+1}</b>
+      <span style="font-size:11.5px;color:var(--t3)">${escHtml(sec.property_type||'')} · ${escHtml(sec.purpose||'')} · ${escHtml(sec.transaction||'')}</span>
+      <button onclick="removeSecurity(${idx})" title="Remove security" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--t3);font-size:18px" aria-label="Remove">×</button>
+    </div>
+    <div class="form-grid" style="margin-bottom:8px">
+      <div class="inp" style="grid-column:1/-1"><label>Address</label><input value="${escHtml(sec.address||'')}" oninput="updateSecurityField(${idx},'address',this.value)" placeholder="14 Smith Street"></div>
+      <div class="inp"><label>Suburb</label><input value="${escHtml(sec.suburb||'')}" oninput="updateSecurityField(${idx},'suburb',this.value)"></div>
+      <div class="inp"><label>State</label><select onchange="updateSecurityField(${idx},'state',this.value)">${AU_STATES.map(s=>`<option ${sec.state===s?'selected':''}>${s}</option>`).join('')}</select></div>
+      <div class="inp"><label>Postcode</label><input value="${escHtml(sec.postcode||'')}" oninput="updateSecurityField(${idx},'postcode',this.value)"></div>
+      <div class="inp"><label>Property type</label><select onchange="updateSecurityField(${idx},'property_type',this.value)">${PROP_TYPES.map(t=>`<option ${sec.property_type===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="inp"><label>Purpose</label><select onchange="updateSecurityField(${idx},'purpose',this.value)">${PROP_PURPOSES.map(t=>`<option ${sec.purpose===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="inp"><label>Transaction</label><select onchange="updateSecurityField(${idx},'transaction',this.value)">${PROP_TXN.map(t=>`<option ${sec.transaction===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="inp"><label>Zoning</label><select onchange="updateSecurityField(${idx},'zoning',this.value)">${PROP_ZONING.map(t=>`<option ${sec.zoning===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="inp"><label>Value (${m().sym})</label><input type="number" value="${sec.value||0}" oninput="updateSecurityField(${idx},'value',+this.value)"></div>
+      <div class="inp"><label>Value basis</label><select onchange="updateSecurityField(${idx},'value_basis',this.value)">${PROP_BASIS.map(t=>`<option ${sec.value_basis===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="inp"><label>Owner entity</label><select onchange="updateSecurityField(${idx},'owner_entity_id',this.value||null)"><option value="">— select —</option>${ents.map(e=>`<option value="${escHtml(e.id)}" ${sec.owner_entity_id===e.id?'selected':''}>${escHtml(e.name||(ENTITY_KINDS[e.kind]||'Entity'))}</option>`).join('')}</select></div>
+    </div>
+    ${(sec.purpose==='Investment' || sec.transaction==='Refinancing' || sec.transaction==='Owned (additional security)') ? `<div class="form-grid" style="margin-bottom:8px">
+      <div class="inp"><label>Existing mortgage (${m().sym})</label><input type="number" value="${sec.existing_mortgage||0}" oninput="updateSecurityField(${idx},'existing_mortgage',+this.value)"></div>
+      <div class="inp"><label>Existing lender</label><input value="${escHtml(sec.existing_lender||'')}" oninput="updateSecurityField(${idx},'existing_lender',this.value)"></div>
+      <div class="inp"><label>Rental income (gross)</label><input type="number" value="${sec.rental_income||0}" oninput="updateSecurityField(${idx},'rental_income',+this.value)"></div>
+      <div class="inp"><label>Rental frequency</label><select onchange="updateSecurityField(${idx},'rental_frequency',this.value)">${FREQ_OPTS.map(t=>`<option ${sec.rental_frequency===t?'selected':''}>${t}</option>`).join('')}</select></div>
+    </div>`:''}
+    <button class="mini-btn" onclick="toggleSecurityTitle(${idx})">${sec._titleOpen?'▾':'▸'} Title details (Torrens)</button>
+    ${sec._titleOpen?`<div class="form-grid" style="margin-top:8px">
+      <div class="inp"><label>Folio</label><input value="${escHtml((sec.title||{}).folio||'')}" oninput="updateSecurityTitle(${idx},'folio',this.value)"></div>
+      <div class="inp"><label>Section</label><input value="${escHtml((sec.title||{}).section||'')}" oninput="updateSecurityTitle(${idx},'section',this.value)"></div>
+      <div class="inp"><label>Block</label><input value="${escHtml((sec.title||{}).block||'')}" oninput="updateSecurityTitle(${idx},'block',this.value)"></div>
+    </div>`:''}
+  </div>`;
+  return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:13px">Securities (${secs.length})</b><span class="mono" style="color:var(--t2)">Total: ${fmtMoney(total)}</span></div>
+    ${secs.map(secCard).join('')}
+    <button class="btn" onclick="addSecurity()">+ Add another security</button>`;
+}
 function addIncome(ei){ state.calc.entities[ei].incomes.push({type:'salary_ft',amount:0}); renderCalcEditor();renderCalcResults();updateStatusStrip(); logEvent('Income line added'); }
 function removeIncome(ei,ii){ state.calc.entities[ei].incomes.splice(ii,1); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
 function addLiab(ei){ state.calc.entities[ei].liabilities.push({type:'credit_card',balance:0,rate:0,term:0}); renderCalcEditor();renderCalcResults();updateStatusStrip(); logEvent('Liability added'); }
@@ -2589,6 +2821,8 @@ function collectProvenance(){
 function persistDealIntel(dealId){
   const deal=DEALS.find(x=>x.id===dealId); if(!deal) return;
   deal.docIntel={ provenance:collectProvenance(), conflicts:(state.conflicts&&state.conflicts[dealId])||[], updatedAt:new Date().toISOString() };
+  // Snapshot multi-entity + multi-security so saveDeal/loadDeals round-trips them.
+  deal.intel = JSON.parse(JSON.stringify({ entities: state.calc.entities, securities: state.calc.securities||[] }));
 }
 function showProv(docName, field){
   const p=collectProvenance().find(x=>x.doc===docName && x.field===field) || { doc:docName, field };
@@ -2701,6 +2935,55 @@ function renderReview(el){
 }
 
 /* ---------- demo seeding ---------- */
+/* Demo templates: multi-entity + multi-security intel applied by setActiveDeal when no saved intel exists. */
+const DEMO_DEAL_INTEL = {};
+function seedDemoIntel(){
+  DEMO_DEAL_INTEL['D-891'] = {
+    entities:[
+      { id:'e_m1', kind:'individual', name:'Sarah Mitchell', role:'borrower', abn:'', trustee_name:'', ownership_pct:50, included:true, open:true,
+        incomes:[{type:'salary_ft', amount:142000, amount_y1:142000, amount_y2:138000, use_average:false, evidence_years:2,
+          _prov:{ doc:'Mitchell_Payslip_01.pdf', field:'gross_period', source_text:'Gross (annualised) $142,000', confidence:97, verified:true, verifiedAt:'2026-05-20' }}],
+        liabilities:[{type:'credit_card', balance:15000, rate:21.9, term:0,
+          _prov:{ doc:'Mitchell_BankStatement.pdf', field:'credit_card_limit', source_text:'Card limit $15,000', confidence:95, verified:true, verifiedAt:'2026-05-20' }}] },
+      { id:'e_m2', kind:'individual', name:'Tom Mitchell', role:'co-borrower', abn:'', trustee_name:'', ownership_pct:50, included:true, open:false,
+        incomes:[{type:'salary_ft', amount:96000, amount_y1:96000, amount_y2:92000, use_average:false, evidence_years:2}], liabilities:[] }
+    ],
+    securities:[
+      { id:'s_m1', address:'118 Elgin Street', suburb:'Carlton', state:'VIC', postcode:'3053', property_type:'House', purpose:'Owner Occupied', transaction:'Purchasing', value:1000000, value_basis:'Contract of Sale', zoning:'Residential', first_mortgage:true, existing_mortgage:0, existing_lender:'', rental_income:0, rental_frequency:'Weekly', owner_entity_id:'e_m1', title:{folio:'',section:'',block:''} }
+    ]
+  };
+  DEMO_DEAL_INTEL['D-890'] = {
+    entities:[
+      { id:'e_ct', kind:'trust', name:'Chen Family Property Trust', role:'borrower', abn:'58 234 567 890', trustee_name:'Chen Holdings Pty Ltd', ownership_pct:100, included:true, open:true,
+        incomes:[{type:'trust_dist', amount:184000, amount_y1:184000, amount_y2:172000, use_average:true, evidence_years:2}], liabilities:[] },
+      { id:'e_ch', kind:'company', name:'Chen Holdings Pty Ltd', role:'trustee', abn:'58 234 567 890', trustee_name:'', ownership_pct:0, included:false, open:false, incomes:[], liabilities:[] },
+      { id:'e_g1', kind:'individual', name:'Wei Chen', role:'guarantor', abn:'', trustee_name:'', ownership_pct:50, included:true, open:false,
+        incomes:[{type:'salary_ft', amount:180000, amount_y1:180000, amount_y2:172000, use_average:false, evidence_years:2}],
+        liabilities:[{type:'credit_card', balance:25000, rate:22.5, term:0}] },
+      { id:'e_g2', kind:'individual', name:'Mei Chen', role:'guarantor', abn:'', trustee_name:'', ownership_pct:50, included:true, open:false,
+        incomes:[{type:'salary_ft', amount:155000, amount_y1:155000, amount_y2:148000, use_average:false, evidence_years:2}], liabilities:[] }
+    ],
+    securities:[
+      { id:'s_c1', address:'14 Smith Street', suburb:'Surry Hills', state:'NSW', postcode:'2010', property_type:'Townhouse', purpose:'Investment', transaction:'Purchasing', value:1350000, value_basis:'Contract of Sale', zoning:'Residential', first_mortgage:true, existing_mortgage:0, existing_lender:'', rental_income:850, rental_frequency:'Weekly', owner_entity_id:'e_ct', title:{folio:'',section:'',block:''} },
+      { id:'s_c2', address:'7/220 Park Road', suburb:'Auburn', state:'NSW', postcode:'2144', property_type:'Unit/Apartment', purpose:'Investment', transaction:'Refinancing', value:680000, value_basis:'Certified Valuation', zoning:'Residential', first_mortgage:false, existing_mortgage:420000, existing_lender:'CBA', rental_income:520, rental_frequency:'Weekly', owner_entity_id:'e_ct', title:{folio:'',section:'',block:''} },
+      { id:'s_c3', address:'31 Spencer Road', suburb:'Killara', state:'NSW', postcode:'2071', property_type:'House', purpose:'Investment', transaction:'Owned (additional security)', value:2200000, value_basis:'Certified Valuation', zoning:'Residential', first_mortgage:true, existing_mortgage:980000, existing_lender:'ANZ', rental_income:1450, rental_frequency:'Weekly', owner_entity_id:'e_ct', title:{folio:'',section:'',block:''} }
+    ]
+  };
+  DEMO_DEAL_INTEL['D-888'] = {
+    entities:[
+      { id:'e_ps', kind:'smsf', name:'Patel Superannuation Fund', role:'borrower', abn:'62 456 789 012', trustee_name:'Patel Super Pty Ltd', ownership_pct:100, included:true, open:true,
+        incomes:[{type:'trust_dist', amount:118000, amount_y1:118000, amount_y2:110000, use_average:true, evidence_years:2}], liabilities:[] },
+      { id:'e_pt', kind:'company', name:'Patel Super Pty Ltd', role:'trustee', abn:'62 456 789 012', trustee_name:'', ownership_pct:0, included:false, open:false, incomes:[], liabilities:[] }
+    ],
+    securities:[
+      { id:'s_p1', address:'42 Riverside Drive', suburb:'Mulgrave', state:'VIC', postcode:'3170', property_type:'House', purpose:'Investment', transaction:'Purchasing', value:1450000, value_basis:'Contract of Sale', zoning:'Residential', first_mortgage:true, existing_mortgage:0, existing_lender:'', rental_income:720, rental_frequency:'Weekly', owner_entity_id:'e_ps', title:{folio:'',section:'',block:''} }
+    ]
+  };
+  // Force-write deal.intel for these demo deals so setActiveDeal restores the multi-entity demo
+  // even after seedDocIntelligence's persistDealIntel snapshot has already run.
+  Object.keys(DEMO_DEAL_INTEL).forEach(id=>{ const d=DEALS.find(x=>x.id===id); if(d) d.intel = JSON.parse(JSON.stringify(DEMO_DEAL_INTEL[id])); });
+}
+
 function seedDocIntelligence(){
   DOCS.forEach(d=>{
     if(!d.classified) d.classified=mockClassify(d.name);
@@ -2725,14 +3008,20 @@ function seedDocIntelligence(){
 function figuresForLender(id){
   const buffer = activeBuffer(id);
   let shadedAnnual = 0, existingDebt = 0, totalLiab = 0;
-  state.calc.entities.forEach(ent=> ent.incomes.forEach(inc=> shadedAnnual += getShadedIncome(inc, id)));
+  state.calc.entities.forEach(ent=>{
+    const w=entityWeight(ent); if(!w) return;
+    ent.incomes.forEach(inc=> shadedAnnual += getShadedIncome(inc, id) * w);
+  });
   const income = shadedAnnual/12;
-  state.calc.entities.forEach(ent=> ent.liabilities.forEach(l=>{
-    let assessed = assessLiability(l, buffer);
-    if(l.type==='hecs') assessed -= hecsExclusion(l, income, id);
-    existingDebt += Math.max(0, assessed);
-    totalLiab += parseFloat(l.balance)||0;
-  }));
+  state.calc.entities.forEach(ent=>{
+    if(!entityWeight(ent)) return;
+    ent.liabilities.forEach(l=>{
+      let assessed = assessLiability(l, buffer);
+      if(l.type==='hecs') assessed -= hecsExclusion(l, income, id);
+      existingDebt += Math.max(0, assessed);
+      totalLiab += parseFloat(l.balance)||0;
+    });
+  });
   const HEM = Math.max(getHEM(shadedAnnual, state.calc.adults||1, state.calc.dependants), income*0.28);
   return {income, shadedAnnual, existingDebt, HEM, totalLiab};
 }
@@ -3181,13 +3470,19 @@ function callExtract(){
 function baseFigures(){
   const buffer = activeBuffer();
   let shadedAnnual = 0, existingDebt = 0;
-  state.calc.entities.forEach(ent=> ent.incomes.forEach(inc=> shadedAnnual += getShadedIncome(inc)));
+  state.calc.entities.forEach(ent=>{
+    const w=entityWeight(ent); if(!w) return;
+    ent.incomes.forEach(inc=> shadedAnnual += getShadedIncome(inc) * w);
+  });
   const income = shadedAnnual/12;
-  state.calc.entities.forEach(ent=> ent.liabilities.forEach(l=>{
-    let assessed = assessLiability(l, buffer);
-    if(l.type==='hecs') assessed -= hecsExclusion(l, income);
-    existingDebt += Math.max(0, assessed);
-  }));
+  state.calc.entities.forEach(ent=>{
+    if(!entityWeight(ent)) return;
+    ent.liabilities.forEach(l=>{
+      let assessed = assessLiability(l, buffer);
+      if(l.type==='hecs') assessed -= hecsExclusion(l, income);
+      existingDebt += Math.max(0, assessed);
+    });
+  });
   const HEM = Math.max(getHEM(shadedAnnual, state.calc.adults||1, state.calc.dependants), income*0.28);
   return {income, existingDebt, HEM};
 }
@@ -3406,7 +3701,7 @@ LOAN: ${fmtMoney(parseFloat(state.calc.newLoan.amount)||0)} ${d.dealType||'Owner
 ASSESSED RATE: ${((parseFloat(state.calc.newLoan.rate)||0)+(pol?pol.buffer:0.03)*100).toFixed(2)}%
 TERM: ${state.calc.newLoan.term||30} years P&I
 PURPOSE: ${d.purpose||'Purchase — Owner Occupied'}
-LVR: ${d.propValue ? (((parseFloat(state.calc.newLoan.amount)||0)/(parseFloat(d.propValue)||1))*100).toFixed(1)+'%' : 'Not specified'}
+LVR: ${(((parseFloat(state.calc.newLoan.amount)||0)/(totalSecurityValue()||1))*100).toFixed(1)+'%'} (over ${(state.calc.securities||[]).length||1} security/securities)
 SERVICEABILITY: DSR ${r.dsr.toFixed(1)}% vs ceiling ${pol?pol.dsr_max:45}%
 NDI: ${fmtMoney(r.ndi)}/month
 DTI: ${r.dti.toFixed(1)}x
@@ -3432,7 +3727,8 @@ Reference the specific figures. Professional broker tone. 100 words maximum.`;
 }
 function buildPackHTML(r, pol, d, nl, ent, deal, bidText, servicingText){
   const lenderName = pol ? pol.label : (d.lender||'CBA');
-  const lvr = d.propValue ? ((parseFloat(nl.amount)||0)/(parseFloat(d.propValue)||1)*100).toFixed(1) : '—';
+  const totalSec = totalSecurityValue();
+  const lvr = totalSec>0 ? ((parseFloat(nl.amount)||0)/totalSec*100).toFixed(1) : '—';
   const assessedRate = ((parseFloat(nl.rate)||0) + (pol ? pol.buffer : 0.03)*100).toFixed(2);
   const esc = (s)=> String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>DebtIQ Submission Pack — ${esc(lenderName)}</title>
@@ -3476,12 +3772,23 @@ tr:last-child td{border-bottom:none}
 <div class="section"><div class="section-title">1. Application Summary</div>
 <table>
 <tr><td style="width:35%;font-weight:600">Application Type</td><td>${esc(d.dealType||'Owner Occupier')}</td><td style="width:35%;font-weight:600">Loan Amount</td><td class="mono">${fmtMoney(parseFloat(nl.amount)||0)}</td></tr>
-<tr><td style="font-weight:600">Loan Purpose</td><td>${esc(d.purpose||'Purchase')}</td><td style="font-weight:600">Property Value</td><td class="mono">${d.propValue ? fmtMoney(parseFloat(d.propValue)) : '—'}</td></tr>
+<tr><td style="font-weight:600">Loan Purpose</td><td>${esc(d.purpose||'Purchase')}</td><td style="font-weight:600">Aggregate Security Value</td><td class="mono">${totalSec>0 ? fmtMoney(totalSec) : '—'} ${((state.calc.securities||[]).length>1?` (${state.calc.securities.length} securities)`:'')}</td></tr>
 <tr><td style="font-weight:600">LVR</td><td class="mono">${lvr}%</td><td style="font-weight:600">Loan Term</td><td>${nl.term||30} years P&I</td></tr>
 <tr><td style="font-weight:600">Interest Rate</td><td class="mono">${(parseFloat(nl.rate)||0).toFixed(2)}% p.a.</td><td style="font-weight:600">Assessed Rate</td><td class="mono">${assessedRate}% p.a.</td></tr>
 <tr><td style="font-weight:600">Lender</td><td>${esc(lenderName)}</td><td style="font-weight:600">Submission Channel</td><td>${pol ? esc(pol.submission_channel||'Broker portal') : '—'}</td></tr>
 ${pol && pol.sla_conditional ? `<tr><td style="font-weight:600">Conditional SLA</td><td>${pol.sla_conditional} business days</td><td></td><td></td></tr>` : ''}
 </table></div>
+
+<div class="section"><div class="section-title">1A. Applicants &amp; Entities</div>
+<table><thead><tr><th>Kind</th><th>Name</th><th>Role</th><th>ABN</th><th>Trustee / Director</th><th>Ownership</th><th>Included</th></tr></thead><tbody>
+${state.calc.entities.map((e,i)=>`<tr><td>${esc(({individual:'Individual',joint:'Joint',company:'Company',trust:'Trust',smsf:'SMSF',partnership:'Partnership'})[e.kind||'individual']||'Individual')}</td><td>${esc(e.name||'Applicant '+(i+1))}</td><td>${esc(({borrower:'Borrower','co-borrower':'Co-borrower',guarantor:'Guarantor',trustee:'Trustee',director:'Director'})[e.role||'borrower']||'Borrower')}</td><td>${esc(e.abn||'—')}</td><td>${esc(e.trustee_name||'—')}</td><td class="mono">${e.ownership_pct==null?100:e.ownership_pct}%</td><td>${e.included===false?'No':'Yes'}</td></tr>`).join('')}
+</tbody></table></div>
+
+${((state.calc.securities||[]).length||totalSec>0) ? `<div class="section"><div class="section-title">1B. Securities</div>
+<table><thead><tr><th>#</th><th>Address</th><th>Type</th><th>Purpose</th><th>Transaction</th><th>Value</th><th>Basis</th><th>Owner entity</th><th>Existing mortgage</th><th>Rental income</th></tr></thead><tbody>
+${((state.calc.securities||[]).length ? state.calc.securities : [{address:'Single implicit security',property_type:'—',purpose:d.dealType||'—',transaction:'—',value:totalSec,value_basis:'Applicant Estimate',owner_entity_id:null,existing_mortgage:0,rental_income:0,rental_frequency:''}]).map((s,i)=>{ const own=(state.calc.entities.find(e=>e.id===s.owner_entity_id)||{}); return `<tr><td>${i+1}</td><td>${esc([s.address,s.suburb,s.state,s.postcode].filter(Boolean).join(', ')||'—')}</td><td>${esc(s.property_type||'—')}</td><td>${esc(s.purpose||'—')}</td><td>${esc(s.transaction||'—')}</td><td class="mono">${fmtMoney(parseFloat(s.value)||0)}</td><td>${esc(s.value_basis||'—')}</td><td>${esc(own.name||'—')}</td><td class="mono">${(parseFloat(s.existing_mortgage)||0) ? fmtMoney(parseFloat(s.existing_mortgage)) : '—'}</td><td class="mono">${(parseFloat(s.rental_income)||0) ? fmtMoney(parseFloat(s.rental_income))+'/'+(s.rental_frequency||'wk').toLowerCase().slice(0,2) : '—'}</td></tr>`; }).join('')}
+<tr style="background:#EEF0FF;font-weight:700"><td colspan="5">Total security value</td><td class="mono">${fmtMoney(totalSec)}</td><td colspan="4"></td></tr>
+</tbody></table></div>` : ''}
 
 <div class="section"><div class="section-title">2. Employment & Income Assessment</div>
 ${state.calc.entities.map((e,i)=>`<div style="margin-bottom:14px"><div style="font-weight:600;margin-bottom:8px;color:#374151">${esc(e.name||'Applicant '+(i+1))}</div>
@@ -3665,6 +3972,12 @@ function setActiveDeal(dealId){
   state.activeDeal = dealId;
   if(lenderDB()[d.lender]) state.lender = d.lender;
   state.calc.newLoan.amount = d.amount;
+  // Restore multi-entity + multi-security from saved intel, else apply demo template.
+  const intel = d.intel || (typeof DEMO_DEAL_INTEL!=='undefined' && DEMO_DEAL_INTEL[dealId]) || null;
+  if(intel){
+    if(Array.isArray(intel.entities) && intel.entities.length) state.calc.entities = JSON.parse(JSON.stringify(intel.entities));
+    if(Array.isArray(intel.securities)) state.calc.securities = JSON.parse(JSON.stringify(intel.securities));
+  }
   updateDealStrip();
   updateCopilot();
   goTab('client');
@@ -3678,6 +3991,7 @@ function clearActiveDeal(){
 function updateDealStrip(){
   const strip = document.getElementById('dealStrip');
   if(!strip) return;
+  renderDealPill();
   const d = DEALS.find(x=>x.id===state.activeDeal);
   if(!d){ strip.style.display='none'; return; }
   strip.style.display = 'flex';
@@ -3732,6 +4046,15 @@ function generateCopilotInsights(){
     if(need) insights.push({ type:'warning', icon:'📝', text:`${need} extraction(s) need review`, action:{ label:'Review', fn:`goReview()` } });
     const missing=missingDocTypes(state.activeDeal);
     if(missing.length) insights.push({ type:'info', icon:'📂', text:`Missing: ${missing.map(t=>(DOC_TYPES[t]||{}).label||t).slice(0,3).join(', ')}`, action:{ label:'Docs', fn:`goTab('documents')` } });
+    // Multi-entity / multi-security insights
+    const nEnts = state.calc.entities.length;
+    const nSecs = (state.calc.securities||[]).length;
+    if(nEnts>1) insights.push({ type:'info', icon:'👥', text:`${nEnts} applicants/entities on this file` });
+    if(nSecs>1) insights.push({ type:'info', icon:'🏠', text:`${nSecs} securities · LVR ${r.lvr.toFixed(1)}% across all` });
+    const blankSec = (state.calc.securities||[]).find(s=>!(parseFloat(s.value)||0));
+    if(blankSec) insights.push({ type:'warning', icon:'⚠', text:'One or more securities has no value entered', action:{ label:'Loan', fn:`goTab('loan')` } });
+    const noIncomeEnt = state.calc.entities.filter(e=>e.included!==false && (!e.incomes||!e.incomes.length||e.incomes.every(i=>!(parseFloat(i.amount_y1||i.amount)||0))));
+    if(noIncomeEnt.length) insights.push({ type:'warning', icon:'⚠', text:`${noIncomeEnt.length} included entity/entities have no income`, action:{ label:'Calc', fn:`goTab('calculate')` } });
   }
   const hasSelfEmp = state.calc.entities.some(e=> e.incomes.some(i=> i.type==='self_emp'));
   if(hasSelfEmp && pol && pol.self_employed_min_years) insights.push({ type:'info', icon:'ℹ', text:`${pol.label}: ${pol.self_employed_min_years}yr self-employed docs required` });
@@ -3988,20 +4311,20 @@ function renderLoanStructureSection(){
   </div>`;
 }
 function renderPropertySection(){
-  const d = state.wizData, nl = state.calc.newLoan;
-  const pv = parseFloat(d.propValue)||0, lvr = pv>0 ? ((parseFloat(nl.amount)||0)/pv*100) : 0;
+  const nl = state.calc.newLoan;
+  const tv = totalSecurityValue(), amt = parseFloat(nl.amount)||0;
+  const lvr = tv>0 ? (amt/tv*100) : 0;
   const col = lvr<=80?'var(--green)':lvr<=90?'var(--amber)':'var(--red)';
   return `<div class="card" style="padding:18px">
-    <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Security / property</h3>
-    <div class="inp" style="margin-bottom:12px"><label>Property value (${m().sym})</label><input type="number" value="${d.propValue}" oninput="state.wizData.propValue=+this.value;updateStatusStrip();renderLoanTab(document.getElementById('page-loan'))"></div>
-    <div class="lvr-badge" style="background:${col}1a;color:${col}">LVR ${lvr.toFixed(1)}%</div>
-    <p style="font-size:12px;color:var(--t3);margin-top:10px">LVR updates the live metrics in the deal strip above.</p>
+    <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Securities (${(state.calc.securities||[]).length||'1 implicit'})</h3>
+    ${securitiesBuilderHTML()}
+    <div class="lvr-badge" style="background:${col}1a;color:${col};margin-top:12px">LVR ${lvr.toFixed(1)}% · Loan ${fmtMoney(amt)} / Security ${fmtMoney(tv)}</div>
   </div>`;
 }
 function renderLoanTab(el){
   if(!state.activeDeal){ el.innerHTML = noDealPrompt('Loan','Select a deal from Pipeline to view loan details.'); return; }
   el.innerHTML = `
-    <div class="page-head"><h1>Loan structure</h1><p>Edits update the live metrics in the deal strip in real time.</p></div>
+    <div class="page-head"><h1>Loan structure</h1><p>Edits update the live metrics in the deal strip in real time. Multi-security supported.</p></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
       ${renderLoanStructureSection()}
       ${renderPropertySection()}
@@ -4121,6 +4444,9 @@ function init(){
   updateEnginePill();
   seedTimeline();
   seedDocIntelligence();          // classify/extract demo docs + provenance + a demo conflict
+  seedDemoIntel();                // multi-entity + multi-security demo templates
+  // Escape closes the slide-over panel from anywhere
+  if(!window._diqEsc){ window._diqEsc = true; document.addEventListener('keydown', e=>{ if(e.key==='Escape') closePanel(); }); }
   renderWorkspace('dashboard');   // Pipeline tab, no active deal → deal strip hidden
   updateCopilot();
   logEvent('Session started');

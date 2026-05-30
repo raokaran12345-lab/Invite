@@ -1,5 +1,23 @@
 # DebtIQ v6 — Changelog
 
+## Round (complexity) — reopenable deal panel, searchable lender picker with buffer explainer, true multi-entity applicant builder, full multi-security model with addresses/valuations/rental, aggregate-LVR rework
+
+Four corrective/additive fixes so the app can hold real broker complexity (multi-applicant, multi-security deals like AOL captures) without losing the simple consolidated output.
+
+**FIX 1 — Reopenable deal panel.** A floating right-edge pill ("⟨ <client> · <id>") appears whenever `state.activeDeal` is set and the slide-over `#panel` is closed; clicking it reopens. The Deal Strip gains an "Open details" (⛶) button next to the back arrow, and a new `togglePanel()` toggles open/closed. `Escape` closes the panel. The panel is never a dead end (three reopen affordances + the deal card).
+
+**FIX 2 — Lender picker.** Wizard step 1 now shows **all 25 AU lenders** (no accreditation gating at deal creation), grouped under "Banks (ADI)" and "Non-bank lenders" sub-headings, sorted alphabetically. A search input (`#lenderSearch` → `filterLenderTiles`) filters tiles live by label / type ("non-bank"/"adi"). Each tile shows type · **buffer %** · max LVR, and a one-line explainer defines buffer ("APRA 3% for banks; lower buffer = higher capacity").
+
+**FIX 3 — Multi-entity applicants.** Entity model now includes `{kind, name, role, abn, trustee_name, ownership_pct, included}`. Wizard step 3 is a true builder: entity cards with kind/role selects, name input, conditional ABN + trustee for company/trust/SMSF/partnership, ownership %, include-toggle, and per-entity income/liability counters with an "Edit financials →" link. `+ Individual/Joint/Company/Trust/SMSF/Partnership` buttons add; remove respects a minimum of one. `computeServiceability`, `baseFigures` and `figuresForLender` now multiply each entity's shaded income by `entityWeight()` (0 if `included===false`, else `ownership_pct/100`), so the engine consolidates cleanly into a **single PASS/BORDERLINE/FAIL verdict**. The submission pack gains a new "Applicants & Entities" section with kind/role/ABN/trustee/ownership.
+
+**FIX 4 — Multi-security model.** New `state.calc.securities[]` with `{address, suburb, state, postcode, property_type, purpose, transaction, value, value_basis, zoning, first_mortgage, existing_mortgage, existing_lender, rental_income, rental_frequency, owner_entity_id, title:{folio,section,block}}`. Wizard step 4 is split into **Part A — Securities** (cards, +Add another, collapsible Torrens title details) and **Part B — Loan structure**. The Loan tab uses the same builder. `totalSecurityValue()` sums `securities[].value` and falls back to `wizData.propValue` when empty — used by `updateWizLVR`, `computeServiceability` LVR, the deal strip, `buildBIDPrompt` and `buildPackHTML`. The submission pack adds a new "Securities" table (Address · Type · Purpose · Transaction · Value · Basis · Owner entity · Existing mortgage · Rental).
+
+**Persistence + demo seeding.** `persistDealIntel(dealId)` now also snapshots `{entities, securities}` to `deal.intel`; `setActiveDeal` restores them. Three demo templates (`DEMO_DEAL_INTEL`) are seeded so the multi-entity complexity is visible on activation: **D-891 Mitchell** (Sarah + Tom, 50/50, 1 OO security), **D-890 Chen Property Trust** (trust + corporate trustee + 2 guarantors + 3 investment securities with rental), **D-888 Patel SMSF** (SMSF + corporate trustee + 1 SMSF residential security). Demo provenance is also baked into the Mitchell template so source-tracing demos survive deal activation.
+
+**Copilot insights.** Now also flag entity count, security count, blank security values and included entities with no income.
+
+**Verification:** `node --check` clean; jsdom smoke **97/97 green**, including: panel open→pill appears→togglePanel reopens; 25 lenders rendered with search filtering and the buffer explainer; multi-entity (add/remove with min-1 guard, `included===false` excluded, `ownership_pct` scales income, single consolidated verdict in the result panel); multi-security (LVR = total lending / total security value, `propValue` fallback when empty, pack renders multi-row Securities table, Chen Trust seed has 4 entities + 3 securities, `deal.intel` survives a JSON round-trip).
+
 ## Round (doc-intelligence) — bulk ingest pipeline, classification, type-specific extraction, intelligent reconciliation, extraction review workspace, source tracing/provenance, missing-doc intelligence
 
 Drop a whole client file (up to 100 docs) and get back a classified, extracted,
