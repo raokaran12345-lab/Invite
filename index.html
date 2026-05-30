@@ -348,11 +348,12 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
 .pd-row-cur td{box-shadow:inset 3px 0 0 var(--brand)}
 
 /* Document forensics */
-.fz-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:var(--r-pill);font-size:11px;font-weight:700;cursor:pointer;border:1px solid transparent}
-.fz-chip.clear{background:rgba(5,150,105,.12);color:var(--green)}
-.fz-chip.caution{background:rgba(217,119,6,.12);color:var(--amber)}
-.fz-chip.review{background:rgba(220,38,38,.12);color:var(--red)}
-.fz-chip.scanning{background:#EEF0F3;color:var(--t3)}
+.fz-chip{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:var(--r-pill);font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:11px;font-weight:600;letter-spacing:.02em;cursor:pointer;border:1px solid var(--line2);background:#fff;transition:filter .12s}
+.fz-chip:hover{filter:brightness(.97)}
+.fz-chip.clear{color:var(--green);border-color:rgba(11,107,79,.30)}
+.fz-chip.caution{color:var(--amber);border-color:rgba(154,90,0,.30)}
+.fz-chip.review{color:var(--red);border-color:rgba(169,38,38,.30)}
+.fz-chip.scanning{color:var(--t3-cool);border-color:var(--line2)}
 .fz-spin{width:11px;height:11px;border:2px solid #D1D5DB;border-top-color:var(--t3);border-radius:50%;animation:spin .8s linear infinite}
 .fz-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block}
 .fz-dot.clear{background:var(--green)}
@@ -579,11 +580,15 @@ tr:last-child td{border-bottom:none}
 
 /* Client portal */
 .portal-split{display:grid;grid-template-columns:300px 1fr;gap:24px;align-items:start}
-.phone{width:280px;height:560px;background:#0F0F1A;border-radius:38px;padding:12px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
-.phone-screen{width:100%;height:100%;background:#F4F5F7;border-radius:28px;overflow:hidden;display:flex;flex-direction:column}
-.phone-top{background:var(--brand-grad);color:#fff;padding:22px 18px}
-.phone-top h4{font-size:16px;font-weight:700}
-.phone-body{padding:16px;flex:1;overflow-y:auto}
+.phone{width:280px;max-width:100%;height:560px;background:var(--ink);border-radius:32px;padding:12px;box-shadow:0 8px 28px rgba(60,50,30,.10);border:1px solid #14182a;justify-self:start}
+.phone-screen{width:100%;height:100%;background:var(--page);border-radius:24px;overflow:hidden;display:flex;flex-direction:column}
+.phone-top{background:var(--ink);color:#fff;padding:22px 18px}
+.phone-top h4{font-family:var(--serif);font-weight:500;font-size:17px;letter-spacing:-.005em}
+.phone-top p{font-family:var(--serif);font-style:italic;font-size:12px;opacity:.85}
+.phone-body{padding:16px;flex:1;overflow-y:auto;background:var(--page)}
+@media(max-width:700px){
+  .phone{width:100%;max-width:360px;height:auto;min-height:520px;justify-self:center}
+}
 .dz{border:2px dashed #CBD2DC;border-radius:14px;padding:16px;text-align:center;margin-bottom:11px;font-size:12px;font-weight:600;color:var(--t3);cursor:pointer;transition:.18s}
 .dz.done{border-style:solid;border-color:var(--green);background:rgba(5,150,105,.07);color:var(--green)}
 .toggle-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
@@ -2237,7 +2242,7 @@ function renderCalcEditor(){
             <input type="number" aria-label="FY prior income" value="${inc.amount_y2||0}" oninput="state.calc.entities[${ei}].incomes[${ii}].amount_y2=+this.value;updateCalc()">
             <span class="avg-toggle"><input type="checkbox" aria-label="Use 2-year average" ${inc.use_average?'checked':''} onchange="state.calc.entities[${ei}].incomes[${ii}].use_average=this.checked;updateCalc()"></span>
             <span class="computed mono" id="incShaded-${ei}-${ii}">${fmtMoney(shaded)}${provBadge(inc._prov)}</span>
-            <span class="row-x" onclick="removeIncome(${ei},${ii})">×</span>
+            <span class="row-x" role="button" tabindex="0" aria-label="Remove income" onclick="removeIncome(${ei},${ii})">×</span>
           </div>${cond}${ab}`;}).join('')}
         <button class="add-row" onclick="addIncome(${ei})">+ Add income</button>
         <div class="subsec">Liabilities</div>
@@ -2256,7 +2261,7 @@ function renderCalcEditor(){
             <input type="number" aria-label="Rate" step="0.1" value="${l.rate}" oninput="state.calc.entities[${ei}].liabilities[${li}].rate=+this.value;updateCalc()">
             <input type="number" aria-label="Term" value="${l.term}" oninput="state.calc.entities[${ei}].liabilities[${li}].term=+this.value;updateCalc()">
             <span class="computed mono" id="liabAss-${ei}-${li}">${fmtMoney(assessed)}${provBadge(l._prov)}</span>
-            <span class="row-x" onclick="removeLiab(${ei},${li})">×</span>
+            <span class="row-x" role="button" tabindex="0" aria-label="Remove liability" onclick="removeLiab(${ei},${li})">×</span>
           </div>${extra}`;}).join('')}
         <button class="add-row" onclick="addLiab(${ei})">+ Add liability</button>
       </div>`:''}
@@ -2824,7 +2829,7 @@ function renderDocBody(){
       <td><span class="pill ${statusCls[d.status]||'gray'}">${escHtml(d.status)}</span></td>
       <td>${fzChip(d,i)}</td>
       <td class="mono">${d.size}</td><td>${d.date}</td>
-      <td><span class="row-x" style="cursor:pointer" onclick="deleteDoc(${i})">🗑</span></td>
+      <td><span class="row-x" role="button" tabindex="0" aria-label="Delete document" style="cursor:pointer" onclick="deleteDoc(${i})">🗑</span></td>
     </tr>`).join('');
 }
 function uploadDocs(files){
@@ -3901,12 +3906,24 @@ function callAIAssessment(){
     .then(txt=>{ hideLoader(); showAssessment(txt); });
 }
 function showAssessment(txt){
-  document.getElementById('panelName').textContent = '✦ AI Assessment';
-  document.getElementById('panelId').textContent = m().label + ' market';
-  document.getElementById('panelBody').innerHTML = `<div class="comm-card" style="margin:0"><div class="comm-text">${txt}</div></div>
+  const r = computeServiceability();
+  const pol = activePolicy();
+  document.getElementById('panelName').textContent = 'AI Assessment';
+  document.getElementById('panelId').textContent = (pol?pol.label:m().label)+' · '+(state.activeDeal||'current calculation');
+  const vCls = r.verdict==='PASS'?'pass':r.verdict==='BORDERLINE'?'borderline':'fail';
+  const vStmt = r.verdict==='PASS'?'Serviceable.':r.verdict==='BORDERLINE'?'Borderline.':'Does not service.';
+  document.getElementById('panelBody').innerHTML = `
+    <div class="verdict-hero" style="margin-bottom:14px">
+      <div class="vh-cap">AI assessment</div>
+      <div class="vh-statement ${vCls}">${vStmt}</div>
+      <div class="vh-feature"><span class="vh-label">NDI</span><span class="vh-value">${fmtMoney(r.ndi)}/mo</span></div>
+    </div>
+    <div class="caption-cool" style="margin-bottom:6px">Narrative</div>
+    <div class="surface-paper" style="padding:14px 16px;font-family:var(--serif);font-size:14px;line-height:1.7;color:var(--t1);white-space:pre-wrap;border-left:2px solid var(--ink);border-radius:0 6px 6px 0">${esc(txt)}</div>
     <button class="btn primary" style="width:100%;margin-top:16px" onclick="closePanel()">Done</button>`;
   document.getElementById('overlay').classList.add('show');
   document.getElementById('panel').classList.add('show');
+  renderDealPill();
 }
 function callExtract(){
   showLoader('Extracting data from documents…');

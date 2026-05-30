@@ -1,5 +1,37 @@
 # DebtIQ v6 — Changelog
 
+## Round (redesign · Phase 4) — Polish (popover · portal mobile · a11y · integrity chip)
+
+Final polish round closing out the redesign brief.
+
+- **AI Assessment popover (`showAssessment`)** restyled in the editorial
+  language: the slide-over now leads with a `VerdictHero` (serif statement +
+  featured NDI), followed by a paper commentary block on an ink margin rule.
+  Lender + active-deal id in the panel sub-title.
+- **Client Portal — mobile-first.** Phone frame moved from a hard-coded
+  280×560px box to a responsive shell: ink chassis, paper screen, serif
+  italic sub-copy in the phone header. Below 700px the phone expands to
+  `max-width:360px` with `height:auto`, centred — usable on real handsets.
+- **Calmer integrity chip.** `.fz-chip` (the Documents-tab Clear / Caution /
+  Review / Scanning chip) restyled to the IntegrityChip aesthetic: mono +
+  tabular, white background, coloured outline only (no filled tint), tiny
+  hover brightness shift.
+- **Accessibility additions.** Added `role="button"`, `tabindex="0"`, and
+  semantic `aria-label`s to the bare-character row controls (`× Remove
+  income`, `× Remove liability`, `🗑 Delete document`) so screen readers
+  announce them properly.
+- **No code-only sweeps needed.** AU-spelling pass: searched for
+  Authoriz/Customiz/Organiz/Color/etc. — every hit was either an HTTP header
+  name (must remain `Authorization`) or a CSS property (`color`). No copy
+  changes required.
+- **Print stylesheet** already shipped in the integration round (`@page{
+  margin:16mm}` + `print-color-adjust:exact` + `break-inside:avoid` on the
+  submission pack); the in-app commentary print rules were validated.
+
+**Verification:** `node --check` clean; jsdom smoke **142/142** (3 new Phase 4
+checks: Assessment popover uses verdict-hero; row × buttons carry aria-label;
+integrity chip uses mono typography).
+
 ## Round (redesign · Phase 3) — Screen polish (Pipeline · Client · Review · Compliance · AI Pilot)
 
 Targeted polish on the remaining journey screens to bring them into the
