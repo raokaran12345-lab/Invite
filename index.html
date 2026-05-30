@@ -154,16 +154,42 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
 }
 .demo-creds b{color:var(--t1);font-family:var(--serif);font-style:italic;font-weight:400;font-size:13px}
 .demo-creds .mono{font-family:var(--mono);color:var(--t1)}
+/* Role selector — segmented radiogroup. Steel ring on focus-visible. */
+.role-select{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:18px;border:1px solid var(--line2);border-radius:var(--r-input);background:var(--page);padding:4px;}
+.role-opt{
+  appearance:none;border:none;background:transparent;cursor:pointer;text-align:left;
+  padding:10px 12px;border-radius:6px;display:flex;flex-direction:column;gap:2px;
+  color:var(--t2);font:inherit;transition:background .12s,color .12s;
+}
+.role-opt .ro-name{font-size:13px;font-weight:700;color:var(--t1)}
+.role-opt .ro-sub{font-family:var(--serif);font-style:italic;font-size:11.5px;color:var(--t3-cool);line-height:1.3}
+.role-opt[aria-checked="true"]{background:var(--white);box-shadow:0 1px 2px rgba(15,23,42,.06)}
+.role-opt[aria-checked="true"] .ro-name{color:var(--ink)}
+.role-opt:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(59,111,181,.30)}
+.role-cap{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--t3-cool);margin-bottom:6px}
+/* Hero motif variants — broker visible by default, lender hidden; toggled by data-mode on #login. */
+.login-hero .lh-motif-lender,.login-hero .lh-proof-lender{display:none}
+#login[data-mode="lender"] .lh-positioning-broker,
+#login[data-mode="lender"] .lh-motif-broker,
+#login[data-mode="lender"] .lh-proof-broker{display:none}
+#login[data-mode="lender"] .lh-positioning-lender{display:block}
+#login[data-mode="lender"] .lh-motif-lender{display:block}
+#login[data-mode="lender"] .lh-proof-lender{display:grid}
+.login-hero .lh-positioning-lender{display:none}
+.login-hero .lh-motif-lender .lm-statement{color:#A7C2E8}
+.login-hero .lh-motif-lender .lm-value{color:#A7C2E8}
 @keyframes loginFadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .login-hero,.login-card{animation:loginFadeUp .35s cubic-bezier(.22,1,.36,1) both}
 .login-card{animation-delay:.05s}
 @media (max-width:860px){
   #login{grid-template-columns:1fr;grid-template-rows:auto 1fr}
   .login-hero{padding:22px 24px 26px}
-  .login-hero .lh-positioning{font-size:22px;max-width:none}
-  .login-hero .lh-motif,.login-hero .lh-proof,.login-hero .lh-foot{display:none}
+  .login-hero .lh-positioning,.login-hero .lh-positioning-lender{font-size:22px;max-width:none}
+  .login-hero .lh-motif,.login-hero .lh-motif-lender,.login-hero .lh-proof,.login-hero .lh-proof-lender,.login-hero .lh-foot{display:none}
+  #login[data-mode="lender"] .lh-motif-lender,#login[data-mode="lender"] .lh-proof-lender{display:none}
   .login-form-col{padding:18px;align-items:flex-start}
   .login-card{padding:22px 22px}
+  .role-select{grid-template-columns:1fr 1fr}
 }
 @media (prefers-reduced-motion: reduce){
   .login-hero,.login-card{animation:none}
@@ -934,6 +960,33 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
 .btn-decline{background:var(--red);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;letter-spacing:.02em}
 
 /* ============================================================
+   ASSESSOR APP SHELL — populated in Pass 2 (Assessment Console).
+   ============================================================ */
+#assessorApp{display:none;flex-direction:column;height:100vh;overflow:hidden;background:var(--page);color:var(--ink);font-family:var(--sans);}
+.ac-cmd-bar{display:flex;align-items:center;gap:14px;padding:10px 18px;background:var(--ink);color:#fff;border-bottom:1px solid rgba(255,255,255,.06);height:54px;flex-shrink:0;}
+.ac-cmd-left{display:flex;align-items:center;gap:10px;min-width:0}
+.ac-cmd-left .wordmark{font-weight:800;font-size:15px;letter-spacing:-.2px;color:#fff}
+.ac-cmd-sep{opacity:.35;font-size:14px}
+.ac-cmd-org{font-family:var(--serif);font-style:italic;font-size:14px;color:rgba(255,255,255,.86);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ac-cmd-swatch{width:10px;height:10px;border-radius:2px;background:var(--steel);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+.ac-cmd-centre{flex:1;display:flex;justify-content:center}
+.ac-cmd-centre input{width:min(480px,100%);padding:8px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);color:#fff;font-size:13px}
+.ac-cmd-centre input::placeholder{color:rgba(255,255,255,.50)}
+.ac-cmd-centre input:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(167,194,232,.30);border-color:rgba(167,194,232,.55)}
+.ac-cmd-right{display:flex;align-items:center;gap:10px}
+.ac-cmd-user{font-size:12.5px;font-weight:600;color:rgba(255,255,255,.78);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ac-cmd-right .avatar{width:30px;height:30px;font-size:11px;background:rgba(255,255,255,.10);color:#fff;border:1px solid rgba(255,255,255,.16)}
+.ac-cmd-right .btn-sm{padding:6px 10px;font-size:12px;border-radius:6px;border:1px solid rgba(255,255,255,.18);background:transparent;color:#fff;cursor:pointer}
+.ac-cmd-right .btn-sm:hover{background:rgba(255,255,255,.06)}
+.ac-cmd-right .btn-sm:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(167,194,232,.30)}
+.ac-body{flex:1;overflow:hidden;display:flex;background:var(--page);min-height:0}
+.ac-placeholder{padding:60px 56px;max-width:680px;margin:40px auto;background:var(--white);border:1px solid var(--line2);border-radius:var(--r-card);box-shadow:var(--sh-1)}
+.ac-placeholder .ac-cap{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--t3-cool);margin-bottom:8px}
+.ac-placeholder h1{font-family:var(--serif);font-weight:400;font-size:32px;line-height:1.1;letter-spacing:-.005em;color:var(--ink);margin-bottom:10px}
+.ac-placeholder p{color:var(--t2);font-size:14px;line-height:1.55;margin-bottom:14px}
+.ac-placeholder .ac-stub{font-family:var(--mono);font-size:12px;color:var(--t3-cool);background:var(--page);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+
+/* ============================================================
    Global reduced-motion override — neutralise page animations.
    ============================================================ */
 @media (prefers-reduced-motion: reduce){
@@ -956,18 +1009,19 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
 <!-- ============================================================
      LOGIN
      ============================================================ -->
-<div id="login">
+<div id="login" data-mode="broker">
   <aside class="login-hero">
     <div>
       <div class="lh-top">
         <div class="lh-logo">D</div>
         <div class="lh-wordmark">DebtIQ</div>
       </div>
-      <p class="lh-positioning" style="margin-top:38px">A credit‑grade brokerage <em>operating system</em>.<br>Calm, exact, auditable.</p>
+      <p class="lh-positioning lh-positioning-broker" style="margin-top:38px">A credit‑grade brokerage <em>operating system</em>.<br>Calm, exact, auditable.</p>
+      <p class="lh-positioning lh-positioning-lender" style="margin-top:38px">A credit‑grade assessment <em>console</em>.<br>Calm, exact, auditable.</p>
     </div>
     <div>
-      <div class="lh-cap">Caught before lodgement</div>
-      <div class="lh-motif" aria-hidden="true">
+      <div class="lh-cap" id="lhCap">Caught before lodgement</div>
+      <div class="lh-motif lh-motif-broker" aria-hidden="true">
         <div class="lm-statement">Serviceable.</div>
         <div class="lm-note">NDI surplus of $847/mo at CBA — assessed against the 3% APRA buffer and the lender's full income shading.</div>
         <div class="lm-feature">
@@ -975,10 +1029,23 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
           <span class="lm-value">+$847/mo</span>
         </div>
       </div>
-      <div class="lh-proof">
+      <div class="lh-motif lh-motif-lender" aria-hidden="true">
+        <div class="lm-statement">Decided in minutes.</div>
+        <div class="lm-note">Approve, refer, or decline with a full audit trail — every figure traces back to the source document the broker submitted.</div>
+        <div class="lm-feature">
+          <span class="lm-label">Median&nbsp;SLA</span>
+          <span class="lm-value">02:38</span>
+        </div>
+      </div>
+      <div class="lh-proof lh-proof-broker">
         <div class="lp"><div class="lp-num">25</div><div class="lp-label">AU lenders, real policies</div></div>
         <div class="lp"><div class="lp-num">3</div><div class="lp-label">Forensic layers per document</div></div>
         <div class="lp"><div class="lp-num">100%</div><div class="lp-label">Source‑traced to origin</div></div>
+      </div>
+      <div class="lh-proof lh-proof-lender">
+        <div class="lp"><div class="lp-num">4</div><div class="lp-label">Cs scored on every file</div></div>
+        <div class="lp"><div class="lp-num">A–D</div><div class="lp-label">Routing with coded reasons</div></div>
+        <div class="lp"><div class="lp-num">100%</div><div class="lp-label">Audited, attributable</div></div>
       </div>
       <div class="lh-foot">For mortgage brokers and credit assessors across Australia.</div>
     </div>
@@ -988,15 +1055,32 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
       <div class="lc-cap">Sign in</div>
       <h1>Welcome back.</h1>
       <p class="sub">Pick up where you left off — or open a new file.</p>
+
+      <div class="role-cap">I'm signing in as</div>
+      <div class="role-select" role="radiogroup" aria-label="Sign-in role">
+        <button type="button" class="role-opt" id="roleOptBroker" role="radio" aria-checked="true" onclick="setLoginRole('broker')">
+          <span class="ro-name">Broker</span>
+          <span class="ro-sub">Pipeline, deals, calculator</span>
+        </button>
+        <button type="button" class="role-opt" id="roleOptLender" role="radio" aria-checked="false" onclick="setLoginRole('lender')">
+          <span class="ro-name">Lender / Assessor</span>
+          <span class="ro-sub">Assessment console, decisioning</span>
+        </button>
+      </div>
+
       <div class="field">
         <label for="loginEmail">Email</label>
         <input id="loginEmail" type="email" value="broker@debtiq.com" placeholder="you@brokerage.com" autocomplete="username">
+      </div>
+      <div class="field" id="loginOrgField" style="display:none">
+        <label for="loginOrg">Lending institution</label>
+        <input id="loginOrg" type="text" value="Commonwealth Bank" placeholder="e.g. Commonwealth Bank" autocomplete="organization">
       </div>
       <div class="field">
         <label for="loginPass">Password</label>
         <input id="loginPass" type="password" value="demo1234" placeholder="••••••••" autocomplete="current-password">
       </div>
-      <button class="btn-grad" onclick="doLogin()">Sign in</button>
+      <button class="btn-grad" id="loginBtn" onclick="doLogin()">Enter broker workspace</button>
       <div id="authExtra"></div>
       <div class="demo-creds">
         <b>Demo credentials</b><br>
@@ -1131,6 +1215,30 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
       <div style="padding:0 24px 24px" id="settingsBody"></div>
     </div>
   </div>
+</div>
+
+<!-- ============================================================
+     LENDER / ASSESSOR WORKSPACE — separate shell, populated by initAssessorShell()
+     ============================================================ -->
+<div id="assessorApp" style="display:none">
+  <div id="acCmdBar" class="ac-cmd-bar">
+    <div class="ac-cmd-left">
+      <div class="logo-mark">D</div>
+      <span class="wordmark">DebtIQ</span>
+      <span class="ac-cmd-sep">·</span>
+      <span class="ac-cmd-org" id="acOrgName">Lending institution</span>
+      <span class="ac-cmd-swatch" id="acOrgSwatch" aria-hidden="true"></span>
+    </div>
+    <div class="ac-cmd-centre">
+      <input id="acSearch" aria-label="Search assessor queue" placeholder="Search files, applicants, codes…  ⌘K">
+    </div>
+    <div class="ac-cmd-right">
+      <span id="acUserName" class="ac-cmd-user"></span>
+      <div class="avatar" id="acAvatar">AS</div>
+      <button class="btn-sm" onclick="doSignOut()" aria-label="Sign out">Sign out</button>
+    </div>
+  </div>
+  <div id="acBody" class="ac-body"></div>
 </div>
 
 <!-- Slide-over panel -->
@@ -1310,6 +1418,8 @@ const state = {
   anthropicKey:'',       // set to a truthy flag when AI is reachable via the server proxy
   backend:false,         // true when Supabase config loaded from /api/config
   user:null,             // Supabase auth user when signed in
+  loginRole:'broker',    // login-form selector — 'broker' | 'lender' (Pass 1)
+  org:null,              // lending institution captured at login when role='lender'
   accreditedLenders:['CBA','ANZ','NAB','Westpac','Macquarie','ING','Bankwest','St George','Pepper','Liberty','Resimac','La Trobe','Firstmac','Suncorp','Bendigo'],
   panelTab:'overview',
   lendersTab:'compare',
@@ -5245,7 +5355,31 @@ async function saveDeal(d){
 }
 
 /* ---------- Auth ---------- */
+/* Login role selector (radiogroup) — toggles hero copy, lender-org field, and button label. */
+function setLoginRole(role){
+  state.loginRole = role==='lender' ? 'lender' : 'broker';
+  const root = document.getElementById('login');
+  if(root) root.setAttribute('data-mode', state.loginRole);
+  const b = document.getElementById('roleOptBroker'), l = document.getElementById('roleOptLender');
+  if(b) b.setAttribute('aria-checked', state.loginRole==='broker');
+  if(l) l.setAttribute('aria-checked', state.loginRole==='lender');
+  const org = document.getElementById('loginOrgField');
+  if(org) org.style.display = state.loginRole==='lender' ? '' : 'none';
+  const btn = document.getElementById('loginBtn');
+  if(btn) btn.textContent = state.loginRole==='lender' ? 'Enter assessment console' : 'Enter broker workspace';
+  const cap = document.getElementById('lhCap');
+  if(cap) cap.textContent = state.loginRole==='lender' ? 'Decisioned with provenance' : 'Caught before lodgement';
+  const email = document.getElementById('loginEmail');
+  // Update placeholder credential only — don't clobber a user-typed value.
+  if(email && (email.value==='broker@debtiq.com' || email.value==='assessor@debtiq.com')){
+    email.value = state.loginRole==='lender' ? 'assessor@debtiq.com' : 'broker@debtiq.com';
+  }
+}
 async function doLogin(){
+  // Capture role + org from the login form before the auth round-trip.
+  const role = state.loginRole==='lender' ? 'assessor' : 'broker';
+  const orgEl = document.getElementById('loginOrg');
+  const org = (role==='assessor' && orgEl) ? (orgEl.value||'').trim() : null;
   if(state.backend && sbClient){
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPass').value;
@@ -5253,8 +5387,12 @@ async function doLogin(){
     const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
     hideLoader();
     if(error){ toast(error.message, 'err'); return; }
-    state.user = data.user; syncAi(); enterApp();
+    state.user = data.user; syncAi();
+    // TODO: when Supabase exposes role/org on the session, prefer those over the login-form values.
+    state.role = role; state.org = org;
+    enterApp();
   } else {
+    state.role = role; state.org = org;
     enterApp();   // static demo mode
   }
 }
@@ -5296,12 +5434,56 @@ function renderLoginMode(){
 }
 async function enterApp(){
   document.getElementById('login').style.display='none';
+  if(state.role==='assessor'){
+    // Lender / Assessor workspace — separate shell (Pass 2 will populate).
+    const a = document.getElementById('assessorApp');
+    if(a) a.style.display='flex';
+    if(aiLive()) await loadDeals();
+    initAssessorShell();
+    toast(state.user ? ('Welcome, '+(state.user.email||'assessor')+'!') : 'Welcome, Assessor.', 'ok');
+    return;
+  }
   document.getElementById('app').style.display='flex';
   if(aiLive()) await loadDeals();
   toast(state.user ? ('Welcome, '+(state.user.email||'broker')+'!') : 'Welcome back, Jordan!', 'ok');
   init();
 }
 document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+
+/* ---------- Assessor shell (Pass 1: placeholder · Pass 2: full console) ---------- */
+function orgSwatchFor(org){
+  // Stable colour from the org name — used for the cmd-bar institution swatch.
+  const palette = ['#3B6FB5','#0B6B4F','#1E2A44','#7A3FB0','#9A5A00','#2E5C8A','#5A2E8A','#A92626'];
+  let h = 0; const s = (org||'').toLowerCase();
+  for(let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i))>>>0; }
+  return palette[h % palette.length];
+}
+function initAssessorShell(){
+  seedTimeline();
+  seedDocIntelligence();
+  seedDemoIntel();
+  const org = state.org || (state.user && state.user.email ? state.user.email.split('@')[0] : '') || 'Lending institution';
+  const orgEl = document.getElementById('acOrgName'); if(orgEl) orgEl.textContent = org;
+  const sw = document.getElementById('acOrgSwatch'); if(sw) sw.style.background = orgSwatchFor(org);
+  const u = document.getElementById('acUserName');
+  if(u) u.textContent = state.user ? (state.user.email||'') : 'Demo assessor';
+  const av = document.getElementById('acAvatar');
+  if(av){
+    const src = state.user && state.user.email ? state.user.email : 'Assessor';
+    av.textContent = src.split(/[@.\s]/).filter(Boolean).slice(0,2).map(s=>s[0].toUpperCase()).join('') || 'AS';
+  }
+  renderAssessmentConsole();
+}
+/* Pass 1 placeholder. Pass 2 replaces this with the full console (queue + decision engine + 4 Cs + routing + conditions + audit). */
+function renderAssessmentConsole(){
+  const body = document.getElementById('acBody'); if(!body) return;
+  body.innerHTML = `<div class="ac-placeholder" role="status">
+    <div class="ac-cap">Assessment console</div>
+    <h1>Workspace ready.</h1>
+    <p>Signed in as <b>${esc(state.org||'lending institution')}</b>. The console — incoming queue, decision engine output, 4 Cs scorecard, approval routing, coded conditions, and the audit trail — will be wired up in <i>Pass 2</i>.</p>
+    <div class="ac-stub">role = ${esc(state.role||'')} · org = ${esc(state.org||'')} · backend = ${state.backend?'live':'demo'}</div>
+  </div>`;
+}
 
 /* ---------- Init ---------- */
 function init(){

@@ -1,5 +1,53 @@
 # DebtIQ v6 — Changelog
 
+## Round (lender side · Pass 1) — Branching login + assessor workspace shell
+
+First pass of the lender/assessor integration. Login now branches by role
+and routes the user into a separate workspace; Pass 2 will fill the
+assessor console with the queue, decision engine, 4 Cs, routing,
+conditions, and audit trail.
+
+- **Role selector** on the login card as an ARIA `radiogroup` with two
+  options (Broker · Lender/Assessor). `:focus-visible` steel ring;
+  `aria-checked` toggled in JS. Persists into `state.loginRole`.
+- **Hero motif branches by role.** The ink left panel keeps its
+  positioning headline + motif + proof points pattern, but swaps content
+  per role via a `data-mode` attribute on `#login` (no DOM swap — both
+  variants live in the document and CSS hides the inactive one):
+  - **Broker:** "A credit-grade brokerage *operating system*." · motif
+    *Serviceable.* · NDI +$847/mo · proof points = 25 lenders / 3
+    forensic layers / 100% source-traced.
+  - **Lender:** "A credit-grade assessment *console*." · motif
+    *Decided in minutes.* · Median SLA 02:38 · proof points = 4 Cs /
+    A–D routing / 100% audited.
+- **`#loginOrg` (Lending institution)** field appears only in lender
+  mode (additive — leaves `#loginEmail` / `#loginPass` / `doLogin()` /
+  `#authExtra` / demo-creds untouched).
+- **Button label** flips between "Enter broker workspace" and "Enter
+  assessment console".
+- **Post-login routing.** `doLogin()` captures the role and org from the
+  form (overlays existing Supabase auth where present — TODO comment for
+  when the session exposes role/org natively). `enterApp()` branches:
+  broker → existing `#app` shell + `init()`; lender → new `#assessorApp`
+  shell + `initAssessorShell()`.
+- **`#assessorApp` shell.** Separate top-level container (ink command
+  bar with institution identity + colour swatch + global search +
+  avatar + sign-out, then a paper body). Pass 1 renders a placeholder
+  card via `renderAssessmentConsole()`; Pass 2 will replace it with the
+  full console.
+- **Demo + live both work.** Demo mode skips the Supabase round-trip
+  and routes directly. Live mode signs in via Supabase first, then
+  applies the captured role/org (until the session payload carries
+  them natively).
+- **Smoke harness +15 checks** (157/157 total): default role state,
+  data-mode, button-label flip, org-field reveal, motif + proof points
+  both present in DOM, lender doLogin routes to `#assessorApp`, org name
+  rendered in the cmd bar, placeholder visible.
+
+Files touched: `index.html` (login HTML + role-selector CSS +
+assessor-shell CSS + JS auth/route branching + state).
+No changes to `netlify/`, `supabase/`, `/api/*`, `lenders.js`.
+
 ## Round (redesign · Phase 4) — Polish (popover · portal mobile · a11y · integrity chip)
 
 Final polish round closing out the redesign brief.
