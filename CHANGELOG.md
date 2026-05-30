@@ -1,5 +1,42 @@
 # DebtIQ v6 — Changelog
 
+## Round (redesign · Phase 3) — Screen polish (Pipeline · Client · Review · Compliance · AI Pilot)
+
+Targeted polish on the remaining journey screens to bring them into the
+Editorial + Clinical language. No backend or contract changes; primitives from
+Phase 1 reused throughout.
+
+- **Pipeline filter chips** now carry per-stage **mono counts** (`All 6 ·
+  My Review 1 · Docs Needed 1 · Approved 1`), so filtering is informative at
+  a glance.
+- **Client tab — compact entity editor** (new `.ent-compact` cards via
+  `renderEntityCompactEditor()`). Per-entity kind / role selects, name +
+  conditional ABN/trustee inputs, ownership %, **include-in-serviceability**
+  toggle, and a remove × when >1. `+ Individual/Joint/Company/Trust/SMSF/
+  Partnership` buttons add an entity inline. The full income/liability editor
+  stays on Calculate per the audit decision; this delivers the "compact
+  editor on Client" ambiguity choice.
+- **Extraction Review — serif source-text callouts.** Replaced the inline
+  `rev-src` snippet with a styled `<blockquote class="rev-quote">` showing
+  the full extracted source text in Newsreader italic, on a paper background
+  with an ink left-rule and ornamental quote marks. Low-confidence fields now
+  show a calm `Low conf.` status pill instead of an emoji warning.
+- **Compliance AI — calmer gating.** API-key-required / blocked / policy-flag
+  banners now use a two-column `.comp-gate` pattern (label · body) on paper
+  with role-coloured left rules — info=steel, warn=amber, blocked=red — and
+  Newsreader italic copy. The four generator cards become `.comp-card`s with
+  editorial section heads (caption + serif title); the Full Submission Pack
+  card is the featured `.comp-card.featured` (paper + ink rule). Buttons are
+  flat ink; emoji generator glyphs removed.
+- **AI Pilot — calm DEMO chip + ink hero.** Hero recoloured to flat ink with
+  serif headline and italic note; the loud yellow `DEMO` badge is replaced
+  with a hairline `.ai-demo-chip` (mono, white-on-ink, pill). The hero's `✦`
+  glyph is gone.
+
+**Verification:** `node --check` clean; jsdom smoke **139/139** (5 new Phase 3
+checks: filter-chip counts, Client compact editor, Review serif callout,
+Compliance comp-card surfaces, AI Pilot calm DEMO chip).
+
 ## Round (redesign · Phase 2) — Shell: role toggle · Assessment screen · Conditions tab · actor-coloured timeline
 
 Phase 2 of the broader frontend refresh — wiring the new design system through

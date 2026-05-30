@@ -394,6 +394,9 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
 .rev-meta .conf-bar{flex:0 0 70px}
 .rev-src{font-size:11px;color:var(--t3);cursor:pointer;font-style:italic}
 .rev-src:hover{color:var(--brand)}
+.rev-quote{margin:8px 0 0;padding:6px 12px;border-left:2px solid var(--ink);background:var(--paper);font-family:var(--serif);font-style:italic;color:var(--t2);font-size:13px;line-height:1.5;border-radius:0 6px 6px 0}
+.rev-quote::before{content:"“";font-family:var(--serif);font-size:18px;color:var(--ink);margin-right:2px;vertical-align:-2px}
+.rev-quote::after{content:"”";font-family:var(--serif);font-size:18px;color:var(--ink);margin-left:2px;vertical-align:-2px}
 
 .page-head{margin-bottom:20px}
 .page-head h1{font-size:22px;font-weight:800}
@@ -868,6 +871,36 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
 /* Calm copilot quick-actions (no mascot/emoji) */
 .cp-actions button{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:10.5px;font-weight:600;letter-spacing:.06em;color:var(--t2);text-transform:uppercase}
 .cp-actions button:hover{background:var(--brand-bg);color:var(--ink);border-color:var(--ink)}
+
+/* Compliance AI — calmer gating */
+.comp-gate{display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:start;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-card);padding:14px 18px;margin-bottom:14px}
+.comp-gate.info{border-left:2px solid var(--steel)}
+.comp-gate.warn{border-left:2px solid var(--amber)}
+.comp-gate.blocked{border-left:2px solid var(--red)}
+.comp-gate .cg-body{font-size:13.5px;color:var(--t2);line-height:1.55}
+.comp-gate b{color:var(--t1);font-weight:600}
+.comp-card{padding:18px;background:var(--white);border:1px solid var(--line2);border-radius:var(--r-card)}
+.comp-card.featured{background:var(--paper);border:1px solid var(--line);border-left:2px solid var(--ink)}
+
+/* AI Pilot DEMO chip — calm editorial */
+.ai-hero{background:var(--ink) !important}
+.ai-hero h2,.ai-hero p,.ai-hero .caption{color:#fff}
+.ai-demo-chip{display:inline-block;margin-left:10px;padding:2px 8px;border:1px solid rgba(255,255,255,.3);border-radius:var(--r-pill);font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:10px;font-weight:600;letter-spacing:.08em;color:rgba(255,255,255,.85);vertical-align:middle}
+
+/* Client tab compact entity editor */
+.ent-compact{border:1px solid var(--line2);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:#fff}
+.ent-compact .ec-row{display:grid;grid-template-columns:140px 1fr 140px auto;gap:8px;align-items:center}
+.ent-compact select,.ent-compact input{padding:6px 9px;border:1px solid var(--line2);border-radius:6px;background:#fff;font-size:13px;color:var(--t1);font-family:inherit}
+.ent-compact input:focus,.ent-compact select:focus{outline:none;border-color:var(--steel);box-shadow:0 0 0 3px rgba(59,111,181,.14)}
+.ent-compact .ec-rm{background:none;border:none;color:var(--t3-cool);font-size:18px;cursor:pointer;padding:0 6px;line-height:1}
+.ent-compact .ec-rm:hover{color:var(--red)}
+.ent-compact .ec-meta{display:flex;align-items:center;gap:14px;margin-top:8px;font-size:12.5px;color:var(--t2);flex-wrap:wrap}
+.ent-compact .ec-own{display:inline-flex;align-items:center;gap:6px;font-family:inherit}
+.ent-compact .ec-own input{width:62px;text-align:right;font-family:var(--mono)}
+.ent-compact .ec-incl{display:inline-flex;align-items:center;gap:6px}
+@media(max-width:700px){
+  .ent-compact .ec-row{grid-template-columns:1fr;gap:6px}
+}
 
 /* Assessment screen primitives */
 .dec-band{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:18px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:16px;background:var(--paper);padding:18px 22px;border-radius:var(--r-card);border:1px solid var(--line)}
@@ -1599,8 +1632,9 @@ function renderDashboard(el){
         <input id="dealSearch" aria-label="Search deals" placeholder="Search deals or client…" value="${state.dealSearch}" oninput="state.dealSearch=this.value;debouncedRenderDealGrid()">
       </div>
       <div class="filters">
-        ${[['all','All'],['my','My Review'],['docs','Docs Needed'],['approved','Approved']].map(([k,l])=>
-          `<button class="chip ${state.dealFilter===k?'active':''}" onclick="state.dealFilter='${k}';renderDashboard(document.getElementById('page-dashboard'))">${l}</button>`).join('')}
+        ${(()=>{ const cnt={all:DEALS.length, my:DEALS.filter(x=>x.status==='BROKER_REVIEW').length, docs:DEALS.filter(x=>x.status==='DOCS_PENDING').length, approved:DEALS.filter(x=>x.status==='APPROVED').length};
+          return [['all','All'],['my','My Review'],['docs','Docs Needed'],['approved','Approved']].map(([k,l])=>
+          `<button class="chip ${state.dealFilter===k?'active':''}" onclick="state.dealFilter='${k}';renderDashboard(document.getElementById('page-dashboard'))">${l} <span class="mono" style="opacity:.7;font-weight:600;margin-left:4px">${cnt[k]}</span></button>`).join(''); })()}
       </div>
     </div>
     <div class="deal-grid" id="dealGrid"></div>
@@ -3325,12 +3359,13 @@ function renderReview(el){
       <div>
         ${doc.forensic && /REVIEW|CAUTION/i.test(doc.forensic.status||'')?`<div class="fz-disc">Integrity: <b>${doc.forensic.integrity}</b> — see findings on the Documents tab.</div>`:''}
         <div class="card" style="padding:16px">
-          <h3 style="font-size:14px;font-weight:700;margin-bottom:10px">Extracted fields — click a value's quote to see its source</h3>
-          ${Object.entries(doc.extracted.fields).map(([k,v])=>{ const conf=(v&&v.confidence)||0; const low=conf<80; return `
+          <div class="caption-cool" style="margin-bottom:10px">Extracted fields — each value is traced to the text it was read from</div>
+          ${Object.entries(doc.extracted.fields).map(([k,v])=>{ const conf=(v&&v.confidence)||0; const low=conf<80; const sevCls=conf<60?'bad':conf<80?'warn':'ok'; return `
             <div class="rev-field ${low?'low':''}">
-              <label>${escHtml(k.replace(/_/g,' '))}${low?' <span style="color:var(--amber)">⚠ low</span>':''}</label>
+              <label>${escHtml(k.replace(/_/g,' '))}${low?' <span class="status-pill warn" style="margin-left:6px">Low conf.</span>':''}</label>
               <input value="${escHtml(v&&v.value!=null?v.value:'')}" onchange="editExtract('${escArg(doc.name)}','${escArg(k)}',this.value)">
-              <div class="rev-meta"><div class="conf-bar"><span style="width:${conf}%"></span></div><span class="mono">${conf}%</span>${v&&v.source_text?`<span class="rev-src" onclick="toast('Read from: ${escArg((v.source_text||'').slice(0,120))}','info')">“${escHtml((v.source_text||'').slice(0,30))}”</span>`:''}</div>
+              <div class="rev-meta"><div class="conf-bar"><span style="width:${conf}%"></span></div><span class="mono">${conf}%</span></div>
+              ${v&&v.source_text?`<blockquote class="rev-quote" title="Read from the source document">${escHtml(v.source_text)}</blockquote>`:''}
             </div>`; }).join('')}
           <div style="margin-top:14px"><button class="btn primary" onclick="approveDoc('${escArg(doc.name)}')">${doc.reviewed?'✓ Approved':'Approve extraction'}</button></div>
         </div>
@@ -3988,10 +4023,11 @@ let pilotResult = null;
 
 function renderAIPilot(el){
   el.innerHTML = `
-    <div class="market-hero">
-      <h2>✦ AI Pilot ${state.anthropicKey?'':'<span style="font-size:11px;font-weight:800;background:#FEF3C7;color:#92400E;padding:3px 8px;border-radius:7px;vertical-align:middle;margin-left:8px">DEMO</span>'}</h2>
-      <p style="opacity:.9;margin-top:4px">End-to-end autopilot — extract, assess, match a lender and draft the submission into one shared file with zero re-keying.${state.anthropicKey?'':' <b>(Demo mode — add your Anthropic API key in Settings to enable live document processing.)</b>'}</p>
-      <button class="btn" id="pilotBtn" style="margin-top:18px;background:#fff;color:var(--brand);font-weight:700" onclick="runAIPilot()">${pilotState==='done'?'▶ Re-run AI Pilot':'▶ Run AI Pilot'}</button>
+    <div class="market-hero ai-hero">
+      <div class="caption" style="color:rgba(255,255,255,.55)">Autopilot · ${state.anthropicKey?'live':'demo'}</div>
+      <h2 class="serif" style="font-weight:500;font-size:30px;letter-spacing:-.005em;margin-top:6px">AI Pilot ${state.anthropicKey?'':'<span class="ai-demo-chip">DEMO</span>'}</h2>
+      <p class="serif-italic" style="margin-top:6px;opacity:.92;max-width:640px">End-to-end — extract documents, assess serviceability, match a lender, draft the submission. One shared file, zero re-keying.${state.anthropicKey?'':' <span class="serif" style="font-style:normal;font-weight:500;color:rgba(255,255,255,.92)">Add a backend API key to enable live document processing.</span>'}</p>
+      <button class="btn" id="pilotBtn" style="margin-top:18px;background:#fff;color:var(--ink);font-weight:700;border:none" onclick="runAIPilot()">${pilotState==='done'?'Re-run AI Pilot':'Run AI Pilot'}</button>
     </div>
     <div id="pilotSteps" style="max-width:760px"></div>
     <div id="pilotResults" style="max-width:760px"></div>`;
@@ -4488,24 +4524,24 @@ function renderCompliance(el){
   const r = computeServiceability();
   const validation = validateBIDBeforeGenerate(r);
   el.innerHTML = `
-    <div class="page-head"><h1>Compliance AI</h1>
-      <p>Generate ASIC RG209-compliant BID documentation, HEM explanations, and responsible lending summaries.</p></div>
-    ${!state.anthropicKey ? `<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--amber);background:#FFFBEB"><b>API key required</b> — Add your Anthropic API key in Settings → AI to enable live generation. Without a key, DebtIQ generates editable template placeholders.</div>` : ''}
-    ${validation.blocked ? `<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--red);background:#FEF2F2"><b>⚠ Cannot generate compliance documents</b><br>${validation.reason}</div>` : ''}
-    ${validation.warnings && validation.warnings.length ? `<div class="card" style="padding:14px 16px;margin-bottom:16px;border-left:4px solid var(--amber)"><b>Policy flags to address in your documentation:</b><ul style="margin-top:8px;padding-left:18px;font-size:13px;color:var(--t2);line-height:1.7">${validation.warnings.map(w=>`<li>${w}</li>`).join('')}</ul></div>` : ''}
+    <div class="page-head"><h1 class="serif" style="font-weight:500;letter-spacing:-.005em">Compliance AI</h1>
+      <p>Generate ASIC RG209-compliant BID documentation, HEM explanations, and responsible-lending summaries — each AI-drafted, editable inline, and gated by the deal's serviceability.</p></div>
+    ${!state.anthropicKey ? `<div class="comp-gate info"><span class="caption-cool">Backend required</span><div class="cg-body"><b>API key not configured.</b> <span class="serif-italic">Without a key, DebtIQ generates editable template placeholders. Set <span class="mono">ANTHROPIC_API_KEY</span> server-side to enable live generation.</span></div></div>` : ''}
+    ${validation.blocked ? `<div class="comp-gate blocked"><span class="caption-cool" style="color:var(--red)">Cannot generate</span><div class="cg-body"><b>Serviceability does not pass.</b> <span class="serif-italic">${esc(validation.reason)}</span></div></div>` : ''}
+    ${validation.warnings && validation.warnings.length ? `<div class="comp-gate warn"><span class="caption-cool" style="color:var(--amber)">Policy flags</span><div class="cg-body"><b>Address these in your documentation.</b><ul style="margin-top:6px;padding-left:18px;font-size:13px;color:var(--t2);line-height:1.7">${validation.warnings.map(w=>`<li class="serif-italic">${esc(w)}</li>`).join('')}</ul></div></div>` : ''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-      <div class="card" style="padding:20px"><h3 style="font-size:15px;font-weight:700;margin-bottom:6px">Requirements & Objectives</h3>
-        <p style="font-size:12.5px;color:var(--t3);margin-bottom:14px">Per ASIC RG209. Explains why this loan meets the client's stated objectives.</p>
-        <button class="btn primary" style="width:100%" onclick="genBID()" ${validation.blocked?'disabled':''}>✦ Generate R&O</button></div>
-      <div class="card" style="padding:20px"><h3 style="font-size:15px;font-weight:700;margin-bottom:6px">HEM Explanation</h3>
-        <p style="font-size:12.5px;color:var(--t3);margin-bottom:14px">Required when declared expenses are below HEM. References specific evidence.</p>
-        <button class="btn primary" style="width:100%" onclick="genHEM()">✦ Generate HEM Explanation</button></div>
-      <div class="card" style="padding:20px"><h3 style="font-size:15px;font-weight:700;margin-bottom:6px">Serviceability Commentary</h3>
-        <p style="font-size:12.5px;color:var(--t3);margin-bottom:14px">Credit-assessor narrative with DSR, NDI, DTI and lender policy references.</p>
-        <button class="btn primary" style="width:100%" onclick="genServiceability()" ${validation.blocked?'disabled':''}>✦ Generate Commentary</button></div>
-      <div class="card" style="padding:20px;background:rgba(30,42,68,.05);border:1.5px solid var(--ink)"><h3 style="font-size:15px;font-weight:700;margin-bottom:6px">Full Submission Pack</h3>
-        <p style="font-size:12.5px;color:var(--t3);margin-bottom:14px">All documents + cover page + checklist. Print-ready AOL-format PDF.</p>
-        <button class="btn primary" style="width:100%" onclick="generateSubmissionPack()">📄 Generate Full Pack</button></div>
+      <div class="card comp-card"><div class="caption-cool">RG209</div><h3 class="serif" style="font-weight:500;font-size:17px;margin:4px 0 6px;color:var(--t1)">Requirements &amp; Objectives</h3>
+        <p class="serif-italic" style="font-size:13px;color:var(--t2);margin-bottom:14px">Per ASIC RG209 — explains why this loan meets the client's stated objectives.</p>
+        <button class="btn primary" style="width:100%" onclick="genBID()" ${validation.blocked?'disabled':''}>Generate R&amp;O</button></div>
+      <div class="card comp-card"><div class="caption-cool">Living expenses</div><h3 class="serif" style="font-weight:500;font-size:17px;margin:4px 0 6px;color:var(--t1)">HEM Explanation</h3>
+        <p class="serif-italic" style="font-size:13px;color:var(--t2);margin-bottom:14px">Required when declared expenses are below HEM — references specific evidence.</p>
+        <button class="btn primary" style="width:100%" onclick="genHEM()">Generate HEM explanation</button></div>
+      <div class="card comp-card"><div class="caption-cool">Credit assessor</div><h3 class="serif" style="font-weight:500;font-size:17px;margin:4px 0 6px;color:var(--t1)">Serviceability Commentary</h3>
+        <p class="serif-italic" style="font-size:13px;color:var(--t2);margin-bottom:14px">DSR · NDI · DTI · lender policy references — assessor-tone narrative.</p>
+        <button class="btn primary" style="width:100%" onclick="genServiceability()" ${validation.blocked?'disabled':''}>Generate commentary</button></div>
+      <div class="card comp-card featured"><div class="caption-cool" style="color:var(--ink)">Submission</div><h3 class="serif" style="font-weight:500;font-size:17px;margin:4px 0 6px;color:var(--ink)">Full Submission Pack</h3>
+        <p class="serif-italic" style="font-size:13px;color:var(--t2);margin-bottom:14px">All sections + cover + checklist + provenance — print-ready credit memo.</p>
+        <button class="btn primary" style="width:100%" onclick="generateSubmissionPack()">Generate full pack</button></div>
     </div>
     <div class="card" style="padding:20px;margin-bottom:16px">
       <h3 style="font-size:15px;font-weight:700;margin-bottom:6px">Document extraction tester</h3>
@@ -5052,24 +5088,57 @@ function renderClientTab(el){
   if(!state.activeDeal){ el.innerHTML = noDealPrompt('Client','Select a deal from Pipeline to view client details.'); return; }
   const d = DEALS.find(x=>x.id===state.activeDeal) || {};
   el.innerHTML = `
-    <div class="page-head"><h1>${esc(d.name||'Client')}</h1><p>${esc(d.id||'')} · ${esc(d.type||'')}</p></div>
+    <div class="page-head"><h1 class="serif" style="font-weight:500;letter-spacing:-.005em">${esc(d.name||'Client')}</h1><p>${esc(d.id||'')} · ${esc(d.type||'')}</p></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
       <div class="card" style="padding:18px">
-        <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Contact &amp; referral</h3>
-        <div class="detail-row"><span class="dl">Phone</span><span class="dv">${d.primary_phone||'—'}</span></div>
-        <div class="detail-row"><span class="dl">Email</span><span class="dv">${d.primary_email||'—'}</span></div>
-        <div class="detail-row"><span class="dl">Referral</span><span class="dv">${REF_LABEL[d.referral_source]||'—'}</span></div>
-        <div class="detail-row"><span class="dl">Lender</span><span class="dv">${lenderLabel(d.lender)}</span></div>
+        <div class="caption-cool" style="margin-bottom:10px">Contact &amp; referral</div>
+        <div class="detail-row"><span class="dl">Phone</span><span class="dv">${esc(d.primary_phone||'—')}</span></div>
+        <div class="detail-row"><span class="dl">Email</span><span class="dv">${esc(d.primary_email||'—')}</span></div>
+        <div class="detail-row"><span class="dl">Referral</span><span class="dv">${esc(REF_LABEL[d.referral_source]||'—')}</span></div>
+        <div class="detail-row"><span class="dl">Lender</span><span class="dv">${esc(lenderLabel(d.lender))}</span></div>
         <div class="detail-row"><span class="dl">Est. commission</span><span class="dv mono">${fmtMoney((d.amount||0)*(d.upfront_commission_rate||0))} + ${fmtMoney((d.amount||0)*(d.trail_commission_rate||0))}/yr</span></div>
       </div>
       <div class="card" style="padding:18px">${renderNextActionSection(d)}</div>
     </div>
+    <div style="margin-top:16px">${renderEntityCompactEditor()}</div>
     <div style="margin-top:16px">${renderIncomeSummarySection()}</div>
     <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn primary" onclick="goTab('calculate')">Open in Calculator →</button>
-      <button class="btn" onclick="goTab('documents')">View Documents →</button>
+      <button class="btn primary" onclick="goTab('calculate')">Open full calculator →</button>
+      <button class="btn" onclick="goTab('documents')">View documents →</button>
       <button class="btn" onclick="goTab('loan')">Loan structure →</button>
     </div>`;
+}
+function renderEntityCompactEditor(){
+  const ents = state.calc.entities || [];
+  return `<div class="card" style="padding:18px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px">
+      <div class="caption-cool">Applicants &amp; entities</div>
+      <span class="serif-italic" style="font-size:12.5px;color:var(--t3-cool)">Compact editor — full income / liabilities on the Calculate tab.</span>
+    </div>
+    ${ents.map((e,i)=>{
+      const kindNeedsBiz = /trust|company|smsf|partnership/.test(e.kind||'individual');
+      return `<div class="ent-compact">
+        <div class="ec-row">
+          <select aria-label="Kind" onchange="setEntityKind(${i}, this.value);renderClientTab(document.getElementById('page-client'))">${Object.entries(ENTITY_KINDS).map(([k,l])=>`<option value="${k}" ${(e.kind||'individual')===k?'selected':''}>${l}</option>`).join('')}</select>
+          <input aria-label="Name" placeholder="${kindNeedsBiz?'Entity name':'Applicant name'}" value="${esc(e.name||'')}" oninput="updateEntityField(${i},'name',this.value)">
+          <select aria-label="Role" onchange="updateEntityField(${i},'role',this.value)">${Object.entries(ENTITY_ROLES).map(([k,l])=>`<option value="${k}" ${(e.role||'borrower')===k?'selected':''}>${l}</option>`).join('')}</select>
+          ${ents.length>1?`<button class="ec-rm" title="Remove entity" aria-label="Remove" onclick="removeEntity(${i});renderClientTab(document.getElementById('page-client'))">×</button>`:''}
+        </div>
+        ${kindNeedsBiz?`<div class="ec-row" style="margin-top:6px">
+          <input aria-label="ABN" placeholder="ABN" value="${esc(e.abn||'')}" oninput="updateEntityField(${i},'abn',this.value)" style="grid-column:span 2">
+          <input aria-label="Trustee/Director" placeholder="${(e.kind==='trust'||e.kind==='smsf')?'Trustee':'Director / contact'}" value="${esc(e.trustee_name||'')}" oninput="updateEntityField(${i},'trustee_name',this.value)" style="grid-column:span 2">
+        </div>`:''}
+        <div class="ec-meta">
+          <label class="ec-own">Ownership <input type="number" min="0" max="100" value="${e.ownership_pct==null?100:e.ownership_pct}" oninput="updateEntityField(${i},'ownership_pct',+this.value)"> <span class="num" style="color:var(--t3-cool)">%</span></label>
+          <label class="ec-incl"><input type="checkbox" ${e.included===false?'':'checked'} onchange="setEntityIncluded(${i},this.checked)"> Include in serviceability</label>
+          <span class="num" style="color:var(--t3-cool);font-size:11.5px;margin-left:auto">${(e.incomes||[]).length} income · ${(e.liabilities||[]).length} liability</span>
+        </div>
+      </div>`;
+    }).join('')}
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+      ${Object.entries(ENTITY_KINDS).map(([k,l])=>`<button class="btn" style="padding:6px 11px;font-size:12px" onclick="addEntity('${k}');renderClientTab(document.getElementById('page-client'))">+ ${esc(l)}</button>`).join('')}
+    </div>
+  </div>`;
 }
 
 /* ---------- Loan tab ---------- */
