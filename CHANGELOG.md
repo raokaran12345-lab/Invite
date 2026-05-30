@@ -1,5 +1,83 @@
 # DebtIQ v6 — Changelog
 
+## Round (brand system v1.0) — Full app rollout (tokens · ink monogram · screens · voice)
+
+A non-feature compliance refactor. Backend, schema, auth, IDs, render
+function signatures, data flow, and demo/live behaviour all preserved.
+
+**Phase 1 — Tokens as single source of truth.** Reconciled `:root` to
+the brief's authoritative block.
+- Added: `--brass`, `--ui`, `--green-bg`, `--amber-bg`, `--steel-bg`,
+  `--ink-bg`, plus on-ink legibility variants (`--green-on-ink`,
+  `--steel-on-ink`, `--amber-on-ink`, `--red-on-ink`).
+- Fixed `--sh-1` opacity to brief value (.05).
+- `--mono` fallback chain now `'DM Mono',ui-monospace,monospace`.
+- Mapped legacy aliases (`--bg`, `--surface`, `--brand`, `--border`,
+  `--t3`, `--t4`, `--teal`, `--brand-bg`, `--brand-soft`,
+  `--brand-grad`, `--sh-brand`, `--r-clinical`) to the new tokens —
+  none are extended, all are kept only so existing CSS cascades.
+- `body { font-family: var(--ui) }`. All `'Plus Jakarta Sans'`
+  literals removed except the two token declarations themselves.
+- `.mono` now also sets `font-feature-settings:"tnum"` alongside
+  `font-variant-numeric:tabular-nums`.
+- Replaced the income-flow chart's hex series (ink/amber/amber/warm-
+  slate/status) — amber reserved for the lender being conservative
+  (debt + stressed new loan), green/red only for the surplus.
+- Replaced the legacy `.verdict` gradient blocks with flat status
+  colours (the new `verdictHero()` is the real verdict surface).
+- Replaced `'Plus Jakarta Sans'` literals in the Submission Pack
+  stylesheet with `var(--ui)`; added `--brass` + `--line2` to the
+  pack's `:root`.
+
+**Phase 2 — Ink monogram, violet retired.**
+- New ink monogram SVG — a serif "D" rising from a faint ledger column
+  with serif feet top and bottom. Ink stroke on a paper square with a
+  hairline border. Inline SVG so it goes anywhere, sized via the host
+  element. Ink-on-paper for light surfaces, paper-on-ink for dark
+  (the assessor command bar).
+- Replaced every glyph site: login hero, broker command bar, assessor
+  command bar, submission-pack masthead, browser favicon (inline SVG
+  data URI).
+- **Deleted `--logo-grad`** and every `#5B4FF5 / #8B5CF6 / #A78BFA`
+  reference. The audit-trail AI dot (was `#7A3FB0`) and the org-swatch
+  palette (had violet entries) both retired to brass + the brand
+  family.
+
+**Phase 3 — Screen sweep.** Every screen now reads through tokens.
+Specific cleanups (called out by the brief):
+- Copilot-info tint → `var(--steel)` + `var(--steel-bg)`.
+- KPI/tile/market-card accents — already token-driven.
+- Tab badge / nav badge / demo banner → `var(--amber-bg)` + `var(--amber)`.
+- Timeline actor dots → on-ink legibility variants of the brand tokens
+  (steel-on-ink, amber-on-ink, green-on-ink) + brass for AI + warm
+  t3 for system.
+- `--logo-grad` already-removed; `@keyframes glow` already-removed.
+- Spinner/skeleton borders → `var(--line2)` / gradient through
+  `var(--paper)`.
+
+**Phase 4 — Voice & finish.**
+- Removed decorative `✦` glyph from "Why it works" / "AI Assessment"
+  buttons. Plain English headings: "Why it works" / "What to change"
+  and "Ask the assistant for an assessment".
+- Global reduced-motion override already present (line 210); 4 further
+  scoped blocks neutralise animation in specific surfaces.
+- Final search: **0 violet hex** anywhere, **0 `--logo-grad`** refs,
+  **0 hard-coded body-font** outside the two `--ui` token
+  declarations, **0 stray hex** outside token blocks / data URIs.
+
+**Styleguide.** `?styleguide=1` (legacy `?preview=1` still works)
+renders the brand catalogue: brand mark in both variants, token
+swatches in three columns (surfaces / structure / status with bg
+variants), type scale, and the signature components (VerdictHero,
+MetricGauges, LedgerRow, StatusPills, IntegrityChips, CodeChips).
+
+**Smoke harness +4 brand checks** (192/192 total): styleguide caption
++ ink monogram + brass swatch present, brand tokens defined,
+`--logo-grad` retired, no violet hex anywhere.
+
+Files touched: `index.html` only. No `netlify/`, `supabase/`,
+`/api/*`, or `lenders.js` changes.
+
 ## Round (lender side · Pass 4) — Provenance reveals (worksheet + submission pack)
 
 Both sides now see the same evidence the broker built. Every figure in
