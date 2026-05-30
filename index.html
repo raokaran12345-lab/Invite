@@ -830,6 +830,72 @@ body{color:var(--t1)}
 }
 
 /* ============================================================
+   PHASE 2 SHELL — role toggle · conditions · timeline actor dots · calm copilot
+   ============================================================ */
+/* Role toggle (segmented control in the command bar) */
+.role-toggle{display:inline-flex;border:1px solid var(--line2);border-radius:var(--r-pill);background:var(--page);padding:2px;height:28px;align-items:center;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.role-toggle button{background:none;border:none;cursor:pointer;padding:3px 10px;font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--t3-cool);border-radius:var(--r-pill);transition:background .12s,color .12s}
+.role-toggle button.active{background:var(--ink);color:#fff}
+.role-toggle .rt-sep{color:var(--t4);font-size:10px}
+
+/* Assessment tab — hidden unless the body has the assessor role */
+body:not(.role-assessor) .os-tab[data-tab="assessment"]{display:none}
+body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density on assessor surfaces */
+
+/* Conditions panel tab — derived conditions cards */
+.cond-summary{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:var(--paper);border:1px solid var(--line);border-radius:8px;margin-bottom:10px;font-size:12.5px;color:var(--t2)}
+.cond-summary .cs-bar{flex:1;height:4px;background:#EFE9DC;border-radius:1px;margin:0 12px;overflow:hidden}
+.cond-summary .cs-bar>span{display:block;height:100%;background:var(--green);border-radius:1px}
+.cond-card{border:1px solid var(--line2);border-left:3px solid var(--ink);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:#fff}
+.cond-card.outstanding{border-left-color:var(--amber)}
+.cond-card.satisfied{border-left-color:var(--green);opacity:.85}
+.cond-card.satisfied .cc-title{text-decoration:line-through;color:var(--t3-cool)}
+.cond-card .cc-top{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+.cond-card .cc-cat{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3-cool)}
+.cond-card .cc-title{font-weight:600;font-size:13px;color:var(--t1)}
+.cond-card .cc-detail{font-family:var(--serif);font-style:italic;color:var(--t2);font-size:12.5px;line-height:1.45;margin-top:2px}
+.cond-card .cc-meta{display:flex;gap:10px;align-items:center;margin-top:6px;font-size:11px;color:var(--t3-cool)}
+.cond-card .cc-actions{margin-top:8px;display:flex;gap:8px}
+
+/* Timeline — actor-coloured dots prefixed to each event */
+.tl-event .tl-dot{width:7px;height:7px;border-radius:50%;background:var(--t4);margin-right:6px;display:inline-block;vertical-align:middle;flex-shrink:0}
+.tl-event .tl-dot.broker{background:#9FA9C2}
+.tl-event .tl-dot.processor{background:#79A7E8}
+.tl-event .tl-dot.assessor{background:#E0B770}
+.tl-event .tl-dot.ai{background:#7BC9A8}
+.tl-event .tl-dot.system{background:#8A8270}
+
+/* Calm copilot quick-actions (no mascot/emoji) */
+.cp-actions button{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:10.5px;font-weight:600;letter-spacing:.06em;color:var(--t2);text-transform:uppercase}
+.cp-actions button:hover{background:var(--brand-bg);color:var(--ink);border-color:var(--ink)}
+
+/* Assessment screen primitives */
+.dec-band{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:18px 0;display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:16px;background:var(--paper);padding:18px 22px;border-radius:var(--r-card);border:1px solid var(--line)}
+.dec-band .db-cap{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--t3-warm);margin-bottom:6px}
+.dec-band .db-code{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:30px;font-weight:500;letter-spacing:-.005em;line-height:1}
+.dec-band .db-code.approve{color:var(--green)}
+.dec-band .db-code.refer{color:var(--amber)}
+.dec-band .db-code.decline{color:var(--red)}
+.dec-band .db-note{font-family:var(--serif);font-style:italic;font-size:13.5px;color:var(--t2);margin-top:6px;max-width:560px;line-height:1.5}
+.dec-band .db-time{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:11px;color:var(--t3-cool);margin-top:6px}
+.dec-band .db-right{text-align:right;min-width:160px}
+
+.cs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:18px}
+.c4{padding:14px;border:1px solid var(--line2);border-radius:8px;background:#fff}
+.c4 .c4-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+.c4 .c4-name{font-family:var(--serif);font-weight:500;font-size:16px;color:var(--ink)}
+.c4 .c4-rating{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+.c4 .c4-rating.strong{color:var(--green)}
+.c4 .c4-rating.adequate{color:var(--amber)}
+.c4 .c4-rating.weak{color:var(--red)}
+.c4 .c4-basis{font-family:var(--serif);font-style:italic;color:var(--t2);font-size:12.5px;line-height:1.5}
+
+.assess-actions{display:flex;gap:8px;margin-top:12px}
+.btn-approve{background:var(--green);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;letter-spacing:.02em}
+.btn-refer{background:var(--amber);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;letter-spacing:.02em}
+.btn-decline{background:var(--red);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;letter-spacing:.02em}
+
+/* ============================================================
    Global reduced-motion override — neutralise page animations.
    ============================================================ */
 @media (prefers-reduced-motion: reduce){
@@ -923,6 +989,10 @@ body{color:var(--t1)}
       <div id="searchResults" class="search-results"></div>
     </div>
     <div class="cmd-right">
+      <div class="role-toggle" role="tablist" aria-label="Role">
+        <button id="roleBroker" class="active" type="button" onclick="setRole('broker')" aria-pressed="true">Broker</button>
+        <button id="roleAssessor" type="button" onclick="setRole('assessor')" aria-pressed="false">Assessor</button>
+      </div>
       <button class="btn primary btn-sm" onclick="startNewDeal()">+ New Deal</button>
       <button onclick="openSettings()" class="cmd-icon-btn" aria-label="Settings">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -955,6 +1025,7 @@ body{color:var(--t1)}
     <button class="os-tab" data-tab="documents" onclick="goTab('documents',this)">Documents</button>
     <button class="os-tab" data-tab="calculate" onclick="goTab('calculate',this)">Calculate</button>
     <button class="os-tab" data-tab="aipilot" onclick="goTab('aipilot',this)">AI Pilot<span class="tab-badge" id="aipilotBadge">DEMO</span></button>
+    <button class="os-tab" data-tab="assessment" onclick="goTab('assessment',this)">Assessment</button>
   </div>
 
   <!-- MAIN CANVAS -->
@@ -970,10 +1041,10 @@ body{color:var(--t1)}
       </div>
       <div class="cp-insights" id="cpInsights"></div>
       <div class="cp-actions">
-        <button onclick="generateSubmissionPack()" title="Generate Submission Pack" aria-label="Generate Submission Pack">📄</button>
-        <button onclick="goTab('aipilot')" title="AI Pilot" aria-label="AI Pilot">✦</button>
-        <button onclick="showLenderCompare()" title="Compare Lenders" aria-label="Compare Lenders">⚖</button>
-        <button onclick="scanAllDocs(state.activeDeal)" title="Run integrity scan on all documents" aria-label="Run integrity scan">🛡</button>
+        <button onclick="generateSubmissionPack()" title="Generate submission pack" aria-label="Generate submission pack">Pack</button>
+        <button onclick="goTab('aipilot')" title="AI Pilot" aria-label="AI Pilot">Pilot</button>
+        <button onclick="showLenderCompare()" title="Compare lenders" aria-label="Compare lenders">Compare</button>
+        <button onclick="scanAllDocs(state.activeDeal)" title="Run integrity scan on all documents" aria-label="Run integrity scan">Scan</button>
       </div>
       <div class="cp-chat">
         <div class="cp-chat-log" id="cpChatLog"></div>
@@ -1320,14 +1391,14 @@ function renderNav(){ /* sidebar removed — tab strip is static HTML */ }
 function toggleSidebar(){ /* no sidebar in the OS shell */ }
 
 // Legacy page id ⇄ OS tab id.
-const TAB_OF_PAGE = { dashboard:'pipeline', client:'client', loan:'loan', documents:'documents', serviceability:'calculate', aipilot:'aipilot' };
-const PAGE_OF_TAB = { pipeline:'dashboard', client:'client', loan:'loan', documents:'documents', calculate:'serviceability', aipilot:'aipilot' };
+const TAB_OF_PAGE = { dashboard:'pipeline', client:'client', loan:'loan', documents:'documents', serviceability:'calculate', aipilot:'aipilot', assessment:'assessment' };
+const PAGE_OF_TAB = { pipeline:'dashboard', client:'client', loan:'loan', documents:'documents', calculate:'serviceability', aipilot:'aipilot', assessment:'assessment' };
 // Every workspace-renderable page (top-level tabs + contextual views reached via navigate()).
 const WS_RENDERERS = {
   dashboard:renderDashboard, client:renderClientTab, loan:renderLoanTab, documents:renderDocuments,
   serviceability:renderServiceability, aipilot:renderAIPilot, compliance:renderCompliance,
   commentary:renderCommentary, compare:renderLenders, intel:renderIntel, portal:renderPortal,
-  markets:renderMarkets, billing:renderBilling, review:renderReview
+  markets:renderMarkets, billing:renderBilling, review:renderReview, assessment:renderAssessment
 };
 
 // Core renderer. Keeps id="page-<legacyId>" so existing re-render call sites keep working.
@@ -1598,11 +1669,11 @@ function renderPanel(){
   const d = DEALS.find(x=>x.id===state.activeDeal); if(!d) return;
   document.getElementById('panelName').textContent = d.name;
   document.getElementById('panelId').textContent = d.id + ' · ' + d.type;
-  const tabs = {overview:'Overview', documents:'Documents', commentary:'Commentary', portal:'Portal', activity:'Activity'};
+  const tabs = {overview:'Overview', documents:'Documents', conditions:'Conditions', commentary:'Commentary', portal:'Portal', activity:'Activity'};
   const bar = `<div class="panel-tabs" style="margin:0 -22px 16px;padding:0 22px">${Object.entries(tabs).map(([t,l])=>
     `<div class="panel-tab ${state.panelTab===t?'active':''}" role="button" tabindex="0" onclick="state.panelTab='${t}';renderPanel()">${l}</div>`).join('')}</div>`;
   document.getElementById('panelBody').innerHTML = bar + `<div id="panelTabBody"></div>`;
-  ({overview:panelOverview, documents:panelDocs, commentary:panelCommentary, portal:panelPortal, activity:panelActivity}[state.panelTab])(document.getElementById('panelTabBody'), d);
+  ({overview:panelOverview, documents:panelDocs, conditions:panelConditions, commentary:panelCommentary, portal:panelPortal, activity:panelActivity}[state.panelTab])(document.getElementById('panelTabBody'), d);
 }
 function panelOverview(el, d){
   const s = STATUS_META[d.status];
@@ -2749,7 +2820,7 @@ function auditLog(action, detail, actor, role){
   if(!state.auditTrail) state.auditTrail = [];
   state.auditTrail.unshift({ at:new Date().toISOString(), action, detail:detail||'', actor:actor||'Broker', role:role||'broker' });
   if(state.auditTrail.length>200) state.auditTrail.pop();
-  logEvent((role==='ai'?'AI Forensics · ':'')+action.replace(/_/g,' ').toLowerCase()+(detail?' — '+detail:''));
+  logEvent((role==='ai'?'AI Forensics · ':'')+action.replace(/_/g,' ').toLowerCase()+(detail?' — '+detail:''), role||'broker');
 }
 
 const fzKind = (status)=> !status ? null : /SCAN/i.test(status) ? 'scanning' : /REVIEW/i.test(status) ? 'review' : /CAUTION/i.test(status) ? 'caution' : 'clear';
@@ -4659,6 +4730,153 @@ async function submitCopilotQuery(){
 }
 function showLenderCompare(){ renderWorkspace('compare'); }
 
+/* ============================================================
+   PHASE 2 SHELL — role toggle · Assessment screen · Conditions
+   ============================================================ */
+function setRole(role){
+  state.role = role==='assessor' ? 'assessor' : 'broker';
+  document.body.classList.toggle('role-assessor', state.role==='assessor');
+  const a = document.getElementById('roleBroker'), b = document.getElementById('roleAssessor');
+  if(a){ a.classList.toggle('active', state.role==='broker'); a.setAttribute('aria-pressed', state.role==='broker'); }
+  if(b){ b.classList.toggle('active', state.role==='assessor'); b.setAttribute('aria-pressed', state.role==='assessor'); }
+  logEvent('Role switched to '+state.role, state.role);
+  // If we're on the Assessment tab and switching to broker, return to pipeline.
+  if(state.role==='broker' && state.page==='assessment'){ goTab('pipeline'); return; }
+  // Otherwise stay on the current page (the tab strip will reveal/hide the Assessment tab via CSS).
+  if(state.page==='assessment') renderWorkspace('assessment');
+}
+
+function decideAssessment(r){
+  const reasons = [];
+  const conflicts = ((state.conflicts && state.conflicts[state.activeDeal])||[]).filter(c=>!c.resolved).length;
+  const reviewDocs = DOCS.filter(d=>d.deal===state.activeDeal && d.forensic && /REVIEW/i.test(d.forensic.status||'')).length;
+  const lowConfDocs = DOCS.filter(d=>d.deal===state.activeDeal && d.extracted && Object.values(d.extracted.fields||{}).some(v=>(v.confidence||0)<80)).length;
+  if(r.lvrAvailable && r.lvr>80) reasons.push({code:'LMI01', text:'LVR > 80% — LMI required'});
+  if(r.dti>6) reasons.push({code:'DTI01', text:`DTI ${r.dti.toFixed(1)}× exceeds APRA 6× restricted threshold`});
+  if(reviewDocs) reasons.push({code:'IQA07', text:`${reviewDocs} document(s) flagged for integrity review`});
+  if(conflicts) reasons.push({code:'CON01', text:`${conflicts} unresolved document conflict(s)`});
+  if(lowConfDocs) reasons.push({code:'M033', text:'Full Verification Required — low-confidence extractions present'});
+  if(!(state.calc.securities||[]).some(s=>/Certified/i.test(s.value_basis||''))) reasons.push({code:'VAL01', text:'No certified valuation on file'});
+  let code, status, note, category, routing;
+  if(r.verdict==='FAIL'){
+    code='DECLINE'; status='decline';
+    reasons.unshift({code:'SRV01', text:'Does not meet serviceability appetite at the proposed structure.'});
+    note='Decline as structured. Restructure (drop loan amount, switch lender, or extend term) before resubmission.';
+    category='D'; routing='Outside lending appetite — decline';
+  } else if(r.verdict==='BORDERLINE' || reasons.length){
+    code='RR05-Referred'; status='refer';
+    note='Refer to DCA. Decision Analysis lists the conditions and signals to address before final approval.';
+    category = r.lvrAvailable && r.lvr<=80 ? 'B' : 'C';
+    routing='Referred to Delegated Credit Authority';
+  } else {
+    code='APPROVE'; status='approve';
+    note='Approve. File services within lender appetite with no outstanding flags.';
+    category='A'; routing='Auto-approved — within delegated authority';
+  }
+  return {code, status, note, reasons, category, routing};
+}
+function fourCs(r){
+  const conflicts = ((state.conflicts&&state.conflicts[state.activeDeal])||[]).filter(c=>!c.resolved).length;
+  const reviewDocs = DOCS.filter(d=>d.deal===state.activeDeal && d.forensic && /REVIEW/i.test(d.forensic.status||'')).length;
+  const lvr = r.lvrAvailable ? r.lvr : 0;
+  return [
+    { name:'Character', rating:(conflicts||reviewDocs)?'adequate':'strong',
+      basis: conflicts ? `${conflicts} unresolved document conflict(s) require resolution.` : reviewDocs ? `${reviewDocs} document(s) flagged by forensic scan.` : 'No adverse forensic signals; no unresolved conflicts.' },
+    { name:'Capacity', rating: r.verdict==='PASS'?'strong':r.verdict==='BORDERLINE'?'adequate':'weak',
+      basis: `NDI ${fmtMoney(r.ndi)}/mo · DSR ${r.dsr.toFixed(1)}% vs ${activeDsrMax()}% ceiling.` },
+    { name:'Capital', rating: r.lvrAvailable ? (lvr<=80?'strong':lvr<=90?'adequate':'weak') : 'adequate',
+      basis: r.lvrAvailable ? `LVR ${lvr.toFixed(1)}% across ${(state.calc.securities||[]).length||1} security/ies.` : 'No security value entered — cannot rate Capital.' },
+    { name:'Collateral', rating:(state.calc.securities||[]).length?'strong':'adequate',
+      basis: (state.calc.securities||[]).length ? `${state.calc.securities.length} security/ies totalling ${fmtMoney(totalSecurityValue())}.` : `Single implicit security at ${fmtMoney(parseFloat(state.wizData.propValue)||0)}.` }
+  ];
+}
+function logAssess(action){
+  auditLog('ASSESSOR_DECISION', action+' · '+state.activeDeal, 'Assessor', 'assessor');
+  toast('Assessor decision logged: '+action, 'ok');
+}
+function renderAssessment(el){
+  if(!state.activeDeal){ el.innerHTML = noDealPrompt('','Select a deal from Pipeline to view its assessor decision.'); return; }
+  const d = DEALS.find(x=>x.id===state.activeDeal) || {};
+  const r = computeServiceability();
+  const dec = decideAssessment(r);
+  const cs = fourCs(r);
+  el.innerHTML = `
+    <div class="page-head"><h1>Assessment</h1><p>${esc(d.id)} · ${esc(d.name||'')} · ${esc(d.type||'')} — assessor decision derived deterministically from the file's signals.</p></div>
+    <div class="dec-band">
+      <div>
+        <div class="db-cap">Decision Engine Output</div>
+        <div class="db-code ${dec.status}">${esc(dec.code)}</div>
+        <div class="db-note">${esc(dec.note)}</div>
+        <div class="db-time">${new Date().toLocaleString('en-AU',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+      <div class="db-right">
+        <div class="db-cap">Lending category</div>
+        <div class="num" style="font-size:24px;color:var(--ink);font-weight:500;line-height:1">${esc(dec.category)}</div>
+        <div style="font-family:var(--serif);font-style:italic;font-size:11.5px;color:var(--t3-cool);margin-top:6px;max-width:180px">${esc(dec.routing)}</div>
+      </div>
+    </div>
+    <div class="caption-cool" style="margin:8px 0 8px">Decision Analysis</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px">
+      ${dec.reasons.length ? dec.reasons.map(x=>`<div style="display:flex;align-items:baseline;gap:8px">${codeChip(x.code)}<span class="serif-italic" style="font-size:13px;color:var(--t2)">${esc(x.text)}</span></div>`).join('') : '<div class="serif-italic" style="color:var(--t3-cool)">No coded flags — clean file.</div>'}
+    </div>
+    <div class="caption-cool" style="margin-bottom:8px">The 4 Cs</div>
+    <div class="cs-grid">
+      ${cs.map(c=>`<div class="c4">
+        <div class="c4-head"><div class="c4-name">${esc(c.name)}</div><div class="c4-rating ${c.rating}">${esc(c.rating)}</div></div>
+        <div class="c4-basis">${esc(c.basis)}</div>
+      </div>`).join('')}
+    </div>
+    <div class="assess-actions">
+      <button class="btn-approve" onclick="logAssess('APPROVE')">Approve</button>
+      <button class="btn-refer" onclick="logAssess('REFER')">Refer to DCA</button>
+      <button class="btn-decline" onclick="logAssess('DECLINE')">Decline</button>
+    </div>`;
+}
+
+/* Conditions — auto-derived from existing signals */
+function derivedConditions(){
+  if(!state.activeDeal) return [];
+  const r = computeServiceability();
+  const out = [];
+  // Valuation
+  const certified = (state.calc.securities||[]).some(s=>/Certified/i.test(s.value_basis||''));
+  out.push({code:'VAL01', category:'Valuation', title:'Certified valuation', detail:'Order a certified valuation on each security before final approval.', resolveAt:'Conditional approval', satisfied:certified});
+  // Income docs present?
+  const incDocs = DOCS.filter(d=>d.deal===state.activeDeal && d.classified && /payslip|tax_return|noa/i.test(d.classified.type)).length;
+  out.push({code:'INC02', category:'Income', title:'Income documentation', detail:'Two recent payslips or latest NOA / tax return per income earner.', resolveAt:'Submission', satisfied:incDocs>=1});
+  // LMI condition when LVR > 80%
+  if(r.lvrAvailable && r.lvr>80){
+    out.push({code:'LMI01', category:'LMI', title:'LMI applicable', detail:'LVR > 80% — explain LMI to client and document acknowledgement before issuing the offer.', resolveAt:'Pre-settlement', satisfied:false});
+  }
+  // DTI policy condition
+  if(r.dti>6){
+    out.push({code:'DTI01', category:'Servicing', title:'High DTI', detail:`DTI ${r.dti.toFixed(1)}× exceeds the APRA 6× restricted threshold — document the assessor's justification.`, resolveAt:'Credit assessment', satisfied:false});
+  }
+  // Forensic review docs → IQA conditions
+  const fz = DOCS.filter(d=>d.deal===state.activeDeal && d.forensic && /REVIEW/i.test(d.forensic.status||''));
+  fz.forEach((d,i)=>{
+    out.push({code:'IQA'+String(7+i).padStart(2,'0'), category:'Integrity', title:'Document integrity review', detail:`Request the original from the issuer — ${d.name} flagged tampering signals.`, resolveAt:'Pre-submission', satisfied:!!d.forensic.reviewed});
+  });
+  // Cross-document conflicts → CON conditions
+  ((state.conflicts&&state.conflicts[state.activeDeal])||[]).filter(x=>!x.resolved).forEach((x,i)=>{
+    out.push({code:'CON0'+(i+1), category:'Conflict', title:x.field+' mismatch', detail:`${x.value_a} (${x.source_a}) vs ${x.value_b} (${x.source_b}) — choose the authoritative source on the Documents tab.`, resolveAt:'Submission', satisfied:false});
+  });
+  return out;
+}
+function panelConditions(el, d){
+  const conds = derivedConditions();
+  const total = conds.length, done = conds.filter(c=>c.satisfied).length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  if(!total){ el.innerHTML = `<p class="serif-italic" style="color:var(--t3-cool)">No outstanding conditions — clean file.</p>`; return; }
+  el.innerHTML = `
+    <div class="cond-summary"><span><b>${done}</b> of <b>${total}</b> satisfied</span><div class="cs-bar"><span style="width:${pct}%"></span></div><span class="mono">${pct}%</span></div>
+    ${conds.map(c=>`<div class="cond-card ${c.satisfied?'satisfied':'outstanding'}">
+      <div class="cc-top">${codeChip(c.code)}<span class="cc-cat">${esc(c.category)}</span><span class="cc-title">${esc(c.title)}</span></div>
+      <div class="cc-detail">${esc(c.detail)}</div>
+      <div class="cc-meta">Resolve at: <span class="mono">${esc(c.resolveAt)}</span> · ${c.satisfied?'<span style="color:var(--green);font-weight:700">Satisfied</span>':'<span style="color:var(--amber);font-weight:700">Outstanding</span>'}</div>
+    </div>`).join('')}`;
+}
+
 /* ---------- Floating Policy & Rates drawer (contextual to the file being lodged) ---------- */
 let policyDrawerOpen = false, policyDrawerWide = false;
 function togglePolicyDrawer(){
@@ -4722,9 +4940,10 @@ function formatRelativeTime(date){
   if(diff<86400) return Math.floor(diff/3600)+'h ago';
   return 'Yesterday';
 }
-function logEvent(text){
+function logEvent(text, actor){
   if(!state.eventLog) state.eventLog = [];
-  state.eventLog.unshift({ time:new Date(), text });
+  const a = (actor && /^(broker|processor|assessor|ai|system)$/.test(actor)) ? actor : 'system';
+  state.eventLog.unshift({ time:new Date(), text, actor:a });
   if(state.eventLog.length>50) state.eventLog.pop();
   renderTimeline();
 }
@@ -4732,7 +4951,7 @@ function renderTimeline(){
   const el = document.getElementById('tlEvents');
   if(!el) return;
   const events = state.eventLog.slice(0, timelineExpanded?12:4);
-  el.innerHTML = events.map(e=>`<span class="tl-event"><span class="tl-time">${formatRelativeTime(e.time)}</span><span class="tl-text">${e.text}</span></span>`).join('');
+  el.innerHTML = events.map(e=>`<span class="tl-event"><span class="tl-dot ${escHtml(e.actor||'system')}"></span><span class="tl-time">${formatRelativeTime(e.time)}</span><span class="tl-text">${escHtml(e.text)}</span></span>`).join('');
 }
 function toggleTimeline(){
   timelineExpanded = !timelineExpanded;
@@ -4743,9 +4962,9 @@ function toggleTimeline(){
 function seedTimeline(){
   const now = Date.now();
   state.eventLog = [
-    { time:new Date(now-7200000),  text:'AI extracted income from Mitchell payslip' },
-    { time:new Date(now-18000000), text:'D-891 Mitchell — moved to Broker Review' },
-    { time:new Date(now-86400000), text:'D-890 Chen Trust — documents pending' }
+    { time:new Date(now-7200000),  text:'AI extracted income from Mitchell payslip', actor:'ai' },
+    { time:new Date(now-18000000), text:'D-891 Mitchell — moved to Broker Review', actor:'broker' },
+    { time:new Date(now-86400000), text:'D-890 Chen Trust — documents pending', actor:'processor' }
   ];
   renderTimeline();
 }

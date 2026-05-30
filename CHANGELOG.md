@@ -1,5 +1,59 @@
 # DebtIQ v6 — Changelog
 
+## Round (redesign · Phase 2) — Shell: role toggle · Assessment screen · Conditions tab · actor-coloured timeline
+
+Phase 2 of the broader frontend refresh — wiring the new design system through
+the shell. No backend changes; existing screens keep working.
+
+**Role toggle (Broker | Assessor)** in the command bar — a segmented control
+(monospace, ink-on-page) next to the avatar. `setRole(role)` flips
+`state.role`, toggles `body.role-assessor`, updates button `aria-pressed`, and
+logs the role-switch to the timeline. Defaults to *Broker*.
+
+**Assessment tab** (Assessor role only). Added a 7th tab `data-tab="assessment"`
+that's CSS-hidden under broker mode (`body:not(.role-assessor) .os-tab[data-tab="assessment"]{display:none}`).
+Switching to broker while on Assessment auto-returns to Pipeline.
+
+**`renderAssessment` (new workspace screen)** — deterministic from existing
+signals, no new `/api/*` calls:
+- **Decision Engine Output** band: serif statement (`APPROVE` /
+  `RR05-Referred` / `DECLINE`) in role colour, italic plain-English note,
+  timestamp, and a lending-category block (A/B/C/D) with routing line.
+- **Decision Analysis** — `CodeChip` reasons derived from the file:
+  `LMI01` (LVR>80), `DTI01` (DTI>6), `IQA07` (forensic REVIEW), `CON01`
+  (open conflicts), `M033` (low-confidence extractions), `VAL01` (no certified
+  valuation), `SRV01` (FAIL serviceability).
+- **The 4 Cs** — Character · Capacity · Capital · Collateral, each
+  Strong/Adequate/Weak with a one-line italic basis pulled from
+  `computeServiceability()` + integrity/conflict signals + securities.
+- **Approve / Refer to DCA / Decline** action buttons; `logAssess(action)`
+  writes an `ASSESSOR_DECISION` audit entry with role `assessor`.
+
+**Conditions panel tab** (slide-over deal panel). New tab between Documents and
+Commentary. `derivedConditions()` auto-derives a list from current signals —
+`VAL01` (certified valuation), `INC02` (income docs present), `LMI01` (LVR>80),
+`DTI01` (DTI>6), `IQA0n` per forensic review doc, `CON0n` per open conflict.
+Each card shows the `CodeChip`, category, italic detail, resolve-at stage, and
+Outstanding/Satisfied. Progress bar at the top: "*N* of *M* satisfied".
+
+**Timeline actor dots.** `logEvent(text, actor)` now records an actor
+(`broker` / `processor` / `assessor` / `ai` / `system`), and each `.tl-event`
+renders a coloured `.tl-dot` prefix. `auditLog` passes its role through to
+`logEvent` so forensic / extraction / pipeline events show as `ai`, broker
+actions as `broker`, etc. Seeded timeline events tagged.
+
+**Calm copilot quick-actions** — replaced the emoji glyphs (📄 ✦ ⚖ 🛡) on the
+copilot panel with calm mono text labels (`Pack`, `Pilot`, `Compare`, `Scan`),
+matching "no mascot, no emoji" from the brief.
+
+**Verification:** `node --check` clean; jsdom smoke **134/134** (10 new Phase 2
+checks: role default + Assessment hidden; `setRole(assessor)` flips state +
+buttons; Assessment renders Decision Engine Output + 4 Cs + reason CodeChips;
+`logAssess` writes an Assessor audit entry; `setRole(broker)` returns to
+pipeline; Conditions panel tab renders derived `VAL01/INC02/LMI01/...`
+cards; timeline events carry actor-coloured dots; copilot quick-actions are
+calm text labels).
+
 ## Round (redesign · integration) — Login split, Editorial pack, Verdict reveal, Violet sweep
 
 Four-pass integration of the finished design language into the live screens. No
