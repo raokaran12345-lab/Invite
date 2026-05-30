@@ -2486,11 +2486,7 @@ function renderCalcResults(animate){
     stress+=`<tr><td>${add===0?'Today':'+'+add+'%'}</td><td class="mono">${(nl.rate+add).toFixed(2)}%</td><td class="mono">${fmtMoney(pmt)}</td><td class="mono" style="color:${sNdi>=0?'var(--green)':'var(--red)'}">${fmtMoney(sNdi)}</td><td class="mono">${sDsr.toFixed(0)}%</td></tr>`;
   }
   box.innerHTML = `
-    <div class="verdict ${vcls}">
-      <div class="v-lbl">Serviceability Verdict</div>
-      <div class="v-big">${r.verdict}</div>
-      <div class="v-sub">${vsub}</div>
-    </div>
+    ${verdictHero(r.verdict, vsub, 'NDI', fmtMoney(r.ndi)+'/mo')}
     ${resultGauges(r, activeDsrMax(), animate)}
     <div class="res-grid">
       <div class="res-box"><div class="rl">DSR</div><div class="rv mono">${r.dsr.toFixed(1)}%</div></div>
@@ -2687,7 +2683,7 @@ function renderManualResults(animate){
     {l:'Surplus (NDI)', v:Math.max(r.ndi,0), c:r.ndi>=0?'#059669':'#DC2626'}
   ];
   box.innerHTML = `
-    <div class="verdict ${vcls}"><div class="v-lbl">Manual Affordability — unverified</div><div class="v-big">${r.verdict}</div><div class="v-sub">${vsub}</div></div>
+    ${verdictHero(r.verdict, vsub, 'NDI', fmtMoney(r.ndi)+'/mo')}
     ${resultGauges(r, r.dsrMax, animate)}
     <div class="res-grid">
       <div class="res-box"><div class="rl">DSR</div><div class="rv mono">${r.dsr.toFixed(1)}%</div></div>
@@ -4109,12 +4105,11 @@ function finishPilot(){
 function renderPilotResults(){
   const box = document.getElementById('pilotResults'); if(!box || !pilotResult) return;
   const {r, top} = pilotResult;
+  const pilotNote = top && top.serviceable
+    ? ('Recommended lender: '+(top.label||top.l)+' @ '+top.rate.toFixed(2)+'% ('+(top.buffer*100).toFixed(0)+'% buffer).')
+    : 'No lender services this structure — see the levers below.';
   box.innerHTML = `
-    <div class="verdict ${r.verdict.toLowerCase()}" style="margin-top:16px">
-      <div class="v-lbl">AI Pilot Verdict</div>
-      <div class="v-big">${r.verdict}</div>
-      <div class="v-sub">${top && top.serviceable ? ('Recommended lender: '+(top.label||top.l)+' @ '+top.rate.toFixed(2)+'% ('+(top.buffer*100).toFixed(0)+'% buffer)') : 'No lender services this structure — see the levers below'}</div>
-    </div>
+    ${verdictHero(r.verdict, pilotNote, 'NDI', fmtMoney(r.ndi)+'/mo')}
     <div class="res-grid">
       <div class="res-box"><div class="rl">DSR</div><div class="rv mono">${r.dsr.toFixed(1)}%</div></div>
       <div class="res-box"><div class="rl">NDI/mo</div><div class="rv mono" style="color:${r.ndi>=0?'var(--green)':'var(--red)'}">${fmtMoney(r.ndi)}</div></div>
