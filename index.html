@@ -986,6 +986,153 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
 .ac-placeholder p{color:var(--t2);font-size:14px;line-height:1.55;margin-bottom:14px}
 .ac-placeholder .ac-stub{font-family:var(--mono);font-size:12px;color:var(--t3-cool);background:var(--page);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
 
+/* ---- Assessment Console (Pass 2) ---- */
+.ac-queue{width:320px;flex-shrink:0;display:flex;flex-direction:column;background:var(--white);border-right:1px solid var(--line2);min-height:0;}
+.ac-queue-head{padding:18px 18px 12px;border-bottom:1px solid var(--line);}
+.ac-queue-head .ac-q-cap{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--t3-cool);}
+.ac-queue-head .ac-q-title{font-family:var(--serif);font-weight:400;font-size:22px;line-height:1.1;color:var(--ink);margin-top:2px;}
+.ac-queue-head .ac-q-sub{font-family:var(--serif);font-style:italic;font-size:11.5px;color:var(--t3-cool);margin-top:4px;}
+.ac-q-filters{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+.ac-q-chip{appearance:none;background:transparent;border:1px solid var(--line2);color:var(--t2);padding:4px 9px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .12s,color .12s,border-color .12s;}
+.ac-q-chip[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink);}
+.ac-q-chip:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(59,111,181,.30);}
+.ac-q-chip .ac-q-n{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:10.5px;opacity:.78;}
+.ac-q-list{flex:1;overflow-y:auto;padding:8px;min-height:0;}
+.ac-q-empty{padding:18px;color:var(--t3-cool);font-family:var(--serif);font-style:italic;font-size:12.5px;}
+.ac-q-item{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:flex-start;padding:11px 12px;border-radius:8px;cursor:pointer;border:1px solid transparent;margin-bottom:2px;transition:background .12s,border-color .12s;}
+.ac-q-item:hover{background:var(--page);}
+.ac-q-item:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(59,111,181,.30);}
+.ac-q-item[aria-current="true"]{background:var(--page);border-color:var(--line2);}
+.ac-q-sq{width:10px;height:10px;border-radius:2px;margin-top:5px;background:var(--steel);}
+.ac-q-sq.new{background:var(--steel);} .ac-q-sq.review{background:var(--amber);} .ac-q-sq.referred{background:var(--red);} .ac-q-sq.approved{background:var(--green);} .ac-q-sq.declined{background:#9a0e0e;}
+.ac-q-id{font-family:var(--mono);font-size:10.5px;color:var(--t3-cool);}
+.ac-q-name{font-size:13px;font-weight:600;color:var(--ink);line-height:1.25;}
+.ac-q-meta{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:11px;color:var(--t2);margin-top:2px;}
+.ac-q-purpose{font-family:var(--serif);font-style:italic;font-size:11.5px;color:var(--t3-cool);}
+.ac-q-stage{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--t3-cool);padding:3px 7px;border:1px solid var(--line2);border-radius:4px;align-self:flex-start;white-space:nowrap;}
+.ac-q-stage.new{color:var(--steel);border-color:rgba(59,111,181,.40);}
+.ac-q-stage.review{color:var(--amber);border-color:rgba(154,90,0,.40);}
+.ac-q-stage.referred{color:var(--red);border-color:rgba(169,38,38,.40);}
+.ac-q-stage.approved{color:var(--green);border-color:rgba(11,107,79,.40);}
+.ac-q-stage.declined{color:#9a0e0e;border-color:rgba(154,14,14,.40);}
+
+.ac-console{flex:1;overflow-y:auto;padding:24px 32px 56px;min-width:0;min-height:0;}
+.ac-noselect{padding:60px 32px;max-width:480px;margin:60px auto;text-align:center;color:var(--t3-cool);}
+.ac-noselect h2{font-family:var(--serif);font-weight:400;font-size:24px;color:var(--ink);margin-bottom:8px;}
+.ac-noselect p{font-size:13.5px;color:var(--t2);line-height:1.5;}
+
+.ac-fh{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:flex-start;padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:22px;}
+.ac-fh-id{font-family:var(--mono);font-size:11px;color:var(--t3-cool);letter-spacing:.04em;}
+.ac-fh-name{font-family:var(--serif);font-weight:400;font-size:26px;color:var(--ink);line-height:1.05;margin-top:2px;}
+.ac-fh-meta{font-size:12px;color:var(--t2);margin-top:6px;}
+.ac-fh-meta .mono{color:var(--ink);}
+.ac-fh-broker{font-family:var(--serif);font-style:italic;font-size:12px;color:var(--t3-cool);margin-top:4px;}
+.ac-fh-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+
+.ac-card{background:var(--white);border:1px solid var(--line2);border-radius:var(--r-card);padding:20px 22px;}
+.ac-card + .ac-card{margin-top:14px;}
+.ac-card-cap{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--t3-cool);margin-bottom:8px;}
+.ac-card-cap.cool{color:var(--steel);}
+.ac-card h3{font-family:var(--sans);font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:10px;}
+
+.ac-dec{display:grid;grid-template-columns:1.4fr 1fr;gap:0;}
+.ac-dec-l{padding-right:22px;border-right:1px solid var(--line);}
+.ac-dec-r{padding-left:22px;}
+.ac-dec-status{font-family:var(--serif);font-weight:400;font-size:34px;line-height:1.05;letter-spacing:-.005em;}
+.ac-dec-status.approve{color:var(--green);}
+.ac-dec-status.refer{color:var(--amber);}
+.ac-dec-status.decline{color:var(--red);}
+.ac-dec-code{font-family:var(--mono);font-size:11.5px;color:var(--t3-cool);margin-top:4px;}
+.ac-dec-note{font-family:var(--serif);font-style:italic;font-size:13.5px;color:var(--t2);margin-top:10px;line-height:1.45;}
+.ac-dec-time{font-family:var(--mono);font-size:11px;color:var(--t3-cool);margin-top:10px;}
+
+.ac-reasons{margin-top:16px;display:flex;flex-direction:column;gap:8px;}
+.ac-reason{display:grid;grid-template-columns:auto 1fr auto;align-items:baseline;gap:10px;padding:8px 0;border-top:1px dashed var(--line);}
+.ac-reason:first-child{border-top:none;padding-top:0;}
+.ac-reason .code-chip{flex-shrink:0;}
+.ac-reason-text{font-family:var(--serif);font-style:italic;font-size:12.5px;color:var(--t2);line-height:1.4;}
+.ac-sev{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:3px;}
+.ac-sev.high{color:var(--red);background:rgba(169,38,38,.08);}
+.ac-sev.med{color:var(--amber);background:rgba(154,90,0,.08);}
+.ac-sev.low{color:var(--steel);background:rgba(59,111,181,.08);}
+
+.ac-rt-cat{font-family:var(--mono);font-size:28px;font-weight:500;color:var(--ink);line-height:1;}
+.ac-rt-seg{display:flex;gap:3px;margin-top:10px;}
+.ac-rt-seg span{flex:1;height:6px;background:var(--line);border-radius:2px;}
+.ac-rt-seg span.on{background:var(--ink);}
+.ac-rt-seg span.A.on{background:var(--green);}
+.ac-rt-seg span.B.on{background:var(--steel);}
+.ac-rt-seg span.C.on{background:var(--amber);}
+.ac-rt-seg span.D.on{background:var(--red);}
+.ac-rt-labels{display:flex;gap:3px;margin-top:5px;font-size:9.5px;font-weight:700;letter-spacing:.06em;color:var(--t3-cool);}
+.ac-rt-labels span{flex:1;text-align:center;}
+.ac-rt-row{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;padding:5px 0;border-top:1px solid var(--line);}
+.ac-rt-row:first-of-type{border-top:none;padding-top:10px;}
+.ac-rt-row .dl{color:var(--t3-cool);}
+.ac-rt-row .dv{color:var(--ink);font-weight:600;font-family:var(--mono);}
+.ac-rt-routing{font-family:var(--serif);font-style:italic;font-size:12px;color:var(--t2);margin-top:10px;line-height:1.4;}
+
+.ac-actions{display:flex;gap:10px;margin-top:16px;}
+.ac-actions button{flex:1;padding:12px 14px;border-radius:var(--r-btn);font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;border:1px solid;background:var(--white);transition:background .12s,color .12s;}
+.ac-actions button:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(59,111,181,.30);}
+.ac-actions .ac-act-approve{color:var(--green);border-color:rgba(11,107,79,.50);}
+.ac-actions .ac-act-approve:hover{background:rgba(11,107,79,.06);}
+.ac-actions .ac-act-refer{color:var(--amber);border-color:rgba(154,90,0,.50);}
+.ac-actions .ac-act-refer:hover{background:rgba(154,90,0,.06);}
+.ac-actions .ac-act-decline{color:var(--red);border-color:rgba(169,38,38,.50);}
+.ac-actions .ac-act-decline:hover{background:rgba(169,38,38,.06);}
+
+.ac-cs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+@media (min-width:1200px){.ac-cs-grid{grid-template-columns:repeat(4,1fr);}}
+.ac-c4{border:1px solid var(--line);border-radius:8px;padding:14px 16px;background:var(--paper);}
+.ac-c4-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+.ac-c4-name{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);}
+.ac-c4-rating{font-family:var(--mono);font-size:10.5px;font-weight:700;text-transform:uppercase;padding:2px 7px;border-radius:3px;}
+.ac-c4-rating.strong{color:var(--green);background:rgba(11,107,79,.10);}
+.ac-c4-rating.adequate{color:var(--steel);background:rgba(59,111,181,.10);}
+.ac-c4-rating.weak{color:var(--red);background:rgba(169,38,38,.10);}
+.ac-c4-basis{font-family:var(--serif);font-style:italic;font-size:12px;color:var(--t2);line-height:1.4;}
+
+.ac-cond{display:grid;grid-template-columns:auto auto 1fr auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line);}
+.ac-cond:first-of-type{border-top:none;padding-top:6px;}
+.ac-cond .ac-cond-cat{font-family:var(--mono);font-size:11px;color:var(--t3-cool);text-transform:uppercase;letter-spacing:.04em;}
+.ac-cond .ac-cond-title{font-size:13px;color:var(--ink);}
+.ac-cond .ac-cond-detail{font-family:var(--serif);font-style:italic;font-size:11.5px;color:var(--t3-cool);grid-column:2/-1;margin-top:-4px;line-height:1.4;}
+.ac-cond .ac-cond-status{font-family:var(--mono);font-size:10.5px;font-weight:700;text-transform:uppercase;padding:3px 7px;border-radius:3px;white-space:nowrap;}
+.ac-cond .ac-cond-status.satisfied{color:var(--green);background:rgba(11,107,79,.08);}
+.ac-cond .ac-cond-status.outstanding{color:var(--amber);background:rgba(154,90,0,.08);}
+.ac-cond-progress{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--t2);padding:8px 0 12px;border-bottom:1px dashed var(--line);margin-bottom:6px;}
+.ac-cond-progress .ac-cp-bar{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden;}
+.ac-cond-progress .ac-cp-bar span{display:block;height:100%;background:var(--green);transition:width .35s cubic-bezier(.22,1,.36,1);}
+.ac-cond-progress .ac-cp-num{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600;}
+
+.ac-audit{display:flex;flex-direction:column;gap:0;}
+.ac-audit-item{display:grid;grid-template-columns:14px 110px 1fr;gap:10px;align-items:baseline;padding:8px 0;border-top:1px dashed var(--line);font-size:12px;}
+.ac-audit-item:first-child{border-top:none;padding-top:0;}
+.ac-audit-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;background:var(--steel);}
+.ac-audit-dot.ai{background:#7A3FB0;} .ac-audit-dot.broker{background:var(--steel);} .ac-audit-dot.assessor{background:var(--green);} .ac-audit-dot.processor{background:var(--amber);} .ac-audit-dot.system{background:var(--t3-cool);}
+.ac-audit-time{font-family:var(--mono);font-size:11px;color:var(--t3-cool);}
+.ac-audit-text{font-family:var(--serif);font-style:italic;color:var(--t2);line-height:1.4;}
+.ac-audit-text b{font-family:var(--sans);font-style:normal;font-weight:600;color:var(--ink);}
+
+.ac-integrity{font-family:var(--mono);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:4px;border:1px solid;background:var(--white);}
+.ac-integrity.clear{color:var(--green);border-color:rgba(11,107,79,.50);}
+.ac-integrity.caution{color:var(--amber);border-color:rgba(154,90,0,.50);}
+.ac-integrity.review{color:var(--red);border-color:rgba(169,38,38,.50);}
+.ac-integrity.scanning{color:var(--steel);border-color:rgba(59,111,181,.50);}
+
+@media (max-width:1100px){
+  .ac-queue{width:260px;}
+  .ac-dec{grid-template-columns:1fr;}
+  .ac-dec-l{padding-right:0;border-right:none;padding-bottom:18px;border-bottom:1px solid var(--line);}
+  .ac-dec-r{padding-left:0;padding-top:18px;}
+}
+@media (max-width:760px){
+  .ac-body{flex-direction:column;}
+  .ac-queue{width:auto;max-height:240px;border-right:none;border-bottom:1px solid var(--line2);}
+  .ac-console{padding:18px;}
+}
+
 /* ============================================================
    Global reduced-motion override — neutralise page animations.
    ============================================================ */
@@ -4909,16 +5056,16 @@ function decideAssessment(r){
   const conflicts = ((state.conflicts && state.conflicts[state.activeDeal])||[]).filter(c=>!c.resolved).length;
   const reviewDocs = DOCS.filter(d=>d.deal===state.activeDeal && d.forensic && /REVIEW/i.test(d.forensic.status||'')).length;
   const lowConfDocs = DOCS.filter(d=>d.deal===state.activeDeal && d.extracted && Object.values(d.extracted.fields||{}).some(v=>(v.confidence||0)<80)).length;
-  if(r.lvrAvailable && r.lvr>80) reasons.push({code:'LMI01', text:'LVR > 80% — LMI required'});
-  if(r.dti>6) reasons.push({code:'DTI01', text:`DTI ${r.dti.toFixed(1)}× exceeds APRA 6× restricted threshold`});
-  if(reviewDocs) reasons.push({code:'IQA07', text:`${reviewDocs} document(s) flagged for integrity review`});
-  if(conflicts) reasons.push({code:'CON01', text:`${conflicts} unresolved document conflict(s)`});
-  if(lowConfDocs) reasons.push({code:'M033', text:'Full Verification Required — low-confidence extractions present'});
-  if(!(state.calc.securities||[]).some(s=>/Certified/i.test(s.value_basis||''))) reasons.push({code:'VAL01', text:'No certified valuation on file'});
+  if(r.lvrAvailable && r.lvr>80) reasons.push({code:'LMI01', sev:'med', text:'LVR > 80% — LMI required'});
+  if(r.dti>6) reasons.push({code:'DTI01', sev:'high', text:`DTI ${r.dti.toFixed(1)}× exceeds APRA 6× restricted threshold`});
+  if(reviewDocs) reasons.push({code:'IQA07', sev:'high', text:`${reviewDocs} document(s) flagged for integrity review`});
+  if(conflicts) reasons.push({code:'CON01', sev:'med', text:`${conflicts} unresolved document conflict(s)`});
+  if(lowConfDocs) reasons.push({code:'M033', sev:'med', text:'Full Verification Required — low-confidence extractions present'});
+  if(!(state.calc.securities||[]).some(s=>/Certified/i.test(s.value_basis||''))) reasons.push({code:'VAL01', sev:'low', text:'No certified valuation on file'});
   let code, status, note, category, routing;
   if(r.verdict==='FAIL'){
     code='DECLINE'; status='decline';
-    reasons.unshift({code:'SRV01', text:'Does not meet serviceability appetite at the proposed structure.'});
+    reasons.unshift({code:'SRV01', sev:'high', text:'Does not meet serviceability appetite at the proposed structure.'});
     note='Decline as structured. Restructure (drop loan amount, switch lender, or extend term) before resubmission.';
     category='D'; routing='Outside lending appetite — decline';
   } else if(r.verdict==='BORDERLINE' || reasons.length){
@@ -5469,19 +5616,283 @@ function initAssessorShell(){
   if(u) u.textContent = state.user ? (state.user.email||'') : 'Demo assessor';
   const av = document.getElementById('acAvatar');
   if(av){
-    const src = state.user && state.user.email ? state.user.email : 'Assessor';
-    av.textContent = src.split(/[@.\s]/).filter(Boolean).slice(0,2).map(s=>s[0].toUpperCase()).join('') || 'AS';
+    const src = state.user && state.user.email ? state.user.email : 'Demo Assessor';
+    const parts = src.split(/[@.\s_-]/).filter(Boolean).slice(0,2);
+    const init = parts.length>=2 ? parts.map(s=>s[0].toUpperCase()).join('')
+                                 : (parts[0]||'AS').slice(0,2).toUpperCase();
+    av.textContent = init;
   }
+  // Default the console to the most-recently-submitted file in the queue.
+  if(!state.activeDeal){
+    const first = assessQueueAll()[0];
+    if(first) loadAssessFile(first.id, /*silent*/true);
+  }
+  if(!state.assessFilter) state.assessFilter='all';
+  if(typeof state.assessSearch!=='string') state.assessSearch='';
   renderAssessmentConsole();
 }
-/* Pass 1 placeholder. Pass 2 replaces this with the full console (queue + decision engine + 4 Cs + routing + conditions + audit). */
+
+/* ---- Pass 2 · Assessment Console ---- */
+/* Mapping deal.status → assessor-side stage (used in queue chips + tags). */
+function assessStageOf(d){
+  if(d.assessorAction==='APPROVE') return 'approved';
+  if(d.assessorAction==='DECLINE') return 'declined';
+  if(d.assessorAction==='REFER')  return 'referred';
+  if(d.status==='APPROVED')       return 'approved';
+  if(d.status==='MORE_INFO')      return 'referred';
+  if(d.status==='SUBMITTED')      return 'review';
+  return 'new';
+}
+const ASSESS_STAGE_LABEL = { new:'New', review:'In review', referred:'Referred', approved:'Approved', declined:'Declined' };
+function assessQueueAll(){
+  // Newest first by id (D-89X) — demo data; later this comes from the backend ordered by submitted_at.
+  return [...DEALS].sort((a,b)=> (b.id||'').localeCompare(a.id||''));
+}
+function assessQueueFiltered(){
+  const f = state.assessFilter||'all', q = (state.assessSearch||'').toLowerCase();
+  return assessQueueAll().filter(d=>{
+    const stage = assessStageOf(d);
+    if(f==='new' && stage!=='new') return false;
+    if(f==='review' && stage!=='review') return false;
+    if(f==='referred' && stage!=='referred') return false;
+    if(f==='approved' && stage!=='approved' && stage!=='declined') return false;
+    if(q && !((d.id||'').toLowerCase().includes(q) || (d.name||'').toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+function loadAssessFile(dealId, silent){
+  const d = DEALS.find(x=>x.id===dealId); if(!d) return;
+  state.activeDeal = dealId;
+  if(lenderDB()[d.lender]) state.lender = d.lender;
+  if(d.calc){ state.calc = JSON.parse(JSON.stringify(d.calc)); }
+  else {
+    state.calc.newLoan.amount = d.amount;
+    const intel = d.intel || (typeof DEMO_DEAL_INTEL!=='undefined' && DEMO_DEAL_INTEL[dealId]) || null;
+    if(intel){
+      if(Array.isArray(intel.entities) && intel.entities.length) state.calc.entities = JSON.parse(JSON.stringify(intel.entities));
+      if(Array.isArray(intel.securities)) state.calc.securities = JSON.parse(JSON.stringify(intel.securities));
+    }
+  }
+  if(!silent) logEvent('Assessor opened '+dealId, 'assessor');
+  renderAssessmentConsole();
+}
+function setAssessFilter(f){ state.assessFilter = f; renderAssessmentConsole(); }
+function setAssessSearch(v){ state.assessSearch = v||''; renderAssessQueueList(); }
+function logAssessorAction(action){
+  if(!state.activeDeal) return;
+  const d = DEALS.find(x=>x.id===state.activeDeal); if(!d) return;
+  d.assessorAction = action;
+  d.assessorActionAt = new Date().toISOString();
+  auditLog('ASSESSOR_DECISION', action+' · '+d.id, state.user ? (state.user.email||'Assessor') : 'Assessor', 'assessor');
+  toast('Assessor decision logged: '+action, 'ok');
+  renderAssessmentConsole();
+}
+
 function renderAssessmentConsole(){
   const body = document.getElementById('acBody'); if(!body) return;
-  body.innerHTML = `<div class="ac-placeholder" role="status">
-    <div class="ac-cap">Assessment console</div>
-    <h1>Workspace ready.</h1>
-    <p>Signed in as <b>${esc(state.org||'lending institution')}</b>. The console — incoming queue, decision engine output, 4 Cs scorecard, approval routing, coded conditions, and the audit trail — will be wired up in <i>Pass 2</i>.</p>
-    <div class="ac-stub">role = ${esc(state.role||'')} · org = ${esc(state.org||'')} · backend = ${state.backend?'live':'demo'}</div>
+  body.innerHTML = `
+    <aside class="ac-queue" aria-label="Assessment queue">
+      <div class="ac-queue-head">
+        <div class="ac-q-cap">Incoming queue</div>
+        <div class="ac-q-title">Files to assess.</div>
+        <div class="ac-q-sub">Select a file to load it into the console.</div>
+        <div class="ac-q-filters" role="tablist" aria-label="Filter queue">${renderAssessFilters()}</div>
+      </div>
+      <div class="ac-q-list" id="acQList" role="list"></div>
+    </aside>
+    <section class="ac-console" id="acConsole" aria-label="Assessment console"></section>`;
+  renderAssessQueueList();
+  renderAssessConsoleBody();
+}
+function renderAssessFilters(){
+  const counts = (()=>{
+    const c = { all:0, new:0, review:0, referred:0, approved:0 };
+    assessQueueAll().forEach(d=>{
+      c.all++;
+      const s = assessStageOf(d);
+      if(s==='new') c.new++;
+      else if(s==='review') c.review++;
+      else if(s==='referred') c.referred++;
+      else if(s==='approved' || s==='declined') c.approved++;
+    });
+    return c;
+  })();
+  return [
+    ['all','All'],['new','New'],['review','In review'],['referred','Referred'],['approved','Closed']
+  ].map(([k,l])=>{
+    const on = (state.assessFilter||'all')===k;
+    return `<button class="ac-q-chip" role="tab" aria-pressed="${on}" onclick="setAssessFilter('${k}')">${l} <span class="ac-q-n">${counts[k]}</span></button>`;
+  }).join('');
+}
+function renderAssessQueueList(){
+  const el = document.getElementById('acQList'); if(!el) return;
+  const list = assessQueueFiltered();
+  if(!list.length){ el.innerHTML = `<div class="ac-q-empty">No files in this view.</div>`; return; }
+  el.innerHTML = list.map(d=>{
+    const stage = assessStageOf(d);
+    const isActive = state.activeDeal===d.id;
+    const lvr = (typeof d.lvr==='number') ? d.lvr.toFixed(1)+'%' : '—';
+    return `<div class="ac-q-item" role="listitem" tabindex="0" aria-current="${isActive}"
+      onclick="loadAssessFile('${escArg(d.id)}')"
+      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();loadAssessFile('${escArg(d.id)}')}">
+      <span class="ac-q-sq ${stage}" aria-hidden="true"></span>
+      <div>
+        <div class="ac-q-id">${esc(d.id)}</div>
+        <div class="ac-q-name">${esc(d.name||'')}</div>
+        <div class="ac-q-meta">${fmtMoney(d.amount||0)} · LVR ${esc(lvr)}</div>
+        <div class="ac-q-purpose">${esc(d.type||'')}</div>
+      </div>
+      <span class="ac-q-stage ${stage}">${ASSESS_STAGE_LABEL[stage]||stage}</span>
+    </div>`;
+  }).join('');
+}
+function assessIntegrityFor(dealId){
+  // CLEAR / CAUTION / REVIEW REQUIRED · derived from worstForensicStatus.
+  const w = worstForensicStatus(dealId);
+  if(!w) return { label:'No documents', cls:'scanning' };
+  if(/REVIEW/i.test(w)) return { label:'Review required', cls:'review' };
+  if(/CAUTION/i.test(w)) return { label:'Caution', cls:'caution' };
+  return { label:'Clear', cls:'clear' };
+}
+function renderAssessConsoleBody(){
+  const el = document.getElementById('acConsole'); if(!el) return;
+  if(!state.activeDeal){
+    el.innerHTML = `<div class="ac-noselect" role="status">
+      <h2>No file selected.</h2>
+      <p>Pick a file from the queue to load the decision engine output, the 4 Cs, routing, conditions, and the audit trail.</p>
+    </div>`;
+    return;
+  }
+  const d = DEALS.find(x=>x.id===state.activeDeal); if(!d){ el.innerHTML=''; return; }
+  const r = computeServiceability();
+  const dec = decideAssessment(r);
+  const cs = fourCs(r);
+  const conds = derivedConditions();
+  const integrity = assessIntegrityFor(d.id);
+  el.innerHTML = `
+    ${renderAssessFileHead(d, integrity, r)}
+    ${renderAssessDecisionCard(d, r, dec)}
+    ${renderAssess4Cs(cs)}
+    ${renderAssessConditions(conds)}
+    ${renderAssessAudit()}
+  `;
+}
+function renderAssessFileHead(d, integrity, r){
+  const lvr = (typeof d.lvr==='number') ? d.lvr.toFixed(1)+'%' : '—';
+  const brokerLine = d.broker_name || d.broker || `Submitting broker · ACL ${d.acl||'480342'}`;
+  return `<header class="ac-fh">
+    <div>
+      <div class="ac-fh-id">${esc(d.id)}</div>
+      <div class="ac-fh-name">${esc(d.name||'')}</div>
+      <div class="ac-fh-meta"><span class="mono">${fmtMoney(d.amount||0)}</span> · ${esc(d.type||'')} · ${esc(lenderLabel(d.lender))} · LVR <span class="mono">${esc(lvr)}</span></div>
+      <div class="ac-fh-broker">Submitted by ${esc(brokerLine)}</div>
+    </div>
+    <div></div>
+    <div class="ac-fh-right">
+      <span class="ac-integrity ${integrity.cls}" title="Document integrity">${esc(integrity.label)}</span>
+      <span class="ac-fh-id">NDI ${fmtMoney(r.ndi)}/mo · DSR ${r.dsr.toFixed(1)}%</span>
+    </div>
+  </header>`;
+}
+function renderAssessDecisionCard(d, r, dec){
+  const fmtNow = new Date().toLocaleString('en-AU',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  // Confidence: tight when verdict is decisive; lower when verdict is BORDERLINE or there are unresolved flags.
+  const conf = (()=>{
+    if(r.verdict==='PASS' && dec.reasons.length===0) return 0.94;
+    if(r.verdict==='FAIL') return 0.92;
+    return Math.max(0.62, 0.88 - dec.reasons.length*0.05);
+  })();
+  const cats = ['A','B','C','D'];
+  const reasons = dec.reasons.length ? dec.reasons.map(x=>`
+    <div class="ac-reason">
+      ${codeChip(x.code)}
+      <span class="ac-reason-text">${esc(x.text)}</span>
+      <span class="ac-sev ${esc(x.sev||'low')}">${(x.sev||'low').toUpperCase()}</span>
+    </div>`).join('')
+    : `<div class="ac-reason-text" style="grid-column:1/-1">No coded flags — clean file.</div>`;
+  return `<div class="ac-card">
+    <div class="ac-card-cap">Decision Engine Output</div>
+    <div class="ac-dec">
+      <div class="ac-dec-l">
+        <div class="ac-dec-status ${esc(dec.status)}">${dec.code==='APPROVE'?'Approve':dec.code==='DECLINE'?'Decline':'Refer'}</div>
+        <div class="ac-dec-code">${esc(dec.code)} · confidence <span style="color:var(--ink);font-weight:600">${Math.round(conf*100)}%</span></div>
+        <div class="ac-dec-note">${esc(dec.note)}</div>
+        <div class="ac-dec-time">${esc(fmtNow)}</div>
+        <div class="ac-reasons" aria-label="Coded reasons">${reasons}</div>
+      </div>
+      <div class="ac-dec-r">
+        <div class="ac-card-cap cool">Approval routing</div>
+        <div class="ac-rt-cat">${esc(dec.category)}</div>
+        <div class="ac-rt-seg" aria-hidden="true">${cats.map(c=>`<span class="${c} ${c===dec.category?'on':''}"></span>`).join('')}</div>
+        <div class="ac-rt-labels" aria-hidden="true">${cats.map(c=>`<span>${c}</span>`).join('')}</div>
+        <div style="margin-top:14px">
+          <div class="ac-rt-row"><span class="dl">DCA referral</span><span class="dv">${dec.status==='refer'?'Required':dec.status==='decline'?'N/A':'Not required'}</span></div>
+          <div class="ac-rt-row"><span class="dl">LMI</span><span class="dv">${r.lvrAvailable && r.lvr>80 ? 'Applicable' : 'Not applicable'}</span></div>
+          <div class="ac-rt-row"><span class="dl">Policy waiver</span><span class="dv">${r.dti>6 ? 'DTI > 6× ' : 'None'}</span></div>
+          <div class="ac-rt-row"><span class="dl">DSR ceiling</span><span class="dv">${r.dsr.toFixed(1)}% / ${activeDsrMax()}%</span></div>
+        </div>
+        <div class="ac-rt-routing">${esc(dec.routing)}</div>
+        <div class="ac-actions" role="group" aria-label="Assessor decision">
+          <button class="ac-act-approve" onclick="logAssessorAction('APPROVE')" aria-label="Approve file">Approve</button>
+          <button class="ac-act-refer" onclick="logAssessorAction('REFER')" aria-label="Refer to DCA">Refer to DCA</button>
+          <button class="ac-act-decline" onclick="logAssessorAction('DECLINE')" aria-label="Decline file">Decline</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function renderAssess4Cs(cs){
+  return `<div class="ac-card">
+    <div class="ac-card-cap">The 4 Cs</div>
+    <div class="ac-cs-grid">
+      ${cs.map(c=>`<div class="ac-c4">
+        <div class="ac-c4-head"><div class="ac-c4-name">${esc(c.name)}</div><div class="ac-c4-rating ${esc(c.rating)}">${esc(c.rating)}</div></div>
+        <div class="ac-c4-basis">${esc(c.basis)}</div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+function renderAssessConditions(conds){
+  if(!conds.length){
+    return `<div class="ac-card">
+      <div class="ac-card-cap">Conditions &amp; verification</div>
+      <p style="font-family:var(--serif);font-style:italic;color:var(--t3-cool);margin:0">No outstanding conditions — clean file.</p>
+    </div>`;
+  }
+  const done = conds.filter(c=>c.satisfied).length;
+  const pct = Math.round(done/conds.length*100);
+  return `<div class="ac-card">
+    <div class="ac-card-cap">Conditions &amp; verification</div>
+    <div class="ac-cond-progress" role="group" aria-label="Condition progress">
+      <span><b>${done}</b> of <b>${conds.length}</b> satisfied</span>
+      <div class="ac-cp-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div>
+      <span class="ac-cp-num">${pct}%</span>
+    </div>
+    ${conds.map(c=>`<div class="ac-cond">
+      ${codeChip(c.code)}
+      <span class="ac-cond-cat">${esc(c.category||'')}</span>
+      <span class="ac-cond-title">${esc(c.title||'')}</span>
+      <span class="ac-cond-status ${c.satisfied?'satisfied':'outstanding'}">${c.satisfied?'Satisfied':'Outstanding'}</span>
+      <div class="ac-cond-detail">${esc(c.detail||'')} · resolve at <span class="mono">${esc(c.resolveAt||'')}</span></div>
+    </div>`).join('')}
+  </div>`;
+}
+function renderAssessAudit(){
+  const events = (state.eventLog||[]).slice(0, 10);
+  if(!events.length){
+    return `<div class="ac-card"><div class="ac-card-cap">Audit trail</div>
+      <p style="font-family:var(--serif);font-style:italic;color:var(--t3-cool);margin:0">No events yet.</p></div>`;
+  }
+  return `<div class="ac-card">
+    <div class="ac-card-cap">Audit trail</div>
+    <div class="ac-audit">${events.map(e=>{
+      const t = e.time instanceof Date ? e.time : new Date(e.time);
+      return `<div class="ac-audit-item">
+        <span class="ac-audit-dot ${esc(e.actor||'system')}" aria-hidden="true"></span>
+        <span class="ac-audit-time">${t.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})} · <b style="font-weight:700">${esc(e.actor||'system')}</b></span>
+        <span class="ac-audit-text">${esc(e.text||'')}</span>
+      </div>`;
+    }).join('')}</div>
   </div>`;
 }
 

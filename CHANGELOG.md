@@ -1,5 +1,69 @@
 # DebtIQ v6 — Changelog
 
+## Round (lender side · Pass 2) — Assessment Console (queue · decision · 4 Cs · routing · conditions · audit)
+
+Second pass — the assessor workspace is now fully operational, built
+entirely from the engine state (no hardcoded per-file decisions).
+
+- **Queue (left, 320px).** Filterable list of every file in `DEALS`,
+  sorted newest first. Status square (steel/amber/red/green by stage) +
+  id + applicant + mono money/LVR + serif-italic purpose + stage tag.
+  Filter chips (All · New · In review · Referred · Closed) carry mono
+  counts; the active chip is inverted (ink on white).
+  Stage is derived from `deal.assessorAction || deal.status`, so a
+  Refer/Decline pressed by the assessor flips the queue tag without
+  touching the broker-side status pill.
+- **File header.** id + serif applicant name + mono money/purpose/lender/LVR
+  + serif-italic broker line ("Submitted by …  ACL …") + an integrity
+  chip derived from `worstForensicStatus(dealId)`. The right column also
+  shows the live NDI/DSR for quick orientation before the decision card.
+- **Decision Engine Output.** Two-column card. Left: serif statement
+  (Approve / Refer / Decline), mono code line with confidence percentage,
+  serif-italic note, timestamp, and a ledger of coded reason chips
+  (SRV01, DTI01, LMI01, IQA07, CON01, M033, VAL01) — each carrying a
+  monochrome severity tag (HIGH/MED/LOW). `decideAssessment(r)`
+  augmented (additive) with per-reason `sev`.
+- **Approval routing.** A/B/C/D 4-segment scale (green/steel/amber/red
+  highlight on the active segment) + DCA referral / LMI / Policy waiver
+  / DSR-ceiling rows + serif-italic routing note. **Approve / Refer /
+  Decline** action buttons with steel focus rings — each calls
+  `logAssessorAction()` which stamps `deal.assessorAction` and writes
+  an ASSESSOR_DECISION row to `state.auditTrail` (and a coloured
+  audit-trail entry via `logEvent`).
+- **The 4 Cs.** Reuses `fourCs(r)`. Four cards (Character, Capacity,
+  Capital, Collateral), rating chip (strong/adequate/weak), serif-italic
+  basis. 2-up on narrow widths, 4-up at ≥1200px.
+- **Conditions & Verification.** Reuses `derivedConditions()`. Header
+  row shows `done / total satisfied` + animated progress bar +
+  percentage. Each condition: code chip + category + title + status
+  chip (Satisfied/Outstanding) + detail line with the resolve-at stage.
+- **Audit trail.** Reuses `state.eventLog`. Up to 10 most recent events,
+  actor-coloured dot (AI violet / broker steel / assessor green /
+  processor amber / system slate), `HH:MM · Actor` + serif-italic text.
+- **Light-touch deal hydration.** New `loadAssessFile(id)` is a slimmer
+  cousin of `setActiveDeal()` for the assessor shell — it sets
+  `state.activeDeal`, restores `state.calc` from the deal's saved
+  snapshot (or the demo intel template), and re-renders the console.
+  Does NOT call `goTab()` (no broker-shell side-effects).
+- **Empty state** when no file is selected — a centred prompt with a
+  matched serif headline.
+- **A11y.** Queue items are `role="listitem"` with `tabindex="0"` and
+  Enter/Space activation; filter chips use `aria-pressed`; the progress
+  bar uses `role="progressbar"` with min/max/now; action buttons live
+  inside a `role="group"`; every interactive control carries a
+  `:focus-visible` steel ring.
+- **Responsive.** Queue narrows to 260px at ≤1100px; decision card
+  collapses to single column. At ≤760px the queue moves above the
+  console (max-height 240px).
+- **Smoke harness +8 checks** (165/165 total): queue presence + counts,
+  default-file console body (decision + 4 Cs + audit), filter narrowing,
+  `loadAssessFile` switching, `logAssessorAction` audit + stage flip.
+
+Files touched: `index.html` (CSS for queue/console + JS for
+`assessStageOf`, `assessQueueAll/Filtered`, `loadAssessFile`,
+`setAssessFilter`, `logAssessorAction`, `renderAssessmentConsole` +
+subrenderers). No backend, schema, or `lenders.js` changes.
+
 ## Round (lender side · Pass 1) — Branching login + assessor workspace shell
 
 First pass of the lender/assessor integration. Login now branches by role
