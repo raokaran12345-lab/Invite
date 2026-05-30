@@ -1,5 +1,25 @@
 # DebtIQ v6 — Changelog
 
+## Round (bugfix) — verdict logic, unique deal id + real borrower name, wizard data capture, DTI card-limit fix, manual DTI, HEM floor removal, self-emp shade display, portal upload, AI-pilot income shape, panel transition, output escaping, engine lender-id, seed dates
+
+Targeted, surgical bug fixes — no refactor. Every change quoted in the brief is applied verbatim across all occurrences.
+
+- **C1 — verdict logic.** `else if(ndi>-500 || dsr<dsrMax+10)` (2× in `computeServiceability` and `computeManual`) becomes `else if(ndi > -250 && dsr < dsrMax+5)`. A deal $50k/mo underwater now returns FAIL instead of BORDERLINE.
+- **C2 — unique deal id + real name.** `submitDeal` now generates a monotonic id (`'D-'+(maxNum+1)` from the existing DEALS) and names the new deal from the wizard's borrower fields (`firstName`+`lastName`) — fallback to entity 0 name, then `'New Application'`. Email/phone also carried.
+- **C3 — wizard borrower step.** Every input wired to `state.wizData` (`firstName/lastName/email/phone/dob`) and Dependants to `state.calc.dependants`; values restored from state on re-render. `state.wizData` defaults extended. `wizGo` syncs entity 0's name from the borrower fields.
+- **C4 — DTI no longer counts card limits as debt.** `totalLiab += parseFloat(l.balance)||0;` (2×) is guarded by `if(l.type!=='credit_card')`. A $15k card with $0 balance no longer inflates DTI by $15k.
+- **C5 — manual DTI.** Uses APRA-correct DTI = (existing-debt **balance** + new loan) / gross income. Adds an optional `existingDebtBalance` input (state + editor) for accuracy; otherwise a ~5-year-of-repayments proxy from the monthly figure.
+- **C6 — HEM floor.** The extra `income*0.28` / `incomeMo*0.28` floor (4 occurrences across `computeServiceability`, `computeManual`, `baseFigures`, and the manual editor copy) is removed. The HEM band table is already correct.
+- **H4 — self-emp shade ×.** `updateCalc` now computes the displayed × from the *assessable* base (post add-backs) the same way `getShadedIncome` does, so a self-employed line correctly shows e.g. ×0.80 instead of ×1.07.
+- **H5 — portal upload.** `simUpload` now creates a real DOC entry (then auto-verifies it) and logs to the timeline; the previous version only marked the tile done.
+- **H6 — AI Pilot output shape.** `applyExtractedProfile` emits incomes with the full 2-year shape (`amount_y1/amount_y2/use_average/evidence_years`) so the calculator's FY columns are populated.
+- **M1 — panel transition.** `.panel` gets `transition:transform`; `.panel.show` is now a transform toggle (not an animation), so the panel slides closed as well as open.
+- **M2 — output escaping.** A global `esc()` alias of `escHtml` is wired into deal-card name, panel email, panel portal copy, global-search results, Client-tab title, and the two `next_action_note` render sites. A name like `O'Brien & <Sons>` now renders literally.
+- **M5 — engine lender id.** Both engine income passes now call `getShadedIncome(inc, state.lender)` explicitly, so per-lender shading (Westpac OT, HSBC foreign) is applied consistently in baseline computations.
+- **L1 — seed dates.** D-891 and D-890 `next_action_date` are now relative to TODAY (+2 and +4 days) so the "Next action soon" banner is always live in the demo.
+
+**Verification:** `node --check` clean; sentinels confirmed absent (`grep -nE "ndi>-500|892\+Math\.floor|name:'New Application'|\*0\.28"` returns nothing); jsdom smoke **103/103** green — including new assertions B-C1 (severe shortfall → FAIL), B-C4 (card limit doesn't inflate DTI), B-H4 (self-emp shade respects assessable base), B-M2 (markup in deal name escaped, no injection), B-L1 (D-891 next action date ≥ today), B-H5 (portal upload creates a DOC).
+
 ## Round (complexity) — reopenable deal panel, searchable lender picker with buffer explainer, true multi-entity applicant builder, full multi-security model with addresses/valuations/rental, aggregate-LVR rework
 
 Four corrective/additive fixes so the app can hold real broker complexity (multi-applicant, multi-security deals like AOL captures) without losing the simple consolidated output.

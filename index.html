@@ -395,9 +395,10 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
 .panel{
   position:fixed;top:0;right:0;height:100%;width:440px;max-width:92vw;background:var(--surface);
   z-index:901;box-shadow:-10px 0 40px rgba(0,0,0,.18);transform:translateX(100%);
+  transition:transform .28s cubic-bezier(.22,1,.36,1);
   display:flex;flex-direction:column;
 }
-.panel.show{animation:slideIn .25s cubic-bezier(.22,1,.36,1) forwards}
+.panel.show{transform:translateX(0)}
 .panel-head{padding:20px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start}
 .panel-body{flex:1;overflow-y:auto;padding:22px}
 .panel-x{font-size:22px;color:var(--t3);line-height:1;background:none}
@@ -911,8 +912,8 @@ function mkDeal(d){ return Object.assign({
   next_action_date:'', next_action_note:'', closed:'', activity:[]
 }, d); }
 let DEALS = [
-  mkDeal({id:'D-891', name:'Sarah & Tom Mitchell', lender:'CBA', amount:785000, status:'BROKER_REVIEW', lvr:78.5, progress:null, type:'Owner Occupier', primary_phone:'+61 412 345 678', primary_email:'sarah.mitchell@email.com', referral_source:'past_client', next_action_date:'2026-05-28', next_action_note:'Call re: payslip clarification'}),
-  mkDeal({id:'D-890', name:'Chen Property Trust', lender:'ANZ', amount:2100000, status:'DOCS_PENDING', lvr:55.2, progress:null, type:'Investment', referral_source:'aggregator', next_action_date:'2026-05-29', next_action_note:'Chase trust deed'}),
+  mkDeal({id:'D-891', name:'Sarah & Tom Mitchell', lender:'CBA', amount:785000, status:'BROKER_REVIEW', lvr:78.5, progress:null, type:'Owner Occupier', primary_phone:'+61 412 345 678', primary_email:'sarah.mitchell@email.com', referral_source:'past_client', next_action_date: new Date(TODAY.getTime()+2*864e5).toISOString().slice(0,10), next_action_note:'Call re: payslip clarification'}),
+  mkDeal({id:'D-890', name:'Chen Property Trust', lender:'ANZ', amount:2100000, status:'DOCS_PENDING', lvr:55.2, progress:null, type:'Investment', referral_source:'aggregator', next_action_date: new Date(TODAY.getTime()+4*864e5).toISOString().slice(0,10), next_action_note:'Chase trust deed'}),
   mkDeal({id:'D-889', name:'James Okonkwo', lender:'NAB', amount:620000, status:'AI_PROCESSING', lvr:82.1, progress:67, type:'Owner Occupier', referral_source:'partner'}),
   mkDeal({id:'D-888', name:'Patel Family SMSF', lender:'Westpac', amount:1400000, status:'SUBMITTED', lvr:60.0, progress:null, type:'SMSF', referral_source:'past_client'}),
   mkDeal({id:'D-887', name:'Amanda Torres', lender:'CBA', amount:495000, status:'APPROVED', lvr:72.3, progress:null, type:'First Home', referral_source:'direct', closed:'2026-05-14'}),
@@ -965,7 +966,7 @@ const state = {
   dealSearch:'',
   wizStep:1,
   // Wizard shares state.calc — only non-calc wizard inputs live here.
-  wizData:{lender:null, dealType:null, propValue:1000000},
+  wizData:{lender:null, dealType:null, propValue:1000000, firstName:'', lastName:'', email:'', phone:'', dob:''},
   calc:{
     entities:[
       {id:'e_1', kind:'individual', name:'Primary Borrower', role:'borrower', abn:'', trustee_name:'',
@@ -991,7 +992,7 @@ const state = {
   manual:{
     incomeAnnual:142000, incomeShade:100, taxRate:0,
     expensesMonthly:2200, useHEM:true,
-    assets:1000000, liabilitiesMonthly:475,
+    assets:1000000, liabilitiesMonthly:475, existingDebtBalance:0,
     loanAmount:785000, rate:6.24, term:30, bufferPct:3, dependants:0
   }
 };
@@ -1208,7 +1209,7 @@ function computeServiceability(){
   state.calc.entities.forEach(ent=>{
     const w=entityWeight(ent); if(!w) return;
     ent.incomes.forEach(inc=>{
-      const shaded = getShadedIncome(inc) * w;
+      const shaded = getShadedIncome(inc, state.lender) * w;
       shadedAnnual += shaded;
       breakdown[inc.type] = (breakdown[inc.type]||0) + shaded;
     });
@@ -1220,13 +1221,14 @@ function computeServiceability(){
       let assessed = assessLiability(l, buffer);
       if(l.type==='hecs') assessed -= hecsExclusion(l, income);  // lender HECS rule
       existingDebt += Math.max(0, assessed);
-      totalLiab += parseFloat(l.balance)||0;
+      // Credit-card LIMIT is not outstanding debt — exclude from the DTI balance sum.
+    if(l.type!=='credit_card') totalLiab += parseFloat(l.balance)||0;
     });
   });
   const nl = state.calc.newLoan;
   const newLoanMo = PMT(parseFloat(nl.amount)||0, ((parseFloat(nl.rate)||0)+buffer*100)/100, parseFloat(nl.term)||30);
   const totalDebt = existingDebt + newLoanMo;
-  const HEM = Math.max(getHEM(shadedAnnual, state.calc.adults||1, state.calc.dependants), income*0.28);
+  const HEM = getHEM(shadedAnnual, state.calc.adults||1, state.calc.dependants);
   const ndi = income - totalDebt - HEM;
   const dsr = income>0 ? totalDebt/income*100 : 0;
   // LVR uses aggregate security value (sum of securities[].value, fallback to wizData.propValue).
@@ -1238,7 +1240,7 @@ function computeServiceability(){
   let verdict;
   const pass = ndi>0 && dsr<dsrMax;
   if(pass) verdict='PASS';
-  else if(ndi>-500 || dsr<dsrMax+10) verdict='BORDERLINE';
+  else if(ndi > -250 && dsr < dsrMax+5) verdict='BORDERLINE';
   else verdict='FAIL';
 
   return {income, shadedAnnual, existingDebt, newLoanMo, totalDebt, HEM, ndi, dsr, lvr, dti, totalLiab, verdict, breakdown, assessedRate:(parseFloat(nl.rate)||0)+buffer*100};
@@ -1326,7 +1328,7 @@ function renderDealGrid(){
     const nextSoon = d.next_action_date && (new Date(d.next_action_date)-TODAY)/864e5 <= 3 && d.status!=='APPROVED';
     return `<div class="deal-card" onclick="setActiveDeal('${d.id}')" role="button" tabindex="0">
       <div class="dc-top">
-        <div class="dc-name">${d.name}</div>
+        <div class="dc-name">${esc(d.name)}</div>
         <span class="pill ${s.cls}">${s.label}</span>
       </div>
       <div class="dc-id">${d.id} · ${d.type}</div>
@@ -1387,13 +1389,13 @@ function panelOverview(el, d){
   const nextSoon = d.next_action_date && (new Date(d.next_action_date) - TODAY)/864e5 <= 3;
   el.innerHTML = `
     <span class="pill ${s.cls}" style="margin-bottom:14px">${s.label}</span>
-    ${nextSoon?`<div class="card" style="padding:12px 14px;margin-bottom:12px;border-left:4px solid var(--amber)">${svgIcon('clock',15)} <b>Next action ${d.next_action_date}</b> — ${d.next_action_note||'follow up'}</div>`:''}
+    ${nextSoon?`<div class="card" style="padding:12px 14px;margin-bottom:12px;border-left:4px solid var(--amber)">${svgIcon('clock',15)} <b>Next action ${esc(d.next_action_date)}</b> — ${esc(d.next_action_note||'follow up')}</div>`:''}
     <div class="detail-row"><span class="dl">Loan Amount</span><span class="dv mono">${fmtMoney(d.amount)}</span></div>
     <div class="detail-row"><span class="dl">Lender</span><span class="dv">${lenderLabel(d.lender)}</span></div>
     <div class="detail-row"><span class="dl">LVR</span><span class="dv mono">${d.lvr}%</span></div>
     <div class="detail-row"><span class="dl">Referral source</span><span class="dv">${REF_LABEL[d.referral_source]||'—'}</span></div>
     <div class="detail-row"><span class="dl">Est. commission</span><span class="dv mono">${fmtMoney(d.amount*d.upfront_commission_rate)} + ${fmtMoney(d.amount*d.trail_commission_rate)}/yr</span></div>
-    ${d.primary_email?`<div class="detail-row"><span class="dl">Contact</span><span class="dv">${d.primary_email}</span></div>`:''}
+    ${d.primary_email?`<div class="detail-row"><span class="dl">Contact</span><span class="dv">${esc(d.primary_email)}</span></div>`:''}
     ${d.progress!==null?`<div style="margin:14px 0"><div class="ai-bar"><div class="lbl"><span>AI Processing</span><span>${d.progress}%</span></div><div class="progress"><span style="width:${d.progress}%"></span></div></div></div>`:''}
     <h4 style="margin:18px 0 10px;font-size:14px">Quick Actions</h4>
     <div style="display:flex;flex-direction:column;gap:9px">
@@ -1535,7 +1537,7 @@ function panelCommentary(el, d){ renderCommentary(el); }
 function panelPortal(el, d){
   const link = 'https://portal.debtiq.com/d/'+d.id.toLowerCase();
   el.innerHTML = `
-    <p style="font-size:13px;color:var(--t2);margin-bottom:12px">Secure client upload link for <b>${d.name}</b>. Anything uploaded here flows into this deal — no re-keying.</p>
+    <p style="font-size:13px;color:var(--t2);margin-bottom:12px">Secure client upload link for <b>${esc(d.name)}</b>. Anything uploaded here flows into this deal — no re-keying.</p>
     <div class="card" style="padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px">
       <span class="mono" style="font-size:12px;overflow:hidden;text-overflow:ellipsis">${link}</span>
       <button class="mini-btn" onclick="navigator.clipboard&&navigator.clipboard.writeText('${link}');toast('Link copied','ok')">Copy</button>
@@ -1595,6 +1597,9 @@ function wizNav(){
 }
 function wizGo(dir){
   state.wizStep = Math.min(8, Math.max(1, state.wizStep+dir));
+  // Sync entity 0's name from the borrower fields so the calculator entity matches the wizard inputs.
+  const bn=[state.wizData.firstName,state.wizData.lastName].filter(Boolean).join(' ').trim();
+  if(bn && state.calc.entities[0]) state.calc.entities[0].name = bn;
   const host = document.getElementById('wizModalContent') || document.getElementById('page-wizard');
   if(host) renderWizard(host);
 }
@@ -1669,14 +1674,15 @@ function renderWizStep(){
       ${reqCard}
       ${wizNav()}</div>`;
   } else if(state.wizStep===2){
+    const wd = state.wizData;
     html = `<div class="wiz-card active"><h3>Borrower Details</h3><p class="desc">Primary applicant information.</p>
       <div class="form-grid">
-        <div class="inp"><label>First Name</label><input value="Sarah"></div>
-        <div class="inp"><label>Last Name</label><input value="Mitchell"></div>
-        <div class="inp"><label>Email</label><input value="sarah.mitchell@email.com"></div>
-        <div class="inp"><label>Phone</label><input value="+61 412 345 678"></div>
-        <div class="inp"><label>Date of Birth</label><input type="date" value="1987-04-12"></div>
-        <div class="inp"><label>Dependants</label><input type="number" value="2"></div>
+        <div class="inp"><label for="wzFn">First Name</label><input id="wzFn" value="${esc(wd.firstName||'')}" oninput="state.wizData.firstName=this.value"></div>
+        <div class="inp"><label for="wzLn">Last Name</label><input id="wzLn" value="${esc(wd.lastName||'')}" oninput="state.wizData.lastName=this.value"></div>
+        <div class="inp"><label for="wzEm">Email</label><input id="wzEm" type="email" value="${esc(wd.email||'')}" oninput="state.wizData.email=this.value"></div>
+        <div class="inp"><label for="wzPh">Phone</label><input id="wzPh" value="${esc(wd.phone||'')}" oninput="state.wizData.phone=this.value"></div>
+        <div class="inp"><label for="wzDob">Date of Birth</label><input id="wzDob" type="date" value="${esc(wd.dob||'')}" oninput="state.wizData.dob=this.value"></div>
+        <div class="inp"><label for="wzDep">Dependants</label><input id="wzDep" type="number" min="0" value="${state.calc.dependants||0}" oninput="state.calc.dependants=Math.max(0,+this.value||0)"></div>
       </div>${wizNav()}</div>`;
   } else if(state.wizStep===3){
     const ents = state.calc.entities;
@@ -1804,9 +1810,14 @@ function submitDeal(){
   showLoader('Submitting deal to lender…');
   setTimeout(()=>{
     hideLoader();
-    const id = 'D-'+(892+Math.floor(Math.random()*100));
+    // Monotonic, collision-free id based on the highest existing D-number
+    const maxNum = DEALS.reduce((mx,d)=>{ const n=parseInt((d.id||'').replace(/\D/g,''),10); return isNaN(n)?mx:Math.max(mx,n); }, 891);
+    const id = 'D-'+(maxNum+1);
     const amt = parseFloat(state.calc.newLoan.amount)||0, pv = totalSecurityValue()||1;
-    const newDeal = mkDeal({id, name:'New Application', lender:state.wizData.lender||'CBA', amount:amt, status:'SUBMITTED', lvr:+(amt/pv*100).toFixed(1), progress:null, type:state.wizData.dealType||'Owner Occupier'});
+    const wd = state.wizData;
+    const borrowerName = [wd.firstName, wd.lastName].filter(Boolean).join(' ').trim()
+      || (state.calc.entities[0] && state.calc.entities[0].name) || 'New Application';
+    const newDeal = mkDeal({id, name:borrowerName, lender:wd.lender||'CBA', amount:amt, status:'SUBMITTED', lvr:+(amt/pv*100).toFixed(1), progress:null, type:wd.dealType||'Owner Occupier', primary_email:wd.email||'', primary_phone:wd.phone||''});
     persistDealIntel(id);  // persist entities + securities + provenance onto the new deal
     DEALS.unshift(newDeal);
     DOCS.forEach(x=>{ if(x.deal==='NEW') x.deal=id; });   // retag wizard docs to the new deal
@@ -2037,9 +2048,16 @@ function updateCalc(){
   const buffer = activeBuffer();
   state.calc.entities.forEach((ent,ei)=>{
     ent.incomes.forEach((inc,ii)=>{
-      const rawAmt = parseFloat(inc.amount)||0;
       const shadedAmt = getShadedIncome(inc, state.lender);
-      const sh = rawAmt > 0 ? shadedAmt / rawAmt : (SHADE[inc.type]||1);
+      // Show the TRUE shade factor (post add-backs the ratio against raw is misleading for self-emp).
+      // Recompute the pre-shade assessable base the same way getShadedIncome does:
+      const annualBase = (inc.use_average && inc.amount_y2)
+        ? (((+inc.amount_y1||0)+(+inc.amount_y2||0))/2)
+        : (parseFloat(inc.amount)||0);
+      const assessableBase = inc.type==='self_emp'
+        ? Math.max(0, annualBase + (+inc.addback_depreciation||0) + (+inc.addback_interest||0) + (+inc.addback_lease||0) - (+inc.business_loan_repayments||0))
+        : annualBase;
+      const sh = assessableBase > 0 ? shadedAmt / assessableBase : (SHADE[inc.type]||1);
       setText(`incShade-${ei}-${ii}`, '×'+sh.toFixed(2));
       setText(`incShaded-${ei}-${ii}`, fmtMoney(shadedAmt));
       if(inc.type==='self_emp'){
@@ -2179,16 +2197,22 @@ function computeManual(){
   const existingDebt = parseFloat(x.liabilitiesMonthly)||0;
   const totalDebt = existingDebt + newLoanMo;
   const living = x.useHEM
-    ? Math.max(getHEM(shaded, 2, parseFloat(x.dependants)||0), incomeMo*0.28)
+    ? getHEM(shaded, 2, parseFloat(x.dependants)||0)
     : (parseFloat(x.expensesMonthly)||0);
   const ndi = incomeMo - totalDebt - living;
   const dsr = incomeMo>0 ? totalDebt/incomeMo*100 : 0;
   const lvr = (parseFloat(x.assets)||0)>0 ? (parseFloat(x.loanAmount)||0)/(parseFloat(x.assets)||0)*100 : 0;
-  const dti = afterTax>0 ? ((parseFloat(x.loanAmount)||0)+existingDebt*12)/afterTax : 0;  // crude DTI on assessable income
+  // DTI = (existing debt BALANCE + new loan) / GROSS annual income (APRA definition).
+  // existingDebt is a monthly repayment, so we need a balance input. Use
+  // x.existingDebtBalance if present; otherwise estimate from the monthly repayment.
+  const exBalance = (parseFloat(x.existingDebtBalance)>0)
+    ? parseFloat(x.existingDebtBalance)
+    : existingDebt*12*5;   // rough proxy: ~5yr of repayments if no balance entered
+  const dti = shaded>0 ? ((parseFloat(x.loanAmount)||0) + exBalance) / shaded : 0;
   const dsrMax = activeDsrMax();
   let verdict;
   if(ndi>0 && dsr<dsrMax) verdict='PASS';
-  else if(ndi>-500 || dsr<dsrMax+10) verdict='BORDERLINE';
+  else if(ndi > -250 && dsr < dsrMax+5) verdict='BORDERLINE';
   else verdict='FAIL';
   return {incomeMo, newLoanMo, existingDebt, totalDebt, living, ndi, dsr, lvr, dti, verdict, assessedRate:(parseFloat(x.rate)||0)+buffer*100, dsrMax};
 }
@@ -2211,7 +2235,7 @@ function renderManualEditor(){
 
       <div class="subsec">Living expenses</div>
       <div class="toggle-row" style="padding:8px 0"><span style="font-weight:600;font-size:12.5px">Use HEM floor (auto)</span><div class="switch ${x.useHEM?'on':''}" onclick="state.manual.useHEM=!state.manual.useHEM;this.classList.toggle('on');renderManualEditor();renderManualResults()"></div></div>
-      ${x.useHEM ? `<div class="assessed-note">Using HEM floor: ${fmtMoney(getHEM((parseFloat(x.incomeAnnual)||0)*((parseFloat(x.incomeShade)||0)/100), 2, parseFloat(x.dependants)||0))}/mo (income band × household) — or 28% of income, whichever is higher.</div>`
+      ${x.useHEM ? `<div class="assessed-note">Using HEM floor: ${fmtMoney(getHEM((parseFloat(x.incomeAnnual)||0)*((parseFloat(x.incomeShade)||0)/100), 2, parseFloat(x.dependants)||0))}/mo (income band × household).</div>`
                  : row('Declared expenses (monthly)','expensesMonthly',x.expensesMonthly,'',50)}
       <div class="slider-row" style="margin-top:12px"><label><span>Dependants</span><span class="mono" id="mDep">${x.dependants}</span></label>
         <input type="range" min="0" max="6" step="1" value="${x.dependants}" oninput="state.manual.dependants=+this.value;setText('mDep',this.value);renderManualEditor();renderManualResults()"></div>
@@ -2219,6 +2243,7 @@ function renderManualEditor(){
       <div class="subsec">Assets & liabilities</div>
       ${row('Total assets (security value)','assets',x.assets,'',1000)}
       ${row('Existing commitments (monthly)','liabilitiesMonthly',x.liabilitiesMonthly,'',25)}
+      <div class="inp" style="margin-bottom:12px"><label>Existing debt balance <span style="color:var(--t3);font-weight:400">(optional — improves DTI accuracy)</span></label><input type="number" step="1000" value="${x.existingDebtBalance}" oninput="setManual('existingDebtBalance', +this.value)"></div>
 
       <div class="subsec">New loan</div>
       ${row('Loan amount','loanAmount',x.loanAmount,'',1000)}
@@ -2632,6 +2657,8 @@ const EXTRACT_SCHEMAS = {
 function escHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 // For a value placed inside a single-quoted JS string within a double-quoted HTML attribute (onclick handlers).
 function escArg(s){ return String(s==null?'':s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/[&"<>]/g, c=>({'&':'&amp;','"':'&quot;','<':'&lt;','>':'&gt;'}[c])); }
+// Alias for HTML text-context escaping (used widely in render templates).
+function esc(s){ return escHtml(s); }
 const wait = ms => new Promise(r=>setTimeout(r, ms));
 function freqMult(freq){ const f=(freq||'').toLowerCase(); if(/fortn/.test(f)) return 26; if(/week/.test(f)) return 52; if(/month/.test(f)) return 12; if(/year|ann/.test(f)) return 1; if(/quarter/.test(f)) return 4; return 12; }
 const numOf = v => { const n=parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
@@ -3019,10 +3046,11 @@ function figuresForLender(id){
       let assessed = assessLiability(l, buffer);
       if(l.type==='hecs') assessed -= hecsExclusion(l, income, id);
       existingDebt += Math.max(0, assessed);
-      totalLiab += parseFloat(l.balance)||0;
+      // Credit-card LIMIT is not outstanding debt — exclude from the DTI balance sum.
+    if(l.type!=='credit_card') totalLiab += parseFloat(l.balance)||0;
     });
   });
-  const HEM = Math.max(getHEM(shadedAnnual, state.calc.adults||1, state.calc.dependants), income*0.28);
+  const HEM = getHEM(shadedAnnual, state.calc.adults||1, state.calc.dependants);
   return {income, shadedAnnual, existingDebt, HEM, totalLiab};
 }
 function rankLenders(){
@@ -3256,8 +3284,17 @@ function renderPhoneBody(){
 function simUpload(i, name){
   if(portalDone.has(i)) return;
   const z = document.getElementById('dz'+i);
-  z.innerHTML = '⟳ Uploading…';
-  setTimeout(()=>{ portalDone.add(i); renderPhoneBody(); }, 1800);
+  if(z) z.innerHTML = '⟳ Uploading…';
+  setTimeout(()=>{
+    portalDone.add(i);
+    const dealId = state.activeDeal || (DEALS[0] && DEALS[0].id) || 'NEW';
+    DOCS.unshift({ name:(name||('Document '+(i+1))).replace(/[^a-z0-9]+/gi,'_')+'_portal.pdf',
+      deal:dealId, type:name||'Client upload', conf:94, status:'Processing', size:'—', date:TODAY_STR });
+    logEvent('Client portal upload: '+(name||'document'));
+    // Simulate verification shortly after
+    setTimeout(()=>{ const d=DOCS.find(x=>x.name.endsWith('_portal.pdf')&&x.status==='Processing'); if(d){d.status='Verified';d.conf=96;} }, 1500);
+    renderPhoneBody();
+  }, 1800);
 }
 function generateLink(){
   const link = 'https://portal.debtiq.com/u/'+Math.random().toString(36).slice(2,10);
@@ -3472,7 +3509,7 @@ function baseFigures(){
   let shadedAnnual = 0, existingDebt = 0;
   state.calc.entities.forEach(ent=>{
     const w=entityWeight(ent); if(!w) return;
-    ent.incomes.forEach(inc=> shadedAnnual += getShadedIncome(inc) * w);
+    ent.incomes.forEach(inc=> shadedAnnual += getShadedIncome(inc, state.lender) * w);
   });
   const income = shadedAnnual/12;
   state.calc.entities.forEach(ent=>{
@@ -3483,7 +3520,7 @@ function baseFigures(){
       existingDebt += Math.max(0, assessed);
     });
   });
-  const HEM = Math.max(getHEM(shadedAnnual, state.calc.adults||1, state.calc.dependants), income*0.28);
+  const HEM = getHEM(shadedAnnual, state.calc.adults||1, state.calc.dependants);
   return {income, existingDebt, HEM};
 }
 function ccLimits(){
@@ -3611,10 +3648,13 @@ function applyExtractedProfile(){
   }
   state.calc.entities = [
     {name:'Sarah Mitchell (extracted)', open:true,
-     incomes:[{type:'salary_ft', amount:142000},{type:'overtime', amount:9500}],
+     incomes:[
+       {type:'salary_ft', amount:142000, amount_y1:142000, amount_y2:138000, use_average:false, evidence_years:2},
+       {type:'overtime', amount:9500, amount_y1:9500, amount_y2:8800, use_average:false, evidence_years:2}
+     ],
      liabilities:[{type:'credit_card', balance:15000, rate:21.9, term:0},{type:'car', balance:18500, rate:8.9, term:5}]},
     {name:'Tom Mitchell (extracted)', open:false,
-     incomes:[{type:'salary_ft', amount:96000}],
+     incomes:[{type:'salary_ft', amount:96000, amount_y1:96000, amount_y2:92000, use_average:false, evidence_years:2}],
      liabilities:[{type:'hecs', balance:22000, rate:0, term:0}]}
   ];
   state.calc.dependants = 2;
@@ -4061,7 +4101,7 @@ function generateCopilotInsights(){
   if(r.lvr>90) insights.push({ type:'warning', icon:'⚠', text:`LVR ${r.lvr.toFixed(1)}% — LMI required` });
   if(deal && deal.next_action_date){
     const days = Math.ceil((new Date(deal.next_action_date)-new Date())/864e5);
-    if(days<=1) insights.push({ type:'urgent', icon:'🔔', text: days<=0 ? `Overdue: ${deal.next_action_note||'Follow up'}` : `Due tomorrow: ${deal.next_action_note||'Follow up'}` });
+    if(days<=1) insights.push({ type:'urgent', icon:'🔔', text: days<=0 ? `Overdue: ${esc(deal.next_action_note||'Follow up')}` : `Due tomorrow: ${esc(deal.next_action_note||'Follow up')}` });
   }
   return insights;
 }
@@ -4203,7 +4243,7 @@ function globalSearchHandler(q){
   if(!results.length){ box.innerHTML = `<div class="sr-empty">No results for "${q}"</div>`; box.style.display='block'; return; }
   box.innerHTML = results.slice(0,5).map(d=>{
     const s = STATUS_META[d.status];
-    return `<div class="sr-item" onmousedown="setActiveDeal('${d.id}')"><div class="sr-name">${d.name}</div><div class="sr-meta">${d.id} · ${lenderLabel(d.lender)} · ${fmtMoney(d.amount)} · <span style="color:var(--${s?s.cls:'gray'})">${s?s.label:''}</span></div></div>`;
+    return `<div class="sr-item" onmousedown="setActiveDeal('${escArg(d.id)}')"><div class="sr-name">${esc(d.name)}</div><div class="sr-meta">${esc(d.id)} · ${esc(lenderLabel(d.lender))} · ${fmtMoney(d.amount)} · <span style="color:var(--${s?s.cls:'gray'})">${s?s.label:''}</span></div></div>`;
   }).join('');
   box.style.display = 'block';
   if(state.page==='dashboard') renderDealGrid();
@@ -4266,14 +4306,14 @@ function renderNextActionSection(d){
   const s = STATUS_META[d.status];
   return `<h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Status &amp; next action</h3>
     <div style="margin-bottom:12px"><span class="pill ${s?s.cls:'gray'}">${s?s.label:(d.status||'—')}</span></div>
-    ${d.next_action_date ? `<div class="card" style="padding:12px 14px;border-left:4px solid var(--amber)">${svgIcon('clock',15)} <b>${d.next_action_date}</b> — ${d.next_action_note||'Follow up'}</div>` : '<p style="color:var(--t3);font-size:13px">No action scheduled.</p>'}
+    ${d.next_action_date ? `<div class="card" style="padding:12px 14px;border-left:4px solid var(--amber)">${svgIcon('clock',15)} <b>${esc(d.next_action_date)}</b> — ${esc(d.next_action_note||'Follow up')}</div>` : '<p style="color:var(--t3);font-size:13px">No action scheduled.</p>'}
     <button class="btn" style="margin-top:12px" onclick="advanceDeal('${d.id}')">Advance Stage</button>`;
 }
 function renderClientTab(el){
   if(!state.activeDeal){ el.innerHTML = noDealPrompt('Client','Select a deal from Pipeline to view client details.'); return; }
   const d = DEALS.find(x=>x.id===state.activeDeal) || {};
   el.innerHTML = `
-    <div class="page-head"><h1>${d.name||'Client'}</h1><p>${d.id||''} · ${d.type||''}</p></div>
+    <div class="page-head"><h1>${esc(d.name||'Client')}</h1><p>${esc(d.id||'')} · ${esc(d.type||'')}</p></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
       <div class="card" style="padding:18px">
         <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Contact &amp; referral</h3>
