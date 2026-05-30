@@ -6,38 +6,60 @@
 <title>DebtIQ v6 — Mortgage Broker Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
    DEBTIQ v6 — Design System
    ============================================================ */
 :root{
-  --bg:#F4F5F7;
-  --surface:#FFFFFF;
-  --brand:#5B4FF5;
-  --brand-grad:linear-gradient(135deg,#5B4FF5,#8B5CF6,#A78BFA);
-  --t1:#0F0F1A;
-  --t2:#374151;
-  --t3:#6B7280;
-  --border:rgba(0,0,0,.06);
-  --green:#059669;
-  --amber:#D97706;
-  --red:#DC2626;
-  --teal:#0D9488;
-  --r-card:20px;
-  --r-input:14px;
-  --r-btn:12px;
-  --r-pill:100px;
-  --sh-1:0 1px 3px rgba(0,0,0,.06);
-  --sh-2:0 4px 12px rgba(0,0,0,.08);
-  --sh-brand:0 8px 24px rgba(91,79,245,.25);
-  --sidebar-w:240px;
-  /* OS shell */
+  /* === Editorial credit-memo + clinical precision === */
+  /* Surfaces */
+  --page:#EEEAE1;          /* warm page background */
+  --paper:#FBFAF6;         /* editorial output surface (verdicts, ledgers, pack, commentary) */
+  --white:#FFFFFF;         /* clinical surface (forms, doc tables, copilot, modals) */
+  --ink:#1E2A44;           /* primary structural & UI accent (replaces violet) */
+  --steel:#3B6FB5;         /* interactive: links / hover / focus */
+  /* Hairlines */
+  --line:#E7E2D6;          /* warm hairline on paper */
+  --line2:#EAEDF1;         /* cool hairline on white / clinical */
+  /* Text */
+  --t1:#1A1A22;
+  --t2:#494C55;
+  --t3-warm:#8A8270;       /* labels on paper */
+  --t3-cool:#6B7280;       /* labels on white */
   --t4:#9CA3AF;
-  --brand-bg:rgba(91,79,245,.08);
-  --brand-soft:rgba(91,79,245,.08);
-  --red-bg:#FEF2F2;
+  /* Status (editorial-deepened) */
+  --green:#0B6B4F;         /* PASS / verified */
+  --amber:#9A5A00;         /* BORDERLINE / caution */
+  --red:#A92626;           /* FAIL / review-required */
+  /* Brand mark gradient — used ONLY on the logo glyph */
+  --logo-grad:linear-gradient(135deg,#5B4FF5,#8B5CF6,#A78BFA);
+  /* === Back-compat aliases (existing code cascades to new values) === */
+  --bg:var(--page);
+  --surface:var(--white);
+  --brand:var(--ink);
+  --brand-grad:var(--ink);          /* legacy var now flat ink; logo overrides to --logo-grad */
+  --brand-bg:rgba(30,42,68,.06);    /* ink tint replaces violet tint */
+  --brand-soft:rgba(30,42,68,.08);
+  --border:var(--line2);
+  --t3:var(--t3-cool);
+  --teal:var(--steel);
+  --red-bg:#FBEDEA;
+  /* Radii — tightened: cards/inputs/buttons 8px, status pills 100px, clinical 2px */
+  --r-card:8px;
+  --r-input:8px;
+  --r-btn:8px;
+  --r-pill:100px;
+  --r-clinical:2px;
+  /* Shadows — minimal; hairlines do the work */
+  --sh-1:0 1px 2px rgba(60,50,30,.04);
+  --sh-2:0 1px 2px rgba(60,50,30,.06);
+  --sh-brand:none;
+  /* Type */
   --mono:'DM Mono',monospace;
+  --serif:'Newsreader',Georgia,serif;
+  /* Shell */
+  --sidebar-w:240px;
   --copilot-w:320px;
   --timeline-h:80px;
   --timeline-h-expanded:240px;
@@ -89,10 +111,9 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
 }
 .login-logo{
   width:72px;height:72px;border-radius:22px;margin:0 auto 22px;
-  background:var(--brand-grad);
+  background:var(--logo-grad);          /* brand mark identity — the only gradient surface */
   display:flex;align-items:center;justify-content:center;
   font-size:36px;font-weight:800;color:#fff;
-  animation:glow 3s ease infinite;
 }
 .login-card h1{font-size:24px;font-weight:800;margin-bottom:6px}
 .login-card p.sub{color:var(--t3);margin-bottom:28px}
@@ -119,9 +140,10 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
    ============================================================ */
 #app{display:none;flex-direction:column;height:100vh;overflow:hidden}
 .logo-mark{
-  width:36px;height:36px;border-radius:11px;flex-shrink:0;
-  background:var(--brand-grad);display:flex;align-items:center;justify-content:center;
-  color:#fff;font-weight:800;font-size:19px;box-shadow:var(--sh-brand);
+  width:36px;height:36px;border-radius:8px;flex-shrink:0;
+  background:var(--logo-grad);          /* brand mark identity — the only gradient surface */
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:800;font-size:19px;
 }
 .wordmark{font-weight:800;font-size:18px;letter-spacing:-.4px}
 .avatar{
@@ -654,6 +676,94 @@ tr:last-child td{border-bottom:none}
   .print-header { display: block !important; }
 }
 .print-header { display: none; }
+
+/* ============================================================
+   PHASE 1 PRIMITIVES — Editorial / Clinical design system
+   ============================================================ */
+/* Type helpers */
+.serif{font-family:var(--serif);font-weight:400}
+.serif-italic{font-family:var(--serif);font-style:italic;font-weight:400}
+.caption{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t3-warm)}
+.caption-cool{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t3-cool)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* Surface helpers */
+.surface-paper{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-card)}
+.surface-white{background:var(--white);border:1px solid var(--line2);border-radius:var(--r-card)}
+.rule{height:1px;background:var(--line);margin:14px 0}
+.rule-cool{height:1px;background:var(--line2);margin:14px 0}
+
+/* VerdictHero — the editorial signature */
+.verdict-hero{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-card);padding:20px 22px;margin-bottom:18px}
+.verdict-hero .vh-cap{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--t3-warm);padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:14px}
+.verdict-hero .vh-statement{font-family:var(--serif);font-weight:400;font-size:32px;line-height:1.1;letter-spacing:-.005em;color:var(--t1)}
+.verdict-hero .vh-statement.pass{color:var(--green)}
+.verdict-hero .vh-statement.borderline{color:var(--amber)}
+.verdict-hero .vh-statement.fail{color:var(--red)}
+.verdict-hero .vh-note{font-family:var(--serif);font-style:italic;font-size:15px;color:var(--t2);margin-top:6px;line-height:1.45}
+.verdict-hero .vh-feature{display:flex;align-items:baseline;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.verdict-hero .vh-feature .vh-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t3-warm)}
+.verdict-hero .vh-feature .vh-value{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:28px;font-weight:500;color:var(--t1)}
+
+/* MetricGauge — hairline track + fill + ceiling tick */
+.metric-gauge{padding:12px 14px;background:var(--white);border:1px solid var(--line2);border-radius:var(--r-card)}
+.metric-gauge .mg-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px}
+.metric-gauge .mg-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t3-cool)}
+.metric-gauge .mg-value{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:17px;font-weight:500;color:var(--t1)}
+.metric-gauge .mg-track{position:relative;height:6px;background:#EFE9DC;border-radius:1px}
+.metric-gauge .mg-fill{position:absolute;top:0;left:0;height:100%;border-radius:1px;transition:width .5s cubic-bezier(.22,1,.36,1)}
+.metric-gauge .mg-fill.ok{background:var(--green)}
+.metric-gauge .mg-fill.warn{background:var(--amber)}
+.metric-gauge .mg-fill.bad{background:var(--red)}
+.metric-gauge .mg-tick{position:absolute;top:-4px;width:1px;height:14px;background:var(--ink)}
+.metric-gauge .mg-tick-label{position:absolute;top:13px;font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:10px;color:var(--t3-cool);transform:translateX(-50%);white-space:nowrap}
+
+/* LedgerRow — credit-memo row: status square · colour-dot · label · italic note · mono result */
+.ledger{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden}
+.ledger-row{display:grid;grid-template-columns:14px 14px 1fr auto;gap:12px;align-items:start;padding:11px 14px;border-bottom:1px solid var(--line)}
+.ledger-row:last-child{border-bottom:none}
+.ledger-row .lr-status{width:8px;height:8px;border-radius:var(--r-clinical);background:var(--t4);margin-top:6px}
+.ledger-row .lr-status.ok{background:var(--green)}
+.ledger-row .lr-status.warn{background:var(--amber)}
+.ledger-row .lr-status.bad{background:var(--red)}
+.ledger-row .lr-dot{width:9px;height:9px;border-radius:2px;margin-top:6px}
+.ledger-row .lr-label{font-weight:600;color:var(--t1);font-size:14px}
+.ledger-row .lr-note{font-family:var(--serif);font-style:italic;color:var(--t2);font-size:13.5px;display:block;line-height:1.45;margin-top:1px}
+.ledger-row .lr-value{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:500;color:var(--t1);text-align:right;white-space:nowrap}
+
+/* CodeChip — coded reasons (VAL01, M033, IQA07, RR05) */
+.code-chip{display:inline-flex;align-items:center;font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.04em;background:var(--ink);color:#fff;padding:2px 7px;border-radius:4px;line-height:1.4}
+.code-chip.muted{background:#0F0F1A;opacity:.85}
+
+/* StatusPill — calmer, ~10–12% tints */
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:3px 11px;border-radius:var(--r-pill);font-size:11px;font-weight:700;letter-spacing:.02em;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.status-pill.ok{background:rgba(11,107,79,.10);color:var(--green)}
+.status-pill.warn{background:rgba(154,90,0,.10);color:var(--amber)}
+.status-pill.bad{background:rgba(169,38,38,.10);color:var(--red)}
+.status-pill.neutral{background:rgba(30,42,68,.06);color:var(--ink)}
+
+/* Refined IntegrityChip — Clear / Caution / Review / Scanning */
+.integrity-chip{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border:1px solid var(--line2);border-radius:var(--r-pill);font-size:11px;font-weight:600;font-family:var(--mono);font-variant-numeric:tabular-nums;background:#fff}
+.integrity-chip.clear{color:var(--green);border-color:rgba(11,107,79,.30)}
+.integrity-chip.caution{color:var(--amber);border-color:rgba(154,90,0,.30)}
+.integrity-chip.review{color:var(--red);border-color:rgba(169,38,38,.30)}
+.integrity-chip.scanning{color:var(--t3-cool)}
+
+/* Refined ConfidenceBar */
+.conf2{display:inline-block;width:84px;height:4px;background:#EFE9DC;border-radius:1px;vertical-align:middle;overflow:hidden}
+.conf2>span{display:block;height:100%;background:var(--ink)}
+
+/* Buttons — flat ink primary, calm rest */
+.btn.primary{background:var(--ink);color:#fff;border:none;box-shadow:none}
+.btn.primary:hover{filter:brightness(1.08);transform:none}
+.btn:hover{filter:none;transform:none;box-shadow:none}
+
+/* Focus rings — steel */
+:focus-visible{outline:2px solid var(--steel);outline-offset:2px;border-radius:6px}
+
+/* Body type tone */
+body{color:var(--t1)}
+
 </style>
 </head>
 <body>
@@ -4514,10 +4624,142 @@ function init(){
   }, 2500);
 }
 
+/* ============================================================
+   PHASE 1 PRIMITIVES — render helpers
+   Use these in Phase 3 screens. They produce HTML strings.
+   ============================================================ */
+function verdictHero(verdict, note, featuredLabel, featuredValue){
+  const cls = verdict==='PASS'?'pass':verdict==='BORDERLINE'?'borderline':'fail';
+  const statement = verdict==='PASS'?'Serviceable.':verdict==='BORDERLINE'?'Borderline.':'Does not service.';
+  return `<div class="verdict-hero">
+    <div class="vh-cap">Serviceability verdict</div>
+    <div class="vh-statement ${cls}">${escHtml(statement)}</div>
+    ${note?`<div class="vh-note">${escHtml(note)}</div>`:''}
+    ${featuredValue?`<div class="vh-feature"><span class="vh-label">${escHtml(featuredLabel||'')}</span><span class="vh-value">${escHtml(featuredValue)}</span></div>`:''}
+  </div>`;
+}
+function metricGauge(label, value, cap, opts){
+  opts = opts||{};
+  const v = +value||0, c = +cap||1;
+  const fmt = (n)=> opts.format==='pct' ? (n.toFixed(1)+'%')
+                  : opts.format==='money' ? fmtMoney(n)
+                  : opts.format==='x' ? (n.toFixed(1)+'x')
+                  : String(n);
+  // Visual scale: extend track 10% past the cap so the tick has breathing room.
+  const trackMax = c * 1.1;
+  const ratio = Math.max(0, Math.min(1, v/trackMax));
+  const fillPct = ratio * 100;
+  const capPosPct = (c / trackMax) * 100;
+  // Severity: under 80% of cap = ok, under 100% = warn, ≥100% = bad.
+  const r = c>0 ? v/c : 0;
+  const sev = r < 0.8 ? 'ok' : r < 1 ? 'warn' : 'bad';
+  return `<div class="metric-gauge">
+    <div class="mg-head"><span class="mg-label">${escHtml(label)}</span><span class="mg-value">${escHtml(fmt(v))}</span></div>
+    <div class="mg-track">
+      <div class="mg-fill ${sev}" style="width:${fillPct.toFixed(1)}%"></div>
+      <div class="mg-tick" style="left:${capPosPct.toFixed(1)}%"></div>
+      <div class="mg-tick-label" style="left:${capPosPct.toFixed(1)}%">cap ${escHtml(fmt(c))}</div>
+    </div>
+  </div>`;
+}
+function ledgerRow(opts){
+  // {status:'ok'|'warn'|'bad', color, label, note, value}
+  const s = opts.status||'';
+  return `<div class="ledger-row">
+    <span class="lr-status ${s}"></span>
+    <span class="lr-dot" style="background:${opts.color||'var(--ink)'}"></span>
+    <div><span class="lr-label">${escHtml(opts.label||'')}</span>${opts.note?`<span class="lr-note">${escHtml(opts.note)}</span>`:''}</div>
+    <span class="lr-value">${escHtml(opts.value||'—')}</span>
+  </div>`;
+}
+function codeChip(code){ return `<span class="code-chip">${escHtml(code||'')}</span>`; }
+function statusPillTone(tone, text){ return `<span class="status-pill ${tone}">${escHtml(text)}</span>`; }
+function integrityChipNew(status){
+  const k = /REVIEW/i.test(status||'') ? 'review'
+          : /CAUTION/i.test(status||'') ? 'caution'
+          : /CLEAR/i.test(status||'') ? 'clear'
+          : 'scanning';
+  return `<span class="integrity-chip ${k}">${escHtml(status||'—')}</span>`;
+}
+
+/* ============================================================
+   ?preview=1 — design-system gallery
+   ============================================================ */
+function showDesignPreview(){
+  const login=document.getElementById('login'); if(login) login.style.display='none';
+  const app=document.getElementById('app'); if(app) app.style.display='flex';
+  document.title = 'DebtIQ · Design system preview';
+  const ws = document.getElementById('workspace'); if(!ws) return;
+  const dealStrip=document.getElementById('dealStrip'); if(dealStrip) dealStrip.style.display='none';
+  ws.innerHTML = `<div class="workspace-page" style="background:var(--page);padding:32px;max-width:980px;margin:0 auto">
+    <div class="caption">Phase 1 — Design system preview</div>
+    <h1 class="serif" style="font-size:34px;letter-spacing:-.01em;margin:6px 0 4px;color:var(--t1)">Editorial credit-memo, calm clinical precision.</h1>
+    <p class="serif-italic" style="color:var(--t2);font-size:16px;margin:0 0 24px">Calm, paper-like, exact — confident, never generic-SaaS.</p>
+
+    <div class="caption" style="margin-top:6px">VerdictHero</div>
+    ${verdictHero('PASS','NDI surplus of $847/mo against CBA. Loan structure within appetite.','NDI','+$847/mo')}
+    ${verdictHero('BORDERLINE','DSR sits at the ceiling — extending term to 30y restores headroom.','NDI shortfall','−$120/mo')}
+    ${verdictHero('FAIL','At the proposed amount the file does not service across any major.','NDI shortfall','−$2,140/mo')}
+
+    <div class="caption" style="margin-top:18px">MetricGauges — hairline track with ceiling tick</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:8px">
+      ${metricGauge('DSR', 41.0, 45, {format:'pct'})}
+      ${metricGauge('LVR', 78.5, 80, {format:'pct'})}
+      ${metricGauge('DTI', 4.2, 6, {format:'x'})}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+      ${metricGauge('DSR', 46.2, 45, {format:'pct'})}
+      ${metricGauge('LVR', 92.0, 80, {format:'pct'})}
+      ${metricGauge('DTI', 6.6, 6, {format:'x'})}
+    </div>
+
+    <div class="caption" style="margin-top:18px">LedgerRow — multi-lender traffic-light, italic policy citation on misses</div>
+    <div class="ledger" style="margin-bottom:8px">
+      ${ledgerRow({status:'ok',  color:'#FFD700', label:'CBA',      note:'Within appetite — 3% buffer; services with $847 NDI.',           value:'$865,000'})}
+      ${ledgerRow({status:'warn',color:'#D5002B', label:'Westpac',  note:'Bonus shaded to 80% reduces capacity by ~6%.',                  value:'$842,000'})}
+      ${ledgerRow({status:'bad', color:'#E60000', label:'NAB',      note:'HECS treatment leaves DSR at 47% — outside policy.',           value:'—'})}
+      ${ledgerRow({status:'ok',  color:'#F7941D', label:'Liberty',  note:'Non-bank · 1% buffer — highest capacity in panel.',             value:'$915,000'})}
+    </div>
+
+    <div class="caption" style="margin-top:18px">StatusPills · IntegrityChips · CodeChips</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+      ${statusPillTone('ok','Verified')}${statusPillTone('warn','Pending')}${statusPillTone('bad','Review required')}${statusPillTone('neutral','Processing')}
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+      ${integrityChipNew('CLEAR')}${integrityChipNew('CAUTION')}${integrityChipNew('REVIEW REQUIRED')}${integrityChipNew('SCANNING')}
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+      ${codeChip('VAL01')}${codeChip('INC02')}${codeChip('LMI01')}${codeChip('DTI01')}${codeChip('IQA07')}${codeChip('RR05')}${codeChip('M033')}
+    </div>
+
+    <div class="caption" style="margin-top:18px">Numbers — DM Mono, tabular (every figure)</div>
+    <div class="surface-paper" style="padding:14px 18px;max-width:420px">
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line)"><span>Loan amount</span><span class="num">$785,000</span></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line)"><span>Contract rate</span><span class="num">6.24%</span></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line)"><span>Assessed rate (CBA, 3% buffer)</span><span class="num">9.24%</span></div>
+      <div style="display:flex;justify-content:space-between;padding:4px 0"><span>Borrower NDI</span><span class="num" style="color:var(--green)">+$847/mo</span></div>
+    </div>
+
+    <div class="caption" style="margin-top:18px">Type system</div>
+    <div class="surface-white" style="padding:18px">
+      <div class="serif" style="font-size:28px;color:var(--t1)">Newsreader — display &amp; verdicts</div>
+      <div class="serif-italic" style="font-size:16px;color:var(--t2);margin-top:6px">Newsreader italic — plain-English notes &amp; lender policy citations</div>
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:var(--t1);margin-top:14px">Plus Jakarta Sans — UI &amp; body</div>
+      <div class="num" style="font-size:14px;color:var(--t1);margin-top:6px">DM Mono — 1,234,567 · 78.5% · $785,000 · 4.2x</div>
+    </div>
+
+    <p class="serif-italic" style="margin-top:28px;color:var(--t3-warm)">Phase 1 preview · Phase 2 wires the new shell · Phase 3 the screens.</p>
+  </div>`;
+}
+
 /* ---------- Boot ---------- */
 (async function boot(){
   await initBackend();
   renderLoginMode();
+  // ?preview=1 → render the Phase-1 design-system gallery and skip the rest.
+  if(typeof location!=='undefined' && (location.search||'').indexOf('preview=1')>-1){
+    showDesignPreview(); return;
+  }
   if(aiLive()) enterApp();   // already signed in → skip the login screen
 })();
 </script>

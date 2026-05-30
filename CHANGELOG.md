@@ -1,5 +1,59 @@
 # DebtIQ v6 — Changelog
 
+## Round (redesign · Phase 1) — Editorial + clinical design system
+
+Frontend refresh: token system, fonts, and primitive components. No backend or
+contract changes; existing rendering keeps working via back-compat aliases.
+
+**Defaults locked for the 7 audit ambiguities** (Phase 0 deliverable, recorded
+here): single-file vanilla JS idiom retained; storybook lives at
+`?preview=1`; Client tab will gain a compact entity editor (Calculate keeps the
+full one); source-text rendered as a callout in Review (no image-overlay);
+Assessor decisions are deterministic off existing signals (no new API);
+Newsreader added as the serif; AU-spelling sweep happens during Phase 3 screens.
+
+**New token system** (`:root`):
+- Surfaces: `--page #EEEAE1`, `--paper #FBFAF6`, `--white #FFFFFF`.
+- Structural/interactive: `--ink #1E2A44` (replaces violet), `--steel #3B6FB5`.
+- Hairlines: `--line #E7E2D6` (warm, paper), `--line2 #EAEDF1` (cool, white).
+- Text: `--t1/t2`, plus `--t3-warm` and `--t3-cool` for paper vs clinical labels.
+- Status: `--green #0B6B4F`, `--amber #9A5A00`, `--red #A92626` (deepened).
+- Brand identity: `--logo-grad` keeps the violet gradient *only* on the brand
+  mark (`.logo-mark` + `.login-logo`). `--brand-grad` aliased to flat `--ink` so
+  every other surface (buttons, hero strips, wiz head, market hero, deal pill,
+  drawer handle) instantly recolours to ink.
+- Radii tightened: cards/inputs/buttons → 8px, pills → 100px, clinical squares → 2px.
+- Shadows minimal (`0 1px 2px rgba(60,50,30,.04)`); hairlines do the work;
+  `--sh-brand` glow removed.
+- Type: Newsreader loaded as `--serif`; Plus Jakarta Sans and DM Mono retained.
+
+**Primitive components** (CSS class + JS helper) ready for Phase 3 reuse:
+- `VerdictHero` (`.verdict-hero` + `verdictHero(verdict, note, label, value)`):
+  ruled caption · serif statement (Serviceable. / Borderline. / Does not service.)
+  in role colour · italic plain-English note · featured mono figure.
+- `MetricGauge` (`.metric-gauge` + `metricGauge(label, value, cap, {format})`):
+  hairline track with **ceiling tick** and a mono cap label.
+- `LedgerRow` (`.ledger`/`.ledger-row` + `ledgerRow({status,color,label,note,value})`):
+  status square · colour-dot · label · serif-italic note · right-aligned mono.
+- `CodeChip`, `StatusPill`, `IntegrityChip`, `ConfidenceBar`, surface helpers
+  (`.surface-paper`/`.surface-white`/`.rule`/`.caption`), `.serif`/`.num` helpers.
+
+**`?preview=1` storybook route.** A gallery page (renderered by `showDesignPreview`)
+showing every primitive on `--page`, including VerdictHero in all three states,
+two banks of MetricGauges, a multi-lender ledger with italic policy citations,
+status/integrity/code chips, and a typography exhibit.
+
+**Verification:** `node --check` clean; jsdom smoke **117/117 green** (8 new P1
+checks: verdictHero PASS/FAIL renderers, metricGauge cap-tick rendering and
+over-cap severity, ledgerRow value/note, codeChip output, integrityChip mapping,
+`showDesignPreview` gallery boots).
+
+**Visual impact note:** because the existing app uses `--bg / --surface / --brand`
+extensively, this round automatically recolours the running UI — backgrounds warm
+to paper, accents become ink, corners tighten to 8px. Old screens are now
+*calmer* but still use the legacy markup; Phase 3 will swap them to use the new
+primitives end-to-end. The brand-mark gradient survives only on the logo glyph.
+
 ## Round (bugfix-27) — 5-stage fix: calculator output, deal capture, persistence, state desync, markup
 
 Surgical second bugfix pass building on the previous round, covering the remaining
