@@ -709,6 +709,7 @@ tr:last-child td{border-bottom:none}
       <button onclick="openSettings()" class="cmd-icon-btn" aria-label="Settings">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
+      <span id="cmdUserName" style="font-size:12.5px;font-weight:600;color:var(--t2);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
       <div class="avatar" id="cmdAvatar">JB</div>
     </div>
   </div>
@@ -996,7 +997,7 @@ const state = {
     loanAmount:785000, rate:6.24, term:30, bufferPct:3, dependants:0
   }
 };
-const fmtMoney = (n)=> MARKETS[state.market].sym + Math.round(n).toLocaleString();
+const fmtMoney = (n)=> MARKETS[state.market].sym + Math.round(+n||0).toLocaleString();
 const m = ()=> MARKETS[state.market];
 
 /* ============================================================
@@ -1232,7 +1233,8 @@ function computeServiceability(){
   const ndi = income - totalDebt - HEM;
   const dsr = income>0 ? totalDebt/income*100 : 0;
   // LVR uses aggregate security value (sum of securities[].value, fallback to wizData.propValue).
-  const propValue = totalSecurityValue() || (parseFloat(nl.amount)/0.8) || 1;
+  // No fake fallback to amount/0.8 — if no security value is set, lvr stays 0 and the UI shows '—'.
+  const propValue = totalSecurityValue();
   const lvr = propValue>0 ? (parseFloat(nl.amount)||0)/propValue*100 : 0;
   // DTI: total debt balance (existing + new loan) vs gross shaded annual income (APRA 2026 cap).
   const dti = shadedAnnual>0 ? (totalLiab + (parseFloat(nl.amount)||0))/shadedAnnual : 0;
@@ -1243,7 +1245,7 @@ function computeServiceability(){
   else if(ndi > -250 && dsr < dsrMax+5) verdict='BORDERLINE';
   else verdict='FAIL';
 
-  return {income, shadedAnnual, existingDebt, newLoanMo, totalDebt, HEM, ndi, dsr, lvr, dti, totalLiab, verdict, breakdown, assessedRate:(parseFloat(nl.rate)||0)+buffer*100};
+  return {income, shadedAnnual, existingDebt, newLoanMo, totalDebt, HEM, ndi, dsr, lvr, dti, totalLiab, verdict, breakdown, propValue, lvrAvailable: propValue>0, assessedRate:(parseFloat(nl.rate)||0)+buffer*100};
 }
 
 /* ============================================================
@@ -1406,7 +1408,8 @@ function panelOverview(el, d){
 function loadDealIntoCalc(id){
   const d = DEALS.find(x=>x.id===id); if(!d) return;
   if(lenderDB()[d.lender]) state.lender = d.lender;
-  state.calc.newLoan.amount = d.amount;
+  if(d.calc){ state.calc = JSON.parse(JSON.stringify(d.calc)); }
+  else { state.calc.newLoan.amount = d.amount; }
   closePanel(); navigate('serviceability');
 }
 function panelDocs(el, d){
@@ -1552,8 +1555,10 @@ function panelActivity(el, d){
 }
 function advanceDeal(id){
   const d = DEALS.find(x=>x.id===id);
+  if(!d) return;
   const order = ['DOCS_PENDING','AI_PROCESSING','BROKER_REVIEW','SUBMITTED','APPROVED'];
   let i = order.indexOf(d.status);
+  if(i === -1){ toast('This deal’s status can’t be auto-advanced','info'); return; }
   d.status = order[Math.min(i+1, order.length-1)];
   if(d.status==='APPROVED'){ d.progress=null; d.closed=TODAY_STR; }
   (d.activity = d.activity||[]).push({at:TODAY_STR, text:'Advanced to '+STATUS_META[d.status].label});
@@ -1561,6 +1566,7 @@ function advanceDeal(id){
   toast(`${d.id} advanced to ${STATUS_META[d.status].label}`, 'ok');
   logEvent(`${d.id} advanced to ${STATUS_META[d.status].label}`);
   updateDealStrip(); updateCopilot();
+  if(state.activeDeal===id && document.getElementById('panel') && document.getElementById('panel').classList.contains('show')) renderPanel();
   const pg = document.getElementById('page-dashboard');
   if(pg){ renderDashboard(pg); const si=document.getElementById('dealSearch'); if(si){ si.value=state.dealSearch; renderDealGrid(); } }
   const cl = document.getElementById('page-client');
@@ -1933,15 +1939,15 @@ function renderCalcEditor(){
   html += `<div class="entity-card"><div class="entity-body" style="padding:16px">
     <div class="subsec" style="margin-top:0">New Loan</div>
     <div class="inp" style="margin-bottom:12px"><label>Loan Amount (${m().sym})</label><input type="number" value="${nl.amount}" oninput="state.calc.newLoan.amount=+this.value;updateCalc()"></div>
-    <div class="slider-row"><label><span>Interest Rate</span><span class="mono" id="nlRateLbl">${nl.rate.toFixed(2)}%</span></label>
-      <input type="range" min="3" max="12" step="0.01" value="${nl.rate}" oninput="state.calc.newLoan.rate=+this.value;updateCalc()"></div>
+    <div class="slider-row"><label><span>Interest Rate</span><span class="mono" id="nlRateLbl">${(+nl.rate||0).toFixed(2)}%</span></label>
+      <input type="range" min="2" max="12" step="0.01" value="${nl.rate}" oninput="state.calc.newLoan.rate=+this.value;updateCalc()"></div>
     <div class="slider-row"><label><span>Term</span><span class="mono" id="nlTermLbl">${nl.term} yrs</span></label>
       <input type="range" min="5" max="30" step="1" value="${nl.term}" oninput="state.calc.newLoan.term=+this.value;updateCalc()"></div>
     <div class="slider-row"><label><span>Adults</span><span class="mono" id="nlAdLbl">${state.calc.adults||1}</span></label>
       <input type="range" min="1" max="2" step="1" value="${state.calc.adults||1}" oninput="state.calc.adults=+this.value;setText('nlAdLbl',this.value);updateCalc()"></div>
     <div class="slider-row"><label><span>Dependants</span><span class="mono" id="nlDepLbl">${state.calc.dependants}</span></label>
       <input type="range" min="0" max="6" step="1" value="${state.calc.dependants}" oninput="state.calc.dependants=+this.value;updateCalc()"></div>
-    <div class="assessed-note" id="nlAssessed">Assessed rate: ${(nl.rate+buffer*100).toFixed(2)}% (contract ${nl.rate.toFixed(2)}% + ${(buffer*100).toFixed(0)}% ${activePolicy()?(activePolicy().label+' '):''}buffer)</div>
+    <div class="assessed-note" id="nlAssessed">Assessed rate: ${((+nl.rate||0)+buffer*100).toFixed(2)}% (contract ${(+nl.rate||0).toFixed(2)}% + ${(buffer*100).toFixed(0)}% ${activePolicy()?(activePolicy().label+' '):''}buffer)</div>
   </div></div>
   <button class="btn ghost" style="margin-top:4px" onclick="addEntity()">+ Add Entity</button>`;
   ed.innerHTML = html;
@@ -2070,10 +2076,10 @@ function updateCalc(){
   });
   const nl = state.calc.newLoan;
   const pol = activePolicy();
-  setText('nlRateLbl', nl.rate.toFixed(2)+'%');
+  setText('nlRateLbl', (+nl.rate||0).toFixed(2)+'%');
   setText('nlTermLbl', nl.term+' yrs');
   setText('nlDepLbl', state.calc.dependants);
-  setText('nlAssessed', `Assessed rate: ${(nl.rate+buffer*100).toFixed(2)}% (contract ${nl.rate.toFixed(2)}% + ${(buffer*100).toFixed(0)}% ${pol?(pol.label+' '):''}buffer)`);
+  setText('nlAssessed', `Assessed rate: ${((+nl.rate||0)+buffer*100).toFixed(2)}% (contract ${(+nl.rate||0).toFixed(2)}% + ${(buffer*100).toFixed(0)}% ${pol?(pol.label+' '):''}buffer)`);
   renderCalcResults();
   updateStatusStrip();
 }
@@ -2116,7 +2122,7 @@ function resultGauges(r, dsrMax, animate){
   const inc = r.income || r.incomeMo || 1;
   return `<div class="gauge-row">
     ${gaugeSVG(r.dsr.toFixed(0)+'%','DSR', r.dsr/dsrMax, dsrCol, animate)}
-    ${gaugeSVG(r.lvr.toFixed(0)+'%','LVR', r.lvr/100, lvrCol, animate)}
+    ${gaugeSVG(r.lvrAvailable?r.lvr.toFixed(0)+'%':'—','LVR', r.lvrAvailable?r.lvr/100:0, lvrCol, animate)}
     ${gaugeSVG(fmtK(r.ndi),'NDI/MO', r.ndi>0?Math.min(r.ndi/(inc*0.3),1):0, ndiCol, animate)}
   </div>`;
 }
@@ -2157,7 +2163,7 @@ function renderCalcResults(animate){
     <div class="res-grid">
       <div class="res-box"><div class="rl">DSR</div><div class="rv mono">${r.dsr.toFixed(1)}%</div></div>
       <div class="res-box"><div class="rl">NDI/mo</div><div class="rv mono" style="color:${r.ndi>=0?'var(--green)':'var(--red)'}">${fmtMoney(r.ndi)}</div></div>
-      <div class="res-box"><div class="rl">LVR</div><div class="rv mono">${r.lvr.toFixed(1)}%</div></div>
+      <div class="res-box"><div class="rl">LVR</div><div class="rv mono">${r.lvrAvailable?r.lvr.toFixed(1)+'%':'—'}</div></div>
       <div class="res-box"><div class="rl">Income/mo</div><div class="rv mono">${fmtMoney(r.income)}</div></div>
       <div class="res-box"><div class="rl">Total Debt</div><div class="rv mono">${fmtMoney(r.totalDebt)}</div></div>
       <div class="res-box"><div class="rl">HEM</div><div class="rv mono">${fmtMoney(r.HEM)}</div></div>
@@ -2248,7 +2254,7 @@ function renderManualEditor(){
       <div class="subsec">New loan</div>
       ${row('Loan amount','loanAmount',x.loanAmount,'',1000)}
       <div class="slider-row"><label><span>Interest rate</span><span class="mono" id="mRate">${(+x.rate).toFixed(2)}%</span></label>
-        <input type="range" min="3" max="12" step="0.01" value="${x.rate}" oninput="state.manual.rate=+this.value;setText('mRate',(+this.value).toFixed(2)+'%');renderManualResults()"></div>
+        <input type="range" min="2" max="12" step="0.01" value="${x.rate}" oninput="state.manual.rate=+this.value;setText('mRate',(+this.value).toFixed(2)+'%');renderManualResults()"></div>
       <div class="slider-row"><label><span>Term</span><span class="mono" id="mTerm">${x.term} yrs</span></label>
         <input type="range" min="5" max="30" step="1" value="${x.term}" oninput="state.manual.term=+this.value;setText('mTerm',this.value+' yrs');renderManualResults()"></div>
       <div class="slider-row"><label><span>Assessment buffer</span><span class="mono" id="mBuf">${x.bufferPct}%</span></label>
@@ -2276,7 +2282,7 @@ function renderManualResults(animate){
     <div class="res-grid">
       <div class="res-box"><div class="rl">DSR</div><div class="rv mono">${r.dsr.toFixed(1)}%</div></div>
       <div class="res-box"><div class="rl">NDI/mo</div><div class="rv mono" style="color:${r.ndi>=0?'var(--green)':'var(--red)'}">${fmtMoney(r.ndi)}</div></div>
-      <div class="res-box"><div class="rl">LVR</div><div class="rv mono">${r.lvr.toFixed(1)}%</div></div>
+      <div class="res-box"><div class="rl">LVR</div><div class="rv mono">${r.lvrAvailable?r.lvr.toFixed(1)+'%':'—'}</div></div>
       <div class="res-box"><div class="rl">Net income/mo</div><div class="rv mono">${fmtMoney(r.incomeMo)}</div></div>
       <div class="res-box"><div class="rl">Total debt/mo</div><div class="rv mono">${fmtMoney(r.totalDebt)}</div></div>
       <div class="res-box"><div class="rl">DTI</div><div class="rv mono">${r.dti.toFixed(1)}x</div></div>
@@ -2422,7 +2428,7 @@ function uploadDocs(files){
   renderDocuments(document.getElementById('page-documents'));
   created.forEach(({doc,file})=> scanDoc(doc, file));   // auto integrity scan
 }
-function deleteDoc(i){ const n=DOCS[i].name; DOCS.splice(i,1); toast(n+' deleted','info'); renderDocuments(document.getElementById('page-documents')); }
+function deleteDoc(i){ const target=DOCS[i]; if(!target) return; const n=target.name; const ix=DOCS.indexOf(target); if(ix>-1) DOCS.splice(ix,1); toast(n+' deleted','info'); const pg=document.getElementById('page-documents'); if(pg) renderDocuments(pg); }
 function classifyAll(){
   showLoader('Classifying documents with AI…');
   setTimeout(()=>{
@@ -3442,8 +3448,9 @@ function saveAccount(){
   if(nameEl && nameEl.value.trim()){
     const name = nameEl.value.trim();
     const initials = name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();
-    const av = document.getElementById('cmdAvatar');
-    if(av) av.textContent = initials;
+    state.userName = name;
+    const av = document.getElementById('cmdAvatar'); if(av) av.textContent = initials;
+    const nm = document.getElementById('cmdUserName'); if(nm) nm.textContent = name;
   }
   toast('Account saved', 'ok');
 }
@@ -3770,7 +3777,6 @@ function buildPackHTML(r, pol, d, nl, ent, deal, bidText, servicingText){
   const totalSec = totalSecurityValue();
   const lvr = totalSec>0 ? ((parseFloat(nl.amount)||0)/totalSec*100).toFixed(1) : '—';
   const assessedRate = ((parseFloat(nl.rate)||0) + (pol ? pol.buffer : 0.03)*100).toFixed(2);
-  const esc = (s)=> String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>DebtIQ Submission Pack — ${esc(lenderName)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -4011,12 +4017,15 @@ function setActiveDeal(dealId){
   if(!d) return;
   state.activeDeal = dealId;
   if(lenderDB()[d.lender]) state.lender = d.lender;
-  state.calc.newLoan.amount = d.amount;
-  // Restore multi-entity + multi-security from saved intel, else apply demo template.
-  const intel = d.intel || (typeof DEMO_DEAL_INTEL!=='undefined' && DEMO_DEAL_INTEL[dealId]) || null;
-  if(intel){
-    if(Array.isArray(intel.entities) && intel.entities.length) state.calc.entities = JSON.parse(JSON.stringify(intel.entities));
-    if(Array.isArray(intel.securities)) state.calc.securities = JSON.parse(JSON.stringify(intel.securities));
+  // Full calc snapshot takes priority (saved by saveDeal); else restore from intel/demo template.
+  if(d.calc){ state.calc = JSON.parse(JSON.stringify(d.calc)); }
+  else {
+    state.calc.newLoan.amount = d.amount;
+    const intel = d.intel || (typeof DEMO_DEAL_INTEL!=='undefined' && DEMO_DEAL_INTEL[dealId]) || null;
+    if(intel){
+      if(Array.isArray(intel.entities) && intel.entities.length) state.calc.entities = JSON.parse(JSON.stringify(intel.entities));
+      if(Array.isArray(intel.securities)) state.calc.securities = JSON.parse(JSON.stringify(intel.securities));
+    }
   }
   updateDealStrip();
   updateCopilot();
@@ -4050,7 +4059,7 @@ function updateDealStrip(){
     <span class="ds-metric" style="color:${dsrColor}">DSR ${r.dsr.toFixed(1)}%</span>
     <span class="ds-metric" style="color:${r.ndi>=0?'var(--green)':'var(--red)'}">NDI ${fmtMoney(r.ndi)}/mo</span>
     <span class="ds-metric" style="color:${r.dti<=6?'var(--green)':r.dti<=9?'var(--amber)':'var(--red)'}">DTI ${r.dti.toFixed(1)}x</span>
-    <span class="ds-metric" style="color:${r.lvr<=80?'var(--green)':r.lvr<=90?'var(--amber)':'var(--red)'}">LVR ${r.lvr.toFixed(1)}%</span>`;
+    <span class="ds-metric" style="color:${!r.lvrAvailable?'var(--t3)':r.lvr<=80?'var(--green)':r.lvr<=90?'var(--amber)':'var(--red)'}">LVR ${r.lvrAvailable?r.lvr.toFixed(1)+'%':'—'}</span>`;
 }
 
 /* ---------- AI Copilot ---------- */
@@ -4344,7 +4353,7 @@ function renderLoanStructureSection(){
     ${lenderSel}
     <div class="inp" style="margin-bottom:12px"><label>Loan amount (${m().sym})</label><input type="number" value="${nl.amount}" oninput="state.calc.newLoan.amount=+this.value;updateStatusStrip()"></div>
     <div class="slider-row"><label><span>Interest rate</span><span class="mono" id="loanRateLbl">${(+nl.rate).toFixed(2)}%</span></label>
-      <input type="range" min="3" max="12" step="0.01" value="${nl.rate}" oninput="state.calc.newLoan.rate=+this.value;setText('loanRateLbl',(+this.value).toFixed(2)+'%');updateStatusStrip()"></div>
+      <input type="range" min="2" max="12" step="0.01" value="${nl.rate}" oninput="state.calc.newLoan.rate=+this.value;setText('loanRateLbl',(+this.value).toFixed(2)+'%');updateStatusStrip()"></div>
     <div class="slider-row"><label><span>Term</span><span class="mono" id="loanTermLbl">${nl.term} yrs</span></label>
       <input type="range" min="5" max="30" step="1" value="${nl.term}" oninput="state.calc.newLoan.term=+this.value;setText('loanTermLbl',this.value+' yrs');updateStatusStrip()"></div>
     <div class="assessed-note">Assessed rate: ${((+nl.rate)+buffer*100).toFixed(2)}% (contract + ${(buffer*100).toFixed(0)}% ${activePolicy()?(activePolicy().label+' '):''}buffer)</div>
@@ -4411,12 +4420,16 @@ async function loadDeals(){
   try{
     const { data, error } = await sbClient.from('deals').select('data').order('updated_at',{ascending:false});
     if(error) throw error;
-    DEALS = (data||[]).map(r=>r.data);   // empty for a new user → first-run empty state
+    DEALS = (data||[]).map(r=>mkDeal(r.data));   // backfill schema defaults via mkDeal
   }catch(e){ toast('Could not load saved deals', 'err'); }
 }
 async function saveDeal(d){
   if(!(state.backend && sbClient && state.user)) return;
-  try{ await sbClient.from('deals').upsert({ id:d.id, user_id:state.user.id, data:d }); }
+  try{
+    // Snapshot the live calc onto the deal when saving the active one so financials persist.
+    if(state.activeDeal===d.id){ d.calc = JSON.parse(JSON.stringify(state.calc)); }
+    await sbClient.from('deals').upsert({ id:d.id, user_id:state.user.id, data:d });
+  }
   catch(e){ /* non-fatal in demo */ }
 }
 
@@ -4490,10 +4503,14 @@ function init(){
   renderWorkspace('dashboard');   // Pipeline tab, no active deal → deal strip hidden
   updateCopilot();
   logEvent('Session started');
-  // simulate live AI progress on the processing deal (demo data only)
-  setInterval(()=>{
-    const d = DEALS.find(x=>x.status==='AI_PROCESSING');
-    if(d && d.progress<99){ d.progress = Math.min(99, d.progress+1); if(state.page==='dashboard') renderDealGrid(); }
+  // simulate live AI progress on the processing deal (demo data only).
+  // Guard the ticker so it idles when nothing's processing — and only re-renders
+  // when the dashboard is actually present.
+  if(state._aiTicker) clearInterval(state._aiTicker);
+  state._aiTicker = setInterval(()=>{
+    const d = DEALS.find(x=>x.status==='AI_PROCESSING' && typeof x.progress==='number');
+    if(!d) return;
+    if(d.progress<99){ d.progress = Math.min(99, d.progress+1); if(state.page==='dashboard'){ const pg=document.getElementById('page-dashboard'); if(pg) renderDealGrid(); } }
   }, 2500);
 }
 

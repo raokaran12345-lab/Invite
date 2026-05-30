@@ -1,5 +1,60 @@
 # DebtIQ v6 — Changelog
 
+## Round (bugfix-27) — 5-stage fix: calculator output, deal capture, persistence, state desync, markup
+
+Surgical second bugfix pass building on the previous round, covering the remaining
+items in the 27-bug brief. No refactor outside the quoted edits.
+
+**Stage 1 — calculator output**
+- **1.2** Coerced every `nl.rate.toFixed(...)` site (4×) with `(+nl.rate||0).toFixed(...)`
+  so clearing the rate field doesn't crash the calculator.
+- **1.3** `fmtMoney` guards `NaN`/`undefined` → `"$0"` instead of `"$NaN"`.
+- **1.9** Rate-slider floor lowered `min="3"` → `min="2"` in all three sites
+  (detailed calc, manual editor, loan tab).
+- *(1.1 verdict, 1.4 HEM 28% floor, 1.5 card-limit DTI, 1.6 manual DTI, 1.7 self-emp shade ×, 1.8 engine lender id — already applied in the prior bugfix round; sentinels confirmed zero.)*
+
+**Stage 2 — deal capture**
+- *(2.1 wizard step 2 wiring, 2.2 unique deal id + real borrower name, 2.5 AI-Pilot 2-year income shape — already applied; sentinels zero.)*
+- `esc` promoted to top-level (now a `function esc` alias of `escHtml`); the local
+  redefinition inside `buildPackHTML` was removed.
+
+**Stage 3 — persistence**
+- **3.1** `saveDeal` snapshots `state.calc` onto `d.calc` when saving the active deal.
+  `loadDealIntoCalc` and `setActiveDeal` now restore from `d.calc` when present (so
+  reopening a saved deal returns its incomes/liabilities/entities — not the default).
+- **3.2** `loadDeals` maps Supabase rows through `mkDeal` so older saved records pick
+  up new schema defaults.
+- **3.3** `saveAccount` now writes a visible name (`#cmdUserName` added next to the
+  command-bar avatar) and stores it on `state.userName`.
+
+**Stage 4 — state desync**
+- **4.1** `advanceDeal` refuses to move a deal whose status isn't in the workflow
+  order (e.g. `MORE_INFO`) — was silently snapping back to `DOCS_PENDING`.
+- **4.2** When the slide-over panel is open on the active deal, `advanceDeal`
+  re-renders it so the status pill updates.
+- **4.4** The AI-progress ticker is held on `state._aiTicker`, idles when nothing is
+  processing, and re-renders only when `#page-dashboard` is mounted.
+- *(4.3 removeEntity min-1 guard, 4.5 portal `simUpload` doc creation, 4.6 seed dates — already applied.)*
+
+**Stage 5 — markup & polish**
+- **5.5** LVR fallback removed (`nl.amount/0.8`/`|| 1` were producing fake 80% / huge
+  LVRs); `computeServiceability` now returns `propValue` + `lvrAvailable`, and the
+  visible LVR sites (gauges, result boxes, deal-strip chip) render `'—'` when no
+  security value is set.
+- **5.6** `deleteDoc` looks up the target object first, then removes by stable
+  index — so deletion from a re-ordered list always removes the intended row. Added
+  a null guard around the re-render so it can be called when the Documents tab
+  isn't mounted.
+- *(5.2 user-string escaping, 5.4 panel close transition — already applied.)*
+
+**Verification:** `node --check` clean. Sentinels confirmed zero:
+`ndi>-500`, `892+Math.floor`, `name:'New Application'`, `*0.28`, bare
+`nl.rate.toFixed(`, `min="3" max="12"`, `(parseFloat(nl.amount)/0.8)`. jsdom smoke
+**109/109** green, including 6 new assertions: `fmtMoney(NaN)`→`"$0"`,
+`advanceDeal('MORE_INFO')` no-op, `deleteDoc` removes the targeted object across
+re-orderings, `saveDeal` attaches `d.calc` for the active deal, `loadDeals` runs rows
+through `mkDeal`.
+
 ## Round (bugfix) — verdict logic, unique deal id + real borrower name, wizard data capture, DTI card-limit fix, manual DTI, HEM floor removal, self-emp shade display, portal upload, AI-pilot income shape, panel transition, output escaping, engine lender-id, seed dates
 
 Targeted, surgical bug fixes — no refactor. Every change quoted in the brief is applied verbatim across all occurrences.
