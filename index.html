@@ -1133,6 +1133,132 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
   .ac-console{padding:18px;}
 }
 
+/* ---- View toggle (Decision / Worksheet) ---- */
+.ac-view{display:inline-flex;gap:0;border:1px solid var(--line2);border-radius:6px;padding:3px;background:var(--page);}
+.ac-view button{appearance:none;background:transparent;border:none;font:inherit;cursor:pointer;padding:5px 11px;border-radius:4px;font-size:11.5px;font-weight:600;color:var(--t2);}
+.ac-view button[aria-pressed="true"]{background:var(--white);color:var(--ink);box-shadow:0 1px 2px rgba(15,23,42,.06);}
+.ac-view button:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(59,111,181,.30);}
+
+/* ============================================================
+   SERVICEABILITY WORKSHEET (Pass 3)
+   Mirrors computeServiceability() line-for-line. Numbers in DM
+   Mono with locked tabular figures so columns align cleanly.
+   ============================================================ */
+.ws-root{font-family:var(--sans);color:var(--ink);font-feature-settings:"tnum";}
+.ws-root .mono,.ws-root .ws-num,.ws-root .ws-formula{font-feature-settings:"tnum";font-variant-numeric:tabular-nums;}
+.ws-head{padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:22px;}
+.ws-cap{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--t3-cool);margin-bottom:4px;}
+.ws-title{font-family:var(--serif);font-weight:400;font-size:28px;line-height:1.05;color:var(--ink);margin-bottom:6px;}
+.ws-sub{font-family:var(--serif);font-style:italic;font-size:13px;color:var(--t3-cool);}
+.ws-step{background:var(--white);border:1px solid var(--line2);border-radius:var(--r-card);padding:20px 22px;margin-bottom:14px;}
+.ws-step-head{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--line);}
+.ws-step-num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:1px solid var(--ink);border-radius:50%;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--ink);flex-shrink:0;}
+.ws-step-title{font-size:14.5px;font-weight:700;color:var(--ink);letter-spacing:-.005em;}
+.ws-step-sub{font-family:var(--serif);font-style:italic;font-size:12px;color:var(--t3-cool);margin-left:auto;}
+.ws-table{width:100%;border-collapse:collapse;}
+.ws-table th{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3-cool);text-align:left;padding:8px 12px 6px;border-bottom:1px solid var(--line);}
+.ws-table th.num,.ws-table td.num{text-align:right;}
+.ws-table th.work,.ws-table td.work{font-family:var(--mono);font-size:11.5px;color:var(--t3-cool);font-variant-numeric:tabular-nums;}
+.ws-table td{padding:9px 12px;font-size:12.5px;color:var(--ink);border-bottom:1px dashed var(--line);vertical-align:top;}
+.ws-table tr:last-child td{border-bottom:none;}
+.ws-table td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+.ws-table td.label{color:var(--t1);}
+.ws-table td.label .ws-rule{display:block;font-family:var(--serif);font-style:italic;font-size:11px;color:var(--t3-cool);margin-top:3px;line-height:1.4;}
+.ws-table td.label .ws-rule.amber{color:var(--amber);}
+.ws-table .ws-op{color:var(--t3-cool);font-weight:400;padding:0 4px;}
+.ws-table tr.ws-shaded td{background:rgba(154,90,0,.04);}
+.ws-table tr.ws-total td{font-weight:700;color:var(--ink);border-top:2px solid var(--ink);border-bottom:none;padding-top:11px;}
+.ws-table tr.ws-total td.label{font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);}
+.ws-table tr.ws-sub td{padding-top:4px;padding-bottom:4px;color:var(--t3-cool);font-size:11.5px;font-style:italic;font-family:var(--serif);border-bottom:1px solid var(--line);}
+.ws-formula{display:inline-flex;align-items:baseline;gap:6px;flex-wrap:wrap;font-family:var(--mono);font-size:13px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:9px 12px;margin-top:6px;font-variant-numeric:tabular-nums;}
+.ws-formula .ws-op{color:var(--t3-cool);}
+.ws-formula b{font-weight:600;color:var(--ink);}
+.ws-formula .res{color:var(--ink);font-weight:600;border-left:1px solid var(--line);padding-left:10px;margin-left:2px;}
+.ws-formula.amber .res{color:var(--amber);}
+.ws-note{font-family:var(--serif);font-style:italic;font-size:12px;color:var(--t3-cool);margin-top:8px;line-height:1.45;}
+.ws-loan-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;}
+.ws-loan-grid .ws-stat{padding:10px 12px;border:1px solid var(--line);border-radius:6px;}
+.ws-loan-grid .ws-stat-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3-cool);}
+.ws-loan-grid .ws-stat-value{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:18px;color:var(--ink);margin-top:3px;font-weight:500;}
+.ws-loan-grid .ws-stat-sub{font-family:var(--serif);font-style:italic;font-size:11.5px;color:var(--t3-cool);margin-top:2px;}
+
+/* HEM step */
+.ws-hem-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:4px;}
+.ws-hem-cell{padding:10px 12px;border:1px solid var(--line);border-radius:6px;}
+.ws-hem-cell .lbl{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3-cool);}
+.ws-hem-cell .val{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:16px;color:var(--ink);margin-top:3px;font-weight:500;}
+.ws-hem-cell.amber .val{color:var(--amber);}
+.ws-hem-cell.floor{background:var(--paper);}
+.ws-hem-cell.floor .val{color:var(--ink);font-weight:600;}
+
+/* Waterfall — single orchestrated motion moment for this view. */
+.ws-wf{display:flex;flex-direction:column;gap:8px;}
+.ws-wf-row{display:grid;grid-template-columns:130px 1fr 110px;align-items:center;gap:12px;}
+.ws-wf-label{font-size:12.5px;color:var(--ink);font-weight:600;}
+.ws-wf-label .ws-wf-sub{display:block;font-family:var(--serif);font-style:italic;font-weight:400;font-size:11px;color:var(--t3-cool);margin-top:1px;}
+.ws-wf-track{position:relative;height:24px;background:transparent;border-radius:3px;overflow:visible;}
+.ws-wf-track .ws-wf-fill{position:absolute;left:var(--ws-x,0%);top:0;bottom:0;background:var(--ink);border-radius:3px;width:0;transition:width .55s cubic-bezier(.22,1,.36,1);}
+.ws-wf-row.income .ws-wf-fill{background:var(--steel);}
+.ws-wf-row.surplus .ws-wf-fill{background:var(--green);}
+.ws-wf-row.surplus.bad .ws-wf-fill{background:var(--red);}
+.ws-wf-row.deduction .ws-wf-fill{
+  background:repeating-linear-gradient(45deg, rgba(30,42,68,.65) 0 6px, rgba(30,42,68,.30) 6px 12px);
+  border-left:1px solid rgba(30,42,68,.45);
+}
+.ws-wf-row.deduction.amber .ws-wf-fill{
+  background:repeating-linear-gradient(45deg, rgba(154,90,0,.55) 0 6px, rgba(154,90,0,.22) 6px 12px);
+  border-left:1px solid rgba(154,90,0,.45);
+}
+.ws-wf-value{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13px;text-align:right;color:var(--ink);}
+.ws-wf-row.deduction .ws-wf-value{color:var(--t2);}
+.ws-wf-row.surplus.bad .ws-wf-value{color:var(--red);font-weight:600;}
+.ws-wf-row.surplus .ws-wf-value{color:var(--green);font-weight:600;}
+.ws-wf-axis{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--t3-cool);padding:6px 0 0 142px;}
+
+@media (prefers-reduced-motion: reduce){
+  .ws-wf-track .ws-wf-fill{transition:none !important;}
+}
+
+/* Ratios table */
+.ws-ratio{width:100%;border-collapse:collapse;}
+.ws-ratio th{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3-cool);text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);}
+.ws-ratio th.num,.ws-ratio td.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;}
+.ws-ratio td{padding:11px 12px;font-size:13px;color:var(--ink);border-bottom:1px dashed var(--line);}
+.ws-ratio tr:last-child td{border-bottom:none;}
+.ws-ratio .ws-r-name{font-weight:700;}
+.ws-ratio .ws-r-formula{font-family:var(--mono);font-size:11.5px;color:var(--t3-cool);}
+.ws-ratio .ws-r-head{color:var(--green);}
+.ws-ratio .ws-r-head.amber{color:var(--amber);}
+.ws-ratio .ws-r-head.red{color:var(--red);font-weight:600;}
+.ws-ratio tr.pass td.num.result{color:var(--green);}
+.ws-ratio tr.borderline td.num.result{color:var(--amber);}
+.ws-ratio tr.fail td.num.result{color:var(--red);font-weight:600;}
+
+/* Verdict footer (ink band) */
+.ws-verdict{background:var(--ink);color:#fff;border-radius:var(--r-card);padding:24px 28px;margin-top:6px;display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr 1fr;gap:18px;align-items:center;}
+.ws-verdict-cap{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45);}
+.ws-verdict-statement{font-family:var(--serif);font-weight:400;font-size:28px;line-height:1.05;margin-top:4px;color:#fff;}
+.ws-verdict-statement.pass{color:#9FE0BB;} .ws-verdict-statement.borderline{color:#F4D193;} .ws-verdict-statement.fail{color:#F8B0B0;}
+.ws-verdict-stat-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.55);}
+.ws-verdict-stat-value{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:18px;color:#fff;margin-top:3px;font-weight:500;}
+
+@media (max-width:900px){
+  .ws-table th.work,.ws-table td.work{display:none;}
+  .ws-loan-grid{grid-template-columns:1fr;}
+  .ws-hem-grid{grid-template-columns:1fr 1fr;}
+  .ws-verdict{grid-template-columns:1fr 1fr;gap:14px;}
+  .ws-verdict > div:first-child{grid-column:1/-1;}
+  .ws-wf-row{grid-template-columns:110px 1fr 90px;}
+  .ws-wf-axis{padding-left:122px;}
+}
+
+/* Inline broker-side "Show working" expansion. */
+.calc-show-working-btn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--line2);color:var(--ink);padding:9px 14px;border-radius:var(--r-btn);font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;transition:background .12s,border-color .12s;}
+.calc-show-working-btn:hover{background:var(--paper);border-color:var(--ink);}
+.calc-show-working-btn:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(59,111,181,.30);}
+#calcWorking{margin-top:18px;display:none;}
+#calcWorking.open{display:block;}
+
 /* ============================================================
    Global reduced-motion override — neutralise page animations.
    ============================================================ */
@@ -2768,6 +2894,10 @@ function renderCalcResults(animate){
         ${x.apply?`<button class="mini-btn" style="flex-shrink:0" onclick="applyLever('${x.apply}')">Apply</button>`:''}</div>`).join('')}
     </div>
     <button class="btn primary" style="width:100%" onclick="callAIAssessment()">✦ AI Assessment</button>
+    <div style="display:flex;justify-content:flex-end">
+      <button class="calc-show-working-btn" id="calcShowWorkingBtn" onclick="toggleCalcWorking()" aria-controls="calcWorking" aria-expanded="false">Show working ↓</button>
+    </div>
+    <div id="calcWorking" aria-label="Serviceability worksheet"></div>
   `;
   playGauges(box);
   if(state.calcRevealed){ paintCaughtStamp(); }
@@ -5765,21 +5895,27 @@ function renderAssessConsoleBody(){
   }
   const d = DEALS.find(x=>x.id===state.activeDeal); if(!d){ el.innerHTML=''; return; }
   const r = computeServiceability();
-  const dec = decideAssessment(r);
-  const cs = fourCs(r);
-  const conds = derivedConditions();
   const integrity = assessIntegrityFor(d.id);
-  el.innerHTML = `
-    ${renderAssessFileHead(d, integrity, r)}
-    ${renderAssessDecisionCard(d, r, dec)}
-    ${renderAssess4Cs(cs)}
-    ${renderAssessConditions(conds)}
-    ${renderAssessAudit()}
-  `;
+  const view = state.assessView==='worksheet' ? 'worksheet' : 'decision';
+  // File header is shared between views.
+  let body;
+  if(view==='worksheet'){
+    body = `<div id="acWorksheet"></div>`;
+  } else {
+    const dec = decideAssessment(r);
+    const cs = fourCs(r);
+    const conds = derivedConditions();
+    body = `${renderAssessDecisionCard(d, r, dec)}${renderAssess4Cs(cs)}${renderAssessConditions(conds)}${renderAssessAudit()}`;
+  }
+  el.innerHTML = `${renderAssessFileHead(d, integrity, r, view)}${body}`;
+  if(view==='worksheet'){
+    renderWorksheet(document.getElementById('acWorksheet'));
+  }
 }
-function renderAssessFileHead(d, integrity, r){
+function renderAssessFileHead(d, integrity, r, view){
   const lvr = (typeof d.lvr==='number') ? d.lvr.toFixed(1)+'%' : '—';
   const brokerLine = d.broker_name || d.broker || `Submitting broker · ACL ${d.acl||'480342'}`;
+  const v = view||'decision';
   return `<header class="ac-fh">
     <div>
       <div class="ac-fh-id">${esc(d.id)}</div>
@@ -5789,6 +5925,10 @@ function renderAssessFileHead(d, integrity, r){
     </div>
     <div></div>
     <div class="ac-fh-right">
+      <div class="ac-view" role="tablist" aria-label="Assessment view">
+        <button role="tab" aria-pressed="${v==='decision'}" onclick="setAssessView('decision')">Decision</button>
+        <button role="tab" aria-pressed="${v==='worksheet'}" onclick="setAssessView('worksheet')">Worksheet</button>
+      </div>
       <span class="ac-integrity ${integrity.cls}" title="Document integrity">${esc(integrity.label)}</span>
       <span class="ac-fh-id">NDI ${fmtMoney(r.ndi)}/mo · DSR ${r.dsr.toFixed(1)}%</span>
     </div>
@@ -5894,6 +6034,443 @@ function renderAssessAudit(){
       </div>`;
     }).join('')}</div>
   </div>`;
+}
+
+/* ============================================================
+   PASS 3 — SERVICEABILITY WORKSHEET
+   Generated entirely from computeServiceability() and the same
+   primitives the engine uses — getShadedIncome, assessLiability,
+   hecsExclusion, getHEM, activeBuffer, activePolicy, PMT.
+   ============================================================ */
+function setAssessView(v){
+  state.assessView = (v==='worksheet') ? 'worksheet' : 'decision';
+  renderAssessConsoleBody();
+}
+function shadeAnnualFor(inc){
+  // Same averaging rule as getShadedIncome, but returns the pre-shade declared.
+  return (inc.use_average && inc.amount_y2)
+    ? ((parseFloat(inc.amount_y1)||0) + (parseFloat(inc.amount_y2)||0))/2
+    : (parseFloat(inc.amount)||0);
+}
+function incomeBandLabel(a){
+  if(a<60000) return '< $60K';
+  if(a<90000) return '$60K–$90K';
+  if(a<140000) return '$90K–$140K';
+  if(a<200000) return '$140K–$200K';
+  return '> $200K';
+}
+function householdLabelFor(adults, deps){
+  return adults<=1 ? 'Single'
+       : deps===0 ? 'Couple, no dependants'
+       : `Couple, ${deps} dependant${deps>1?'s':''}`;
+}
+function liabRuleAnnotation(row){
+  const k = row.kind || row.type;
+  if(k==='credit_card') return 'Credit-card limit × 3.8% ÷ 12 (APRA undrawn-limit rule).';
+  if(k==='hecs')        return 'Balance × 1% ÷ 12 (lender HECS rule may exclude).';
+  return `Amortising PMT(balance, rate + buffer, term).`;
+}
+function liabFormulaText(row, buffer){
+  const k = row.kind || row.type;
+  const monthly = row.monthly||0, excl = row.excl||0;
+  if(k==='credit_card'){
+    return `${fmtMoney(row.balance)} <span class="ws-op">×</span> 3.8% <span class="ws-op">÷</span> 12 <span class="res">= ${fmtMoney(monthly)}/mo</span>`;
+  }
+  if(k==='hecs'){
+    const gross = row.balance*0.01/12;
+    const after = Math.max(0, monthly - excl);
+    return `${fmtMoney(row.balance)} <span class="ws-op">×</span> 1% <span class="ws-op">÷</span> 12 <span class="res">= ${fmtMoney(gross)}/mo</span>${excl?` <span class="ws-op">−</span> exclusion ${fmtMoney(excl)} <span class="res">= ${fmtMoney(after)}/mo</span>`:''}`;
+  }
+  const term = row.term || defaultTerm(k);
+  const assessedRate = row.rate + buffer*100;
+  return `PMT(${fmtMoney(row.balance)}, ${assessedRate.toFixed(2)}%, ${term}y) <span class="res">= ${fmtMoney(monthly)}/mo</span>`;
+}
+
+function buildWorksheetData(){
+  const r = computeServiceability();
+  const buffer = activeBuffer();
+  const policy = activePolicy();
+
+  // Step 1 — assessed income line-by-line.
+  const incomeRows = [];
+  let declaredAnnualTotal = 0;
+  state.calc.entities.forEach(e=>{
+    const w = entityWeight(e); if(!w) return;
+    e.incomes.forEach(inc=>{
+      const declared = shadeAnnualFor(inc);
+      const shaded = getShadedIncome(inc, state.lender);
+      const shadePct = declared>0 ? shaded/declared : (shaded>0 ? 1 : 0);
+      const assessed = shaded * w;
+      declaredAnnualTotal += declared;
+      incomeRows.push({
+        entity:e.name, kind:inc.type, label:INCOME_TYPES[inc.type]||inc.type,
+        declared, averaging:!!inc.use_average,
+        amount_y1: parseFloat(inc.amount_y1)||0, amount_y2: parseFloat(inc.amount_y2)||0,
+        shadePct, shaded, assessed, weight:w
+      });
+    });
+  });
+  const shadedAnnual = r.shadedAnnual;
+  const incomeMonthly = r.income;
+
+  // Step 2 — existing commitments line-by-line.
+  const liabRows = [];
+  state.calc.entities.forEach(e=>{
+    if(!entityWeight(e)) return;
+    e.liabilities.forEach(l=>{
+      const monthly = assessLiability(l, buffer);
+      const excl = l.type==='hecs' ? hecsExclusion(l, incomeMonthly) : 0;
+      liabRows.push({
+        entity:e.name, kind:l.type, label:LIAB_TYPES[l.type]||l.type,
+        balance: parseFloat(l.balance)||0, rate: parseFloat(l.rate)||0,
+        term: parseFloat(l.term)||0, monthly, excl
+      });
+    });
+  });
+
+  // Step 3 — proposed loan stressed
+  const nl = state.calc.newLoan;
+  const contractRate = parseFloat(nl.rate)||0;
+  const assessedRate = contractRate + buffer*100;
+  const term = parseFloat(nl.term)||30;
+  const amount = parseFloat(nl.amount)||0;
+  const stressedPMT = PMT(amount, assessedRate/100, term);
+
+  // Step 4 — HEM
+  const adults = state.calc.adults||1;
+  const deps   = state.calc.dependants||0;
+  const HEM    = r.HEM;
+  const band   = incomeBandLabel(shadedAnnual);
+  const household = householdLabelFor(adults, deps);
+  // We don't capture declared monthly expenses in detailed mode — flag that to the assessor.
+  const declaredExpensesMonthly = (state.calc.declaredExpensesMonthly!=null)
+    ? +state.calc.declaredExpensesMonthly : null;
+  const appliedFloor = (declaredExpensesMonthly!=null) ? Math.max(declaredExpensesMonthly, HEM) : HEM;
+
+  // Step 6 — policy ratios
+  const dsrCeil = activeDsrMax();
+  const lvrCeil = (policy && policy.max_lvr_owner_occ_pi) ? policy.max_lvr_owner_occ_pi : 80;
+  const dtiCeil = 6.0;
+
+  return {
+    r, buffer, policy, lender:state.lender,
+    incomeRows, declaredAnnualTotal, shadedAnnual, incomeMonthly,
+    liabRows, existingDebt:r.existingDebt,
+    contractRate, assessedRate, term, amount, stressedPMT,
+    adults, deps, HEM, band, household, declaredExpensesMonthly, appliedFloor,
+    dsrCeil, lvrCeil, dtiCeil
+  };
+}
+
+function renderWorksheet(el){
+  if(!el) return;
+  if(!state.activeDeal && !(state.calc && state.calc.entities && state.calc.entities.length)){
+    el.innerHTML = `<div class="ac-noselect"><h2>No file selected.</h2><p>Pick a file from the queue to view its worksheet.</p></div>`;
+    return;
+  }
+  const d = buildWorksheetData();
+  const r = d.r;
+  const verdictLabel = r.verdict==='PASS'?'Serviceable.':r.verdict==='BORDERLINE'?'Borderline.':'Does not service.';
+  const deal = state.activeDeal ? (DEALS.find(x=>x.id===state.activeDeal)||{}) : {};
+
+  el.innerHTML = `
+    <div class="ws-root">
+      <header class="ws-head">
+        <div class="ws-cap">Serviceability worksheet</div>
+        <h1 class="ws-title">Working from declared to verdict.</h1>
+        <div class="ws-sub">${deal.id?esc(deal.id)+' · ':''}${esc(deal.name||state.calc.entities[0]?.name||'Calculation')} · assessed against <b>${esc(d.policy?d.policy.label:lenderLabel(d.lender))}</b> with a ${(d.buffer*100).toFixed(0)}% buffer.</div>
+      </header>
+
+      ${renderWsStep1(d)}
+      ${renderWsStep2(d)}
+      ${renderWsStep3(d)}
+      ${renderWsStep4(d)}
+      ${renderWsStep5(d)}
+      ${renderWsStep6(d)}
+
+      <div class="ws-verdict" role="status">
+        <div>
+          <div class="ws-verdict-cap">Verdict</div>
+          <div class="ws-verdict-statement ${esc(r.verdict.toLowerCase())}">${esc(verdictLabel)}</div>
+        </div>
+        <div>
+          <div class="ws-verdict-stat-label">NDI / mo</div>
+          <div class="ws-verdict-stat-value" style="color:${r.ndi>=0?'#9FE0BB':'#F8B0B0'}">${fmtMoney(r.ndi)}</div>
+        </div>
+        <div>
+          <div class="ws-verdict-stat-label">DSR</div>
+          <div class="ws-verdict-stat-value">${r.dsr.toFixed(1)}%</div>
+        </div>
+        <div>
+          <div class="ws-verdict-stat-label">LVR</div>
+          <div class="ws-verdict-stat-value">${r.lvrAvailable?r.lvr.toFixed(1)+'%':'—'}</div>
+        </div>
+        <div>
+          <div class="ws-verdict-stat-label">DTI</div>
+          <div class="ws-verdict-stat-value">${r.dti.toFixed(2)}×</div>
+        </div>
+      </div>
+    </div>`;
+
+  // Orchestrated motion: grow each waterfall bar from 0 → final width.
+  const reduced = (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const fills = el.querySelectorAll('.ws-wf-fill');
+  if(reduced){
+    fills.forEach(f=>{ f.style.width = f.getAttribute('data-target-w'); });
+  } else {
+    requestAnimationFrame(()=>{
+      fills.forEach(f=>{ f.style.width = f.getAttribute('data-target-w'); });
+    });
+  }
+}
+
+function renderWsStep1(d){
+  const rows = d.incomeRows.length ? d.incomeRows.map(row=>{
+    const shaded = row.shadePct < 1;
+    const ent = (state.calc.entities.find(e=>e.name===row.entity)||{});
+    const w = entityWeight(ent);
+    const declaredText = row.averaging && row.amount_y2
+      ? `${fmtMoney(row.amount_y1)} & ${fmtMoney(row.amount_y2)} avg`
+      : fmtMoney(row.declared);
+    const annot = shaded
+      ? `<span class="ws-rule amber">Shaded to ${(row.shadePct*100).toFixed(0)}% — ${shadeRuleNote(row.kind, d.policy)}</span>`
+      : `<span class="ws-rule">Full credit — no shading rule applies.</span>`;
+    const ownership = w<1 ? ` <span class="ws-rule">× ${Math.round(w*100)}% ownership</span>` : '';
+    return `<tr class="${shaded?'ws-shaded':''}">
+      <td class="label">
+        <span data-prov="income" data-entity="${escArg(row.entity)}" data-kind="${escArg(row.kind)}">${esc(row.label)}</span>
+        <span class="ws-rule">${esc(row.entity)}${ownership}</span>
+        ${annot}
+      </td>
+      <td class="num">${declaredText}</td>
+      <td class="num">${(row.shadePct*100).toFixed(0)}%</td>
+      <td class="num">${fmtMoney(row.assessed)}</td>
+      <td class="work">${(row.averaging&&row.amount_y2)?`(${fmtMoney(row.amount_y1)}+${fmtMoney(row.amount_y2)})÷2 = ${fmtMoney(row.declared)}<br>`:''}${fmtMoney(row.declared)} × ${(row.shadePct*100).toFixed(0)}% × ${Math.round(w*100)}% = ${fmtMoney(row.assessed)}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="5" style="color:var(--t3-cool);font-family:var(--serif);font-style:italic">No income lines captured.</td></tr>`;
+  return `<section class="ws-step">
+    <header class="ws-step-head">
+      <span class="ws-step-num">1</span>
+      <span class="ws-step-title">Assessed income</span>
+      <span class="ws-step-sub">Lender shading rules applied per line.</span>
+    </header>
+    <table class="ws-table">
+      <thead><tr><th>Income line</th><th class="num">Declared (yr)</th><th class="num">Shade</th><th class="num">Assessed (yr)</th><th class="work">Working</th></tr></thead>
+      <tbody>
+        ${rows}
+        <tr class="ws-total">
+          <td class="label">Assessed income</td>
+          <td class="num">${fmtMoney(d.declaredAnnualTotal)}/yr</td>
+          <td class="num">—</td>
+          <td class="num">${fmtMoney(d.shadedAnnual)}/yr</td>
+          <td class="work">${fmtMoney(d.shadedAnnual)} ÷ 12 = ${fmtMoney(d.incomeMonthly)}/mo</td>
+        </tr>
+        <tr class="ws-sub"><td colspan="5">Monthly equivalent applied in Steps 5–6: <span class="mono" style="color:var(--ink);font-style:normal;font-weight:600">${fmtMoney(d.incomeMonthly)}/mo</span></td></tr>
+      </tbody>
+    </table>
+  </section>`;
+}
+function shadeRuleNote(kind, policy){
+  if(kind==='overtime') return 'Overtime shaded by APRA prudential expectation.';
+  if(kind==='bonus')    return 'Bonus requires 2-year evidence; otherwise excluded.';
+  if(kind==='commission') return 'Commission shaded — variable component.';
+  if(kind==='rental_res') return policy && policy.income_shading && policy.income_shading.rental_res!=null
+      ? `${policy.label} rental shading = ${Math.round(policy.income_shading.rental_res*100)}%.`
+      : 'Residential rental shaded for vacancy + costs.';
+  if(kind==='rental_com') return 'Commercial rental shaded for vacancy + costs.';
+  if(kind==='self_emp') return 'Self-employed — uses 2-year average where evidence exists.';
+  if(kind==='dividends') return 'Dividends shaded — variable distribution.';
+  if(kind==='foreign')   return 'Foreign income shaded for FX risk.';
+  return 'Policy-specific shading applied.';
+}
+
+function renderWsStep2(d){
+  const rows = d.liabRows.length ? d.liabRows.map(row=>{
+    const annot = liabRuleAnnotation(row);
+    const formula = liabFormulaText(row, d.buffer);
+    const afterExcl = Math.max(0, row.monthly - (row.excl||0));
+    const stressed = row.kind!=='credit_card' && row.kind!=='hecs';
+    return `<tr class="${stressed?'ws-shaded':''}">
+      <td class="label">
+        <span data-prov="liability" data-entity="${escArg(row.entity)}" data-kind="${escArg(row.kind)}">${esc(row.label)}</span>
+        <span class="ws-rule">${esc(row.entity)} · ${esc(annot)}</span>
+      </td>
+      <td class="num">${fmtMoney(row.balance)}</td>
+      <td class="num">${row.rate?row.rate.toFixed(2)+'%':'—'}</td>
+      <td class="num">${row.term?row.term+'y':'—'}</td>
+      <td class="num">${fmtMoney(afterExcl)}/mo</td>
+      <td class="work">${formula}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="6" style="color:var(--t3-cool);font-family:var(--serif);font-style:italic">No existing commitments captured.</td></tr>`;
+  return `<section class="ws-step">
+    <header class="ws-step-head">
+      <span class="ws-step-num">2</span>
+      <span class="ws-step-title">Existing commitments</span>
+      <span class="ws-step-sub">Assessment rule applied per liability type.</span>
+    </header>
+    <table class="ws-table">
+      <thead><tr><th>Liability</th><th class="num">Balance / limit</th><th class="num">Rate</th><th class="num">Term</th><th class="num">Assessed</th><th class="work">Working</th></tr></thead>
+      <tbody>
+        ${rows}
+        <tr class="ws-total">
+          <td class="label">Existing debt service</td>
+          <td class="num">—</td><td class="num">—</td><td class="num">—</td>
+          <td class="num">${fmtMoney(d.existingDebt)}/mo</td>
+          <td class="work">Σ of assessed lines (post-exclusions).</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>`;
+}
+
+function renderWsStep3(d){
+  return `<section class="ws-step">
+    <header class="ws-step-head">
+      <span class="ws-step-num">3</span>
+      <span class="ws-step-title">Proposed loan — stressed repayment</span>
+      <span class="ws-step-sub">Contract rate + active lender buffer.</span>
+    </header>
+    <div class="ws-loan-grid">
+      <div class="ws-stat"><div class="ws-stat-label">Loan amount</div><div class="ws-stat-value">${fmtMoney(d.amount)}</div><div class="ws-stat-sub">Over ${d.term} years.</div></div>
+      <div class="ws-stat"><div class="ws-stat-label">Contract rate</div><div class="ws-stat-value">${d.contractRate.toFixed(2)}%</div><div class="ws-stat-sub">As priced by the lender.</div></div>
+    </div>
+    <div class="ws-formula amber">
+      <b>${d.contractRate.toFixed(2)}%</b> <span class="ws-op">+</span> buffer <b>${(d.buffer*100).toFixed(2)}%</b> <span class="ws-op">=</span>
+      <b>Assessment rate ${d.assessedRate.toFixed(2)}%</b>
+      <span class="res">PMT(${fmtMoney(d.amount)}, ${d.assessedRate.toFixed(2)}%, ${d.term}y) = ${fmtMoney(d.stressedPMT)}/mo</span>
+    </div>
+    <div class="ws-note">Buffer pulled from <b>activeBuffer()</b> — ${(d.buffer*100).toFixed(0)}% applies for ${esc(d.policy?d.policy.label:lenderLabel(d.lender))}. Stressed repayment is added to existing debt service in the NDI waterfall.</div>
+  </section>`;
+}
+
+function renderWsStep4(d){
+  const declaredCell = d.declaredExpensesMonthly!=null
+    ? `<div class="ws-hem-cell"><div class="lbl">Declared monthly</div><div class="val">${fmtMoney(d.declaredExpensesMonthly)}</div></div>`
+    : `<div class="ws-hem-cell"><div class="lbl">Declared monthly</div><div class="val" style="color:var(--t3-cool);font-style:italic;font-family:var(--serif);font-size:13px">— not declared —</div></div>`;
+  const floorBasis = d.declaredExpensesMonthly!=null
+    ? `max(${fmtMoney(d.declaredExpensesMonthly)}, ${fmtMoney(d.HEM)}) = ${fmtMoney(d.appliedFloor)}/mo`
+    : `Using HEM benchmark as the floor (no declared monthly expenses on file).`;
+  return `<section class="ws-step">
+    <header class="ws-step-head">
+      <span class="ws-step-num">4</span>
+      <span class="ws-step-title">HEM benchmark</span>
+      <span class="ws-step-sub">Melbourne Institute table, by household × income band.</span>
+    </header>
+    <div class="ws-hem-grid">
+      <div class="ws-hem-cell"><div class="lbl">Household</div><div class="val">${esc(d.household)}</div></div>
+      <div class="ws-hem-cell"><div class="lbl">Income band</div><div class="val">${esc(d.band)}</div></div>
+      ${declaredCell}
+      <div class="ws-hem-cell floor"><div class="lbl">HEM benchmark</div><div class="val">${fmtMoney(d.HEM)}/mo</div></div>
+    </div>
+    <div class="ws-formula">
+      getHEM(<b>${fmtMoney(d.r.shadedAnnual)}</b>/yr, <b>${d.adults}</b> adult${d.adults>1?'s':''}, <b>${d.deps}</b> dep${d.deps===1?'':'s'}) <span class="ws-op">=</span> <b>${fmtMoney(d.HEM)}/mo</b>
+      <span class="res">Applied floor: ${fmtMoney(d.appliedFloor)}/mo</span>
+    </div>
+    <div class="ws-note">${esc(floorBasis)}</div>
+  </section>`;
+}
+
+function renderWsStep5(d){
+  const r = d.r;
+  const income = r.income;
+  const existing = r.existingDebt;
+  const newL = r.newLoanMo;
+  const hem = d.appliedFloor;
+  const surplus = r.ndi;
+  // Visual scale: stretch to the largest single bar so all proportions are visible.
+  const span = Math.max(income, Math.abs(surplus)+existing+newL+hem, 1);
+  const pct = (v)=> (Math.abs(v)/span*100).toFixed(1)+'%';
+  const surplusClass = surplus<0 ? 'bad' : '';
+  return `<section class="ws-step">
+    <header class="ws-step-head">
+      <span class="ws-step-num">5</span>
+      <span class="ws-step-title">NDI waterfall</span>
+      <span class="ws-step-sub">Income → minus debts → minus HEM → surplus.</span>
+    </header>
+    <div class="ws-wf" role="img" aria-label="Net disposable income waterfall">
+      <div class="ws-wf-row income">
+        <div class="ws-wf-label">Assessed income<span class="ws-wf-sub">monthly</span></div>
+        <div class="ws-wf-track"><div class="ws-wf-fill" data-target-w="${pct(income)}" style="--ws-x:0%"></div></div>
+        <div class="ws-wf-value">${fmtMoney(income)}/mo</div>
+      </div>
+      <div class="ws-wf-row deduction amber">
+        <div class="ws-wf-label">− Existing debt<span class="ws-wf-sub">stressed PMT + cards + HECS</span></div>
+        <div class="ws-wf-track"><div class="ws-wf-fill" data-target-w="${pct(existing)}" style="--ws-x:0%"></div></div>
+        <div class="ws-wf-value">−${fmtMoney(existing)}/mo</div>
+      </div>
+      <div class="ws-wf-row deduction amber">
+        <div class="ws-wf-label">− New loan<span class="ws-wf-sub">PMT @ ${d.assessedRate.toFixed(2)}%</span></div>
+        <div class="ws-wf-track"><div class="ws-wf-fill" data-target-w="${pct(newL)}" style="--ws-x:0%"></div></div>
+        <div class="ws-wf-value">−${fmtMoney(newL)}/mo</div>
+      </div>
+      <div class="ws-wf-row deduction">
+        <div class="ws-wf-label">− HEM floor<span class="ws-wf-sub">${esc(d.household)} · ${esc(d.band)}</span></div>
+        <div class="ws-wf-track"><div class="ws-wf-fill" data-target-w="${pct(hem)}" style="--ws-x:0%"></div></div>
+        <div class="ws-wf-value">−${fmtMoney(hem)}/mo</div>
+      </div>
+      <div class="ws-wf-row surplus ${surplusClass}">
+        <div class="ws-wf-label">${surplus<0?'Shortfall':'Net surplus (NDI)'}<span class="ws-wf-sub">${surplus<0?'income does not absorb the structure':'available after stress'}</span></div>
+        <div class="ws-wf-track"><div class="ws-wf-fill" data-target-w="${pct(surplus)}" style="--ws-x:0%"></div></div>
+        <div class="ws-wf-value">${surplus<0?'−':'+'}${fmtMoney(Math.abs(surplus))}/mo</div>
+      </div>
+    </div>
+  </section>`;
+}
+
+function renderWsStep6(d){
+  const r = d.r;
+  const rows = [
+    {
+      name:'DSR', formula:'(existing debt + stressed new loan) ÷ assessed income',
+      resultText: r.dsr.toFixed(1)+'%',
+      ceilText: d.dsrCeil+'%',
+      headroom: d.dsrCeil - r.dsr, headFmt:(h)=> (h>=0?'+':'')+h.toFixed(1)+'%',
+      kind: r.dsr < d.dsrCeil*0.85 ? 'pass' : r.dsr < d.dsrCeil ? 'borderline' : 'fail'
+    },
+    {
+      name:'LVR', formula:'loan amount ÷ aggregate security value',
+      resultText: r.lvrAvailable ? r.lvr.toFixed(1)+'%' : '—',
+      ceilText: d.lvrCeil+'%',
+      headroom: r.lvrAvailable ? d.lvrCeil - r.lvr : null, headFmt:(h)=> (h>=0?'+':'')+h.toFixed(1)+'%',
+      kind: !r.lvrAvailable ? 'borderline' : r.lvr < d.lvrCeil*0.85 ? 'pass' : r.lvr <= d.lvrCeil ? 'borderline' : 'fail'
+    },
+    {
+      name:'DTI', formula:'(existing balances + loan amount) ÷ gross assessed annual income',
+      resultText: r.dti.toFixed(2)+'×',
+      ceilText: d.dtiCeil.toFixed(1)+'×',
+      headroom: d.dtiCeil - r.dti, headFmt:(h)=> (h>=0?'+':'')+h.toFixed(2)+'×',
+      kind: r.dti < d.dtiCeil*0.85 ? 'pass' : r.dti <= d.dtiCeil ? 'borderline' : 'fail'
+    }
+  ];
+  return `<section class="ws-step">
+    <header class="ws-step-head">
+      <span class="ws-step-num">6</span>
+      <span class="ws-step-title">Policy ratios</span>
+      <span class="ws-step-sub">Live ceilings from <b>${esc(d.policy?d.policy.label:lenderLabel(d.lender))}</b>.</span>
+    </header>
+    <table class="ws-ratio">
+      <thead><tr><th>Ratio</th><th>Formula</th><th class="num">Result</th><th class="num">Ceiling</th><th class="num">Headroom</th></tr></thead>
+      <tbody>
+        ${rows.map(rw=>`<tr class="${rw.kind}">
+          <td class="ws-r-name">${esc(rw.name)}</td>
+          <td class="ws-r-formula">${esc(rw.formula)}</td>
+          <td class="num result">${rw.resultText}</td>
+          <td class="num">${rw.ceilText}</td>
+          <td class="num"><span class="ws-r-head ${rw.kind==='fail'?'red':rw.kind==='borderline'?'amber':''}">${rw.headroom==null?'—':rw.headFmt(rw.headroom)}</span></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </section>`;
+}
+
+/* Broker-side "Show working" toggle on the Calculate screen. */
+function toggleCalcWorking(){
+  const el = document.getElementById('calcWorking'); if(!el) return;
+  const open = !el.classList.contains('open');
+  el.classList.toggle('open', open);
+  const btn = document.getElementById('calcShowWorkingBtn');
+  if(btn){ btn.textContent = (open?'Hide working ↑':'Show working ↓'); btn.setAttribute('aria-expanded', String(open)); }
+  if(open){ renderWorksheet(el); el.scrollIntoView({behavior:'smooth', block:'start'}); }
 }
 
 /* ---------- Init ---------- */

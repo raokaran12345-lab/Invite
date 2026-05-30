@@ -1,5 +1,78 @@
 # DebtIQ v6 — Changelog
 
+## Round (lender side · Pass 3) — Serviceability Worksheet (line-for-line working)
+
+The centrepiece of the lender side — an exhaustive, traceable view of
+the serviceability math. Generated entirely from
+`computeServiceability()` and the same primitives the engine itself
+uses (`getShadedIncome`, `assessLiability`, `hecsExclusion`, `getHEM`,
+`activeBuffer`, `activePolicy`, `PMT`). No hardcoded numbers anywhere.
+
+- **Step 1 · Assessed income.** Per-line table: Declared (yr) → Shade
+  % → Assessed (yr), with shaded rows tinted amber and a serif-italic
+  policy basis ("Overtime shaded by APRA prudential expectation",
+  "Self-employed — 2-year average where evidence exists", etc.). The
+  Working column shows the literal arithmetic
+  `$X × 80% × 50% = $Y`. Total row + monthly equivalent applied in
+  Steps 5–6.
+- **Step 2 · Existing commitments.** Per-liability table: Balance/limit
+  · Rate · Term · Assessed · Working. The Working column emits the
+  rule verbatim — credit cards as `limit × 3.8% ÷ 12`, HECS as
+  `balance × 1% ÷ 12 − exclusion`, amortising debts as
+  `PMT(balance, rate + buffer, term)`. Existing-debt-service total
+  matches `computeServiceability()`.
+- **Step 3 · Proposed loan — stressed.** Two-card grid (Loan amount,
+  Contract rate) followed by an amber-toned formula chip:
+  `contractRate + buffer = assessmentRate · PMT(amount, rate, term) =
+  $X/mo`. Buffer pulled live from `activeBuffer()`.
+- **Step 4 · HEM.** Four cells (Household, Income band, Declared
+  monthly, HEM benchmark) followed by the literal call
+  `getHEM($X/yr, N adults, N deps) = $Y/mo` and the floor applied
+  (`max(declared, HEM)`). When no declared expenses are on file (the
+  detailed mode), the renderer says so explicitly.
+- **Step 5 · NDI waterfall.** Proportional bar rows: Assessed income →
+  − Existing debt → − New loan → − HEM floor → Net surplus.
+  - **One orchestrated motion moment per screen** — bars grow from
+    `width:0` to their final width via a 0.55s cubic-bezier; bypassed
+    under `prefers-reduced-motion`.
+  - Solid bars for income/surplus, **hatched** (45° stripes) for
+    deductions. **Amber reserved for shading/stress** (existing debt,
+    new loan); steel hatching for HEM; green solid for surplus; red
+    solid when surplus turns negative.
+- **Step 6 · Policy ratios.** DSR / LVR / DTI table: name · formula ·
+  result · ceiling (from `activePolicy()`) · headroom. Result + headroom
+  coloured by verdict tone (`pass` / `borderline` / `fail`).
+- **Verdict footer.** Ink band with the serif statement (Serviceable /
+  Borderline / Does not service.) and four mono stat columns (NDI/mo,
+  DSR, LVR, DTI). Statement colour tones for the verdict.
+- **Reachable two ways.** New segmented toggle in the assessor file
+  header (Decision · Worksheet); new "Show working ↓ / ↑" button on
+  the broker Calculate screen that expands the worksheet inline below
+  the verdict.
+- **Craft details.** `font-feature-settings:"tnum"` locked on `.ws-root`
+  so every numeric column lines up. Arithmetic operators (×, +, =, ÷)
+  rendered in a muted token (`.ws-op`). On widths ≤900px the Working
+  column hides via CSS; below that the loan/HEM grids collapse to a
+  single column and the verdict footer reflows to 2 cols.
+- **Failing-file path.** Verified against the Mitchell file at CBA
+  (NDI positive but DSR 65.5% vs 45% ceiling, DTI 6.6× vs 6× cap):
+  ratios row red, verdict statement red, headroom negative. When NDI
+  itself goes negative, the surplus bar also goes red.
+- **A11y.** Worksheet is `role="img"` on the waterfall with an
+  `aria-label`; the broker-side toggle button uses `aria-expanded` +
+  `aria-controls`; every focusable control keeps its steel
+  focus-visible ring.
+- **Smoke harness +13 checks** (178/178 total): 6-step structure,
+  income/liability column emission, formula text presence, HEM
+  `getHEM` text, waterfall bar count with `data-target-w`, ratio
+  rows for DSR/LVR/DTI, verdict footer tone class, tabular-nums
+  feature, failing-file ratio class + verdict tone.
+
+Files touched: `index.html` (CSS for `.ws-*` + JS for
+`buildWorksheetData`, `renderWorksheet` + step renderers,
+`setAssessView`, `toggleCalcWorking`, and the assessor file-head
+view toggle). No backend, schema, or `lenders.js` changes.
+
 ## Round (lender side · Pass 2) — Assessment Console (queue · decision · 4 Cs · routing · conditions · audit)
 
 Second pass — the assessor workspace is now fully operational, built
