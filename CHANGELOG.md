@@ -1,5 +1,72 @@
 # DebtIQ v6 — Changelog
 
+## Round (redesign · integration) — Login split, Editorial pack, Verdict reveal, Violet sweep
+
+Four-pass integration of the finished design language into the live screens. No
+backend, contract, auth, or `lenders.js` changes; demo and live-backend modes
+both still work; every existing handler/ID/data flow preserved.
+
+**Pass 1 — Login split layout.** `#login` is now a two-column grid: left **ink**
+editorial hero (logo glyph + serif positioning line + a muted *Serviceable.*
+verdict motif + 25-lender / 3-layer / 100% proof points + foot caption); right
+clinical **paper** sign-in card at 8px radius. Kept exactly: `#loginEmail`,
+`#loginPass`, `onclick="doLogin()"`, the `#authExtra` slot, and the demo-creds
+block. Primary button is flat `--ink`; focus rings are steel
+`box-shadow:0 0 0 4px rgba(59,111,181,.16)` with `border-color:var(--steel)`.
+Gentle `loginFadeUp` entrance with a `prefers-reduced-motion` guard. Stacks
+under 860px to a compact ink header + form (proof tiles hide on mobile).
+
+**Pass 2 — Submission pack.** `buildPackHTML(r,pol,d,nl,ent,deal,bidText,
+servicingText)` rewritten as a credit-memo: Newsreader masthead + section
+titles, Plus Jakarta Sans column heads, DM Mono figures throughout; numbered
+sections **01–12** (Application Summary · Applicants & Entities · Securities ·
+Employment & Income · Liabilities · Serviceability · R&O · Commentary · Policy
+Alignment · Document Checklist · Broker Declaration · Source Documents). The
+Serviceability section now renders a **verdict band** (serif statement +
+italic note, ink rule + assessment-buffer block) and **four hairline gauges
+with ceiling ticks** (DSR / NDI / LVR / DTI). Commentary blocks use an ink
+margin rule and Newsreader body. Provenance appendix renders source-text in
+serif italic with mono confidence. Print button = `--ink` (no violet shadow);
+dedicated `@page{margin:16mm}` + `print-color-adjust:exact` +
+`break-inside:avoid` on sections / tables / gauges / commentary. Every data
+expression (`computeServiceability`, `getShadedIncome`, `assessLiability`,
+`lenderChecklist`, `collectProvenance`, `totalSecurityValue`, etc.) and the
+function signature are untouched.
+
+**Pass 3 — Verdict reveal.** A four-step pipeline (Reading documents · Shading
+income · Stress-testing · Checking policy) runs in `#calcResults` before the
+result panel paints. Each step animates ~420ms with a steel spinner that
+resolves to a green tick. The verdict then renders via the existing
+`renderCalcResults` (so gauges sweep on their own CSS transition), NDI
+**counts up** to the real value via `animateCount`, and a **"Caught before
+lodgement" stamp** + discreet **↻ replay** chip prepend to the results.
+Everything reads off `computeServiceability()` — no hardcoded figures.
+`useLender` and `applyLever` reset the reveal flag so switching lender or
+applying a lever re-runs the pipeline. `prefers-reduced-motion` skips the
+pipeline and renders the final state immediately.
+
+**Pass 4 — Violet sweep & motion guard.** Eradicated every remaining
+`rgba(91,79,245,…)`, `#5B4FF5`, `#8B5CF6`, `#A78BFA` outside the brand-mark
+`--logo-grad`. Sites recoloured to ink/steel tints:
+focus rings (`#globalSearch`, `.search input`, `.inp …:focus`) → steel
+`rgba(59,111,181,.16)`; `.copilot-suggestion`, `.bulk-drop:hover/.over`,
+`.pill.violet`, `.tile.sel`, `.addback-row`, `.market-card.active`,
+`.pilot-step.running .pilot-ico`, the dashboard KPI icon, the documents
+processing KPI, the market-row highlight, the Compliance "Full Pack" card,
+and the chart series in both flow visualisations all moved to ink/steel.
+The `rankLenders` non-AU default colour moved to ink. The `@keyframes glow`
+block was deleted (the brief bans glow). A single global
+`@media (prefers-reduced-motion: reduce)` block now collapses
+animation/transition durations to ~0 across the page.
+
+**Verification.** `node --check` clean. Sentinels confirmed empty:
+`rgba(91,79,245`, literal `#5B4FF5`/`#8B5CF6` outside `--logo-grad`,
+`animation:glow`. jsdom smoke **124/124 green**, including 7 new assertions:
+reveal completes → `state.calcRevealed=true`, caught-stamp present, replay
+button present, `useLender` re-resolves the reveal, `replayCalcReveal`
+returns to a revealed state, plus a DOM-wide scan confirming no violet
+literals leak outside the brand-mark gradient.
+
 ## Round (redesign · Phase 1) — Editorial + clinical design system
 
 Frontend refresh: token system, fonts, and primitive components. No backend or
