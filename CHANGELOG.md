@@ -1,5 +1,726 @@
 # DebtIQ v6 — Changelog
 
+## Round (platform migration) — Netlify → Cloudflare Pages + Pages Functions
+
+Moved every backend handler off Netlify Functions to Cloudflare Pages
+Functions. Static hosting moves to Cloudflare Pages in the same step.
+**Zero frontend changes** — the `/api/*` contract is preserved
+verbatim (Pages Functions' file-path-as-route covers it natively), so
+the `state.backend` auto-detect, the demo-mode fallback, and the
+existing Supabase session gating all work unchanged.
+
+- **New `functions/api/`** structure:
+  - `config.js` → `/api/config` (returns public Supabase vars)
+  - `claude.js` → `/api/claude` (Anthropic proxy)
+  - `extract.js` → `/api/extract` (Claude vision OCR)
+  - `classify.js` → `/api/classify` (document type ID)
+  - `forensics.js` → `/api/forensics` (three-layer tamper-signal scan)
+  - `_lib.js` — shared CORS / json / `requireSupabaseSession` /
+    `parseJsonLoose` helpers (kept tiny; each handler still
+    self-contained).
+- **Handler signatures converted** from Netlify's
+  `exports.handler = async (event) => ({ statusCode, headers, body })`
+  to Pages Functions' Web-standard
+  `export const onRequestPost = async ({ request, env }) => Response`.
+  Method-specific exports replace the `event.httpMethod` switch;
+  preflight `OPTIONS` is its own `onRequestOptions` export.
+- **One Node-ism rewritten** — `forensics.js` previously did
+  `Buffer.from(b64,'base64').toString('latin1')` on the Node runtime.
+  Replaced with the Web-standard `atob(b64)`, which Cloudflare Workers
+  supports natively. Confirmed byte-for-byte equivalent on a sample
+  payload, so the META01–META06 metadata-forensics rules behave
+  identically. No `nodejs_compat` flag needed.
+- **Env vars** — same three (`ANTHROPIC_API_KEY`, `SUPABASE_URL`,
+  `SUPABASE_ANON_KEY`), now read from `env.*` instead of
+  `process.env.*`. Set in the Cloudflare Pages project Settings →
+  Environment variables (Production + Preview).
+- **`wrangler.toml`** — minimal project config for local dev
+  (`wrangler pages dev .`). Secrets go in a gitignored `.dev.vars`.
+- **`.gitignore`** — added (was missing): ignores `.dev.vars`,
+  `.wrangler/`, `node_modules/`, `.DS_Store`.
+- **Deploy workflow** — `.github/workflows/cloudflare-deploy.yml`
+  uses `wrangler pages deploy . --project-name=debtiq`. Skips
+  cleanly when `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`
+  aren't set. **Recommended path is still the Cloudflare Pages →
+  Git integration in the dashboard** (no workflow secret management
+  needed); the action is a fallback.
+- **Retired**: `netlify.toml`, all of `netlify/functions/*`,
+  `.github/workflows/netlify-deploy.yml`.
+- **`BACKEND.md` rewritten** with the Cloudflare Pages setup
+  walkthrough, local dev steps, env-var table, and the same
+  security/RLS guidance.
+
+**Verification.** Imported each ported handler in Node and drove it
+with synthetic `request` / `env` objects:
+- `/api/config` returns the configured Supabase pair in normal mode,
+  empty strings in demo mode (same shape the boot code expects).
+- `/api/claude` returns 500 when `ANTHROPIC_API_KEY` is missing and
+  401 when Supabase is configured but the request carries no Bearer
+  token — same gating as before.
+- `/api/forensics` produces the expected META01 (Photoshop producer
+  string), META02 (modified-after-creation), and META03 (multiple
+  `%%EOF` markers) findings from a synthetic Photoshop-produced PDF
+  — proves the `atob` ↔ `Buffer.from(b64).toString('latin1')` swap
+  preserves the exact byte stream the metadata regexes consume.
+
+**Frontend smoke** still 192/192 — `index.html` was not touched.
+
+Files touched: `functions/api/*` (new), `wrangler.toml` (new),
+`.gitignore` (new), `BACKEND.md` (rewrite),
+`.github/workflows/cloudflare-deploy.yml` (new); removed
+`netlify/`, `netlify.toml`, `.github/workflows/netlify-deploy.yml`.
+No `supabase/`, `lenders.js`, or `index.html` changes.
+
+## Round (brand system v1.0) — Full app rollout (tokens · ink monogram · screens · voice)
+
+A non-feature compliance refactor. Backend, schema, auth, IDs, render
+function signatures, data flow, and demo/live behaviour all preserved.
+
+**Phase 1 — Tokens as single source of truth.** Reconciled `:root` to
+the brief's authoritative block.
+- Added: `--brass`, `--ui`, `--green-bg`, `--amber-bg`, `--steel-bg`,
+  `--ink-bg`, plus on-ink legibility variants (`--green-on-ink`,
+  `--steel-on-ink`, `--amber-on-ink`, `--red-on-ink`).
+- Fixed `--sh-1` opacity to brief value (.05).
+- `--mono` fallback chain now `'DM Mono',ui-monospace,monospace`.
+- Mapped legacy aliases (`--bg`, `--surface`, `--brand`, `--border`,
+  `--t3`, `--t4`, `--teal`, `--brand-bg`, `--brand-soft`,
+  `--brand-grad`, `--sh-brand`, `--r-clinical`) to the new tokens —
+  none are extended, all are kept only so existing CSS cascades.
+- `body { font-family: var(--ui) }`. All `'Plus Jakarta Sans'`
+  literals removed except the two token declarations themselves.
+- `.mono` now also sets `font-feature-settings:"tnum"` alongside
+  `font-variant-numeric:tabular-nums`.
+- Replaced the income-flow chart's hex series (ink/amber/amber/warm-
+  slate/status) — amber reserved for the lender being conservative
+  (debt + stressed new loan), green/red only for the surplus.
+- Replaced the legacy `.verdict` gradient blocks with flat status
+  colours (the new `verdictHero()` is the real verdict surface).
+- Replaced `'Plus Jakarta Sans'` literals in the Submission Pack
+  stylesheet with `var(--ui)`; added `--brass` + `--line2` to the
+  pack's `:root`.
+
+**Phase 2 — Ink monogram, violet retired.**
+- New ink monogram SVG — a serif "D" rising from a faint ledger column
+  with serif feet top and bottom. Ink stroke on a paper square with a
+  hairline border. Inline SVG so it goes anywhere, sized via the host
+  element. Ink-on-paper for light surfaces, paper-on-ink for dark
+  (the assessor command bar).
+- Replaced every glyph site: login hero, broker command bar, assessor
+  command bar, submission-pack masthead, browser favicon (inline SVG
+  data URI).
+- **Deleted `--logo-grad`** and every `#5B4FF5 / #8B5CF6 / #A78BFA`
+  reference. The audit-trail AI dot (was `#7A3FB0`) and the org-swatch
+  palette (had violet entries) both retired to brass + the brand
+  family.
+
+**Phase 3 — Screen sweep.** Every screen now reads through tokens.
+Specific cleanups (called out by the brief):
+- Copilot-info tint → `var(--steel)` + `var(--steel-bg)`.
+- KPI/tile/market-card accents — already token-driven.
+- Tab badge / nav badge / demo banner → `var(--amber-bg)` + `var(--amber)`.
+- Timeline actor dots → on-ink legibility variants of the brand tokens
+  (steel-on-ink, amber-on-ink, green-on-ink) + brass for AI + warm
+  t3 for system.
+- `--logo-grad` already-removed; `@keyframes glow` already-removed.
+- Spinner/skeleton borders → `var(--line2)` / gradient through
+  `var(--paper)`.
+
+**Phase 4 — Voice & finish.**
+- Removed decorative `✦` glyph from "Why it works" / "AI Assessment"
+  buttons. Plain English headings: "Why it works" / "What to change"
+  and "Ask the assistant for an assessment".
+- Global reduced-motion override already present (line 210); 4 further
+  scoped blocks neutralise animation in specific surfaces.
+- Final search: **0 violet hex** anywhere, **0 `--logo-grad`** refs,
+  **0 hard-coded body-font** outside the two `--ui` token
+  declarations, **0 stray hex** outside token blocks / data URIs.
+
+**Styleguide.** `?styleguide=1` (legacy `?preview=1` still works)
+renders the brand catalogue: brand mark in both variants, token
+swatches in three columns (surfaces / structure / status with bg
+variants), type scale, and the signature components (VerdictHero,
+MetricGauges, LedgerRow, StatusPills, IntegrityChips, CodeChips).
+
+**Smoke harness +4 brand checks** (192/192 total): styleguide caption
++ ink monogram + brass swatch present, brand tokens defined,
+`--logo-grad` retired, no violet hex anywhere.
+
+Files touched: `index.html` only. No `netlify/`, `supabase/`,
+`/api/*`, or `lenders.js` changes.
+
+## Round (lender side · Pass 4) — Provenance reveals (worksheet + submission pack)
+
+Both sides now see the same evidence the broker built. Every figure in
+the worksheet (and in the Submission Pack) reveals its source on hover
+or focus — no toast, no modal, no extra navigation.
+
+- **New `provReveal(value, prov)` primitive.** Wraps a numeric/text
+  value in a focusable `<span>` (`tabindex="0"`,
+  `aria-describedby="pr-tt-N"`). A pure-CSS popover anchored above the
+  value shows:
+  - Source document name (`MITCHELL_PAYSLIP_01.PDF`)
+  - Source field (`gross_period`, mono)
+  - Source-text quote (serif italic, "Gross (annualised) $142,000")
+  - Confidence percentage with a verified flag where present
+    (`97% confidence · Verified 2026-05-20`, green)
+- **System-source variant** for engine/policy values that aren't
+  document-backed (buffer, HEM benchmark, ratio ceilings, loan amount,
+  contract rate). Same chassis, slate-italic source line, brass dotted
+  underline so the assessor can tell at a glance which figures are
+  doc-backed and which are policy/engine.
+- **Wired into the worksheet:**
+  - Step 1 — declared income per line (doc prov on file, fallback to
+    "Applicant declaration" otherwise).
+  - Step 2 — liability balance per line (same fallback rule).
+  - Step 3 — buffer percentage (system: lender policy) +
+    loan amount (application) + contract rate (lender pricing).
+  - Step 4 — HEM benchmark (system: Melbourne Institute table).
+  - Step 6 — each policy ceiling (system: `activePolicy()`).
+- **Wired into the Submission Pack** (`buildPackHTML`). Same prov CSS
+  inlined into the pack's stylesheet so the standalone HTML stays
+  self-contained. Income FY-current and liability balance/limit
+  columns both trigger the reveal.
+- **Keyboard-accessible, not hover-only.** `tabindex="0"` makes every
+  wrapper tab-reachable; the popover opens on `:focus`,
+  `:focus-within`, and `:hover`; `aria-describedby` points to the
+  popover with `role="tooltip"`; reduced-motion neutralises the
+  opacity transition.
+- **Clipping fixed**: `.ws-table td`, `.ws-ratio td`, and the
+  `.ac-card` shells set `overflow:visible` so the popover renders
+  above the table edge.
+- **Smoke harness +10 checks** (188/188 total): doc-prov on income
+  row, doc-prov on liability row, system-prov on policy values,
+  keyboard accessibility attributes, `role="tooltip"`, confidence text,
+  verified flag, pack inlines prov CSS, pack income + liability
+  rows use provReveal.
+
+Files touched: `index.html` (CSS for `.prov-*` + JS `provReveal()` +
+worksheet wiring + pack wiring + pack CSS). No backend, schema, or
+`lenders.js` changes.
+
+## Round (lender side · Pass 3) — Serviceability Worksheet (line-for-line working)
+
+The centrepiece of the lender side — an exhaustive, traceable view of
+the serviceability math. Generated entirely from
+`computeServiceability()` and the same primitives the engine itself
+uses (`getShadedIncome`, `assessLiability`, `hecsExclusion`, `getHEM`,
+`activeBuffer`, `activePolicy`, `PMT`). No hardcoded numbers anywhere.
+
+- **Step 1 · Assessed income.** Per-line table: Declared (yr) → Shade
+  % → Assessed (yr), with shaded rows tinted amber and a serif-italic
+  policy basis ("Overtime shaded by APRA prudential expectation",
+  "Self-employed — 2-year average where evidence exists", etc.). The
+  Working column shows the literal arithmetic
+  `$X × 80% × 50% = $Y`. Total row + monthly equivalent applied in
+  Steps 5–6.
+- **Step 2 · Existing commitments.** Per-liability table: Balance/limit
+  · Rate · Term · Assessed · Working. The Working column emits the
+  rule verbatim — credit cards as `limit × 3.8% ÷ 12`, HECS as
+  `balance × 1% ÷ 12 − exclusion`, amortising debts as
+  `PMT(balance, rate + buffer, term)`. Existing-debt-service total
+  matches `computeServiceability()`.
+- **Step 3 · Proposed loan — stressed.** Two-card grid (Loan amount,
+  Contract rate) followed by an amber-toned formula chip:
+  `contractRate + buffer = assessmentRate · PMT(amount, rate, term) =
+  $X/mo`. Buffer pulled live from `activeBuffer()`.
+- **Step 4 · HEM.** Four cells (Household, Income band, Declared
+  monthly, HEM benchmark) followed by the literal call
+  `getHEM($X/yr, N adults, N deps) = $Y/mo` and the floor applied
+  (`max(declared, HEM)`). When no declared expenses are on file (the
+  detailed mode), the renderer says so explicitly.
+- **Step 5 · NDI waterfall.** Proportional bar rows: Assessed income →
+  − Existing debt → − New loan → − HEM floor → Net surplus.
+  - **One orchestrated motion moment per screen** — bars grow from
+    `width:0` to their final width via a 0.55s cubic-bezier; bypassed
+    under `prefers-reduced-motion`.
+  - Solid bars for income/surplus, **hatched** (45° stripes) for
+    deductions. **Amber reserved for shading/stress** (existing debt,
+    new loan); steel hatching for HEM; green solid for surplus; red
+    solid when surplus turns negative.
+- **Step 6 · Policy ratios.** DSR / LVR / DTI table: name · formula ·
+  result · ceiling (from `activePolicy()`) · headroom. Result + headroom
+  coloured by verdict tone (`pass` / `borderline` / `fail`).
+- **Verdict footer.** Ink band with the serif statement (Serviceable /
+  Borderline / Does not service.) and four mono stat columns (NDI/mo,
+  DSR, LVR, DTI). Statement colour tones for the verdict.
+- **Reachable two ways.** New segmented toggle in the assessor file
+  header (Decision · Worksheet); new "Show working ↓ / ↑" button on
+  the broker Calculate screen that expands the worksheet inline below
+  the verdict.
+- **Craft details.** `font-feature-settings:"tnum"` locked on `.ws-root`
+  so every numeric column lines up. Arithmetic operators (×, +, =, ÷)
+  rendered in a muted token (`.ws-op`). On widths ≤900px the Working
+  column hides via CSS; below that the loan/HEM grids collapse to a
+  single column and the verdict footer reflows to 2 cols.
+- **Failing-file path.** Verified against the Mitchell file at CBA
+  (NDI positive but DSR 65.5% vs 45% ceiling, DTI 6.6× vs 6× cap):
+  ratios row red, verdict statement red, headroom negative. When NDI
+  itself goes negative, the surplus bar also goes red.
+- **A11y.** Worksheet is `role="img"` on the waterfall with an
+  `aria-label`; the broker-side toggle button uses `aria-expanded` +
+  `aria-controls`; every focusable control keeps its steel
+  focus-visible ring.
+- **Smoke harness +13 checks** (178/178 total): 6-step structure,
+  income/liability column emission, formula text presence, HEM
+  `getHEM` text, waterfall bar count with `data-target-w`, ratio
+  rows for DSR/LVR/DTI, verdict footer tone class, tabular-nums
+  feature, failing-file ratio class + verdict tone.
+
+Files touched: `index.html` (CSS for `.ws-*` + JS for
+`buildWorksheetData`, `renderWorksheet` + step renderers,
+`setAssessView`, `toggleCalcWorking`, and the assessor file-head
+view toggle). No backend, schema, or `lenders.js` changes.
+
+## Round (lender side · Pass 2) — Assessment Console (queue · decision · 4 Cs · routing · conditions · audit)
+
+Second pass — the assessor workspace is now fully operational, built
+entirely from the engine state (no hardcoded per-file decisions).
+
+- **Queue (left, 320px).** Filterable list of every file in `DEALS`,
+  sorted newest first. Status square (steel/amber/red/green by stage) +
+  id + applicant + mono money/LVR + serif-italic purpose + stage tag.
+  Filter chips (All · New · In review · Referred · Closed) carry mono
+  counts; the active chip is inverted (ink on white).
+  Stage is derived from `deal.assessorAction || deal.status`, so a
+  Refer/Decline pressed by the assessor flips the queue tag without
+  touching the broker-side status pill.
+- **File header.** id + serif applicant name + mono money/purpose/lender/LVR
+  + serif-italic broker line ("Submitted by …  ACL …") + an integrity
+  chip derived from `worstForensicStatus(dealId)`. The right column also
+  shows the live NDI/DSR for quick orientation before the decision card.
+- **Decision Engine Output.** Two-column card. Left: serif statement
+  (Approve / Refer / Decline), mono code line with confidence percentage,
+  serif-italic note, timestamp, and a ledger of coded reason chips
+  (SRV01, DTI01, LMI01, IQA07, CON01, M033, VAL01) — each carrying a
+  monochrome severity tag (HIGH/MED/LOW). `decideAssessment(r)`
+  augmented (additive) with per-reason `sev`.
+- **Approval routing.** A/B/C/D 4-segment scale (green/steel/amber/red
+  highlight on the active segment) + DCA referral / LMI / Policy waiver
+  / DSR-ceiling rows + serif-italic routing note. **Approve / Refer /
+  Decline** action buttons with steel focus rings — each calls
+  `logAssessorAction()` which stamps `deal.assessorAction` and writes
+  an ASSESSOR_DECISION row to `state.auditTrail` (and a coloured
+  audit-trail entry via `logEvent`).
+- **The 4 Cs.** Reuses `fourCs(r)`. Four cards (Character, Capacity,
+  Capital, Collateral), rating chip (strong/adequate/weak), serif-italic
+  basis. 2-up on narrow widths, 4-up at ≥1200px.
+- **Conditions & Verification.** Reuses `derivedConditions()`. Header
+  row shows `done / total satisfied` + animated progress bar +
+  percentage. Each condition: code chip + category + title + status
+  chip (Satisfied/Outstanding) + detail line with the resolve-at stage.
+- **Audit trail.** Reuses `state.eventLog`. Up to 10 most recent events,
+  actor-coloured dot (AI violet / broker steel / assessor green /
+  processor amber / system slate), `HH:MM · Actor` + serif-italic text.
+- **Light-touch deal hydration.** New `loadAssessFile(id)` is a slimmer
+  cousin of `setActiveDeal()` for the assessor shell — it sets
+  `state.activeDeal`, restores `state.calc` from the deal's saved
+  snapshot (or the demo intel template), and re-renders the console.
+  Does NOT call `goTab()` (no broker-shell side-effects).
+- **Empty state** when no file is selected — a centred prompt with a
+  matched serif headline.
+- **A11y.** Queue items are `role="listitem"` with `tabindex="0"` and
+  Enter/Space activation; filter chips use `aria-pressed`; the progress
+  bar uses `role="progressbar"` with min/max/now; action buttons live
+  inside a `role="group"`; every interactive control carries a
+  `:focus-visible` steel ring.
+- **Responsive.** Queue narrows to 260px at ≤1100px; decision card
+  collapses to single column. At ≤760px the queue moves above the
+  console (max-height 240px).
+- **Smoke harness +8 checks** (165/165 total): queue presence + counts,
+  default-file console body (decision + 4 Cs + audit), filter narrowing,
+  `loadAssessFile` switching, `logAssessorAction` audit + stage flip.
+
+Files touched: `index.html` (CSS for queue/console + JS for
+`assessStageOf`, `assessQueueAll/Filtered`, `loadAssessFile`,
+`setAssessFilter`, `logAssessorAction`, `renderAssessmentConsole` +
+subrenderers). No backend, schema, or `lenders.js` changes.
+
+## Round (lender side · Pass 1) — Branching login + assessor workspace shell
+
+First pass of the lender/assessor integration. Login now branches by role
+and routes the user into a separate workspace; Pass 2 will fill the
+assessor console with the queue, decision engine, 4 Cs, routing,
+conditions, and audit trail.
+
+- **Role selector** on the login card as an ARIA `radiogroup` with two
+  options (Broker · Lender/Assessor). `:focus-visible` steel ring;
+  `aria-checked` toggled in JS. Persists into `state.loginRole`.
+- **Hero motif branches by role.** The ink left panel keeps its
+  positioning headline + motif + proof points pattern, but swaps content
+  per role via a `data-mode` attribute on `#login` (no DOM swap — both
+  variants live in the document and CSS hides the inactive one):
+  - **Broker:** "A credit-grade brokerage *operating system*." · motif
+    *Serviceable.* · NDI +$847/mo · proof points = 25 lenders / 3
+    forensic layers / 100% source-traced.
+  - **Lender:** "A credit-grade assessment *console*." · motif
+    *Decided in minutes.* · Median SLA 02:38 · proof points = 4 Cs /
+    A–D routing / 100% audited.
+- **`#loginOrg` (Lending institution)** field appears only in lender
+  mode (additive — leaves `#loginEmail` / `#loginPass` / `doLogin()` /
+  `#authExtra` / demo-creds untouched).
+- **Button label** flips between "Enter broker workspace" and "Enter
+  assessment console".
+- **Post-login routing.** `doLogin()` captures the role and org from the
+  form (overlays existing Supabase auth where present — TODO comment for
+  when the session exposes role/org natively). `enterApp()` branches:
+  broker → existing `#app` shell + `init()`; lender → new `#assessorApp`
+  shell + `initAssessorShell()`.
+- **`#assessorApp` shell.** Separate top-level container (ink command
+  bar with institution identity + colour swatch + global search +
+  avatar + sign-out, then a paper body). Pass 1 renders a placeholder
+  card via `renderAssessmentConsole()`; Pass 2 will replace it with the
+  full console.
+- **Demo + live both work.** Demo mode skips the Supabase round-trip
+  and routes directly. Live mode signs in via Supabase first, then
+  applies the captured role/org (until the session payload carries
+  them natively).
+- **Smoke harness +15 checks** (157/157 total): default role state,
+  data-mode, button-label flip, org-field reveal, motif + proof points
+  both present in DOM, lender doLogin routes to `#assessorApp`, org name
+  rendered in the cmd bar, placeholder visible.
+
+Files touched: `index.html` (login HTML + role-selector CSS +
+assessor-shell CSS + JS auth/route branching + state).
+No changes to `netlify/`, `supabase/`, `/api/*`, `lenders.js`.
+
+## Round (redesign · Phase 4) — Polish (popover · portal mobile · a11y · integrity chip)
+
+Final polish round closing out the redesign brief.
+
+- **AI Assessment popover (`showAssessment`)** restyled in the editorial
+  language: the slide-over now leads with a `VerdictHero` (serif statement +
+  featured NDI), followed by a paper commentary block on an ink margin rule.
+  Lender + active-deal id in the panel sub-title.
+- **Client Portal — mobile-first.** Phone frame moved from a hard-coded
+  280×560px box to a responsive shell: ink chassis, paper screen, serif
+  italic sub-copy in the phone header. Below 700px the phone expands to
+  `max-width:360px` with `height:auto`, centred — usable on real handsets.
+- **Calmer integrity chip.** `.fz-chip` (the Documents-tab Clear / Caution /
+  Review / Scanning chip) restyled to the IntegrityChip aesthetic: mono +
+  tabular, white background, coloured outline only (no filled tint), tiny
+  hover brightness shift.
+- **Accessibility additions.** Added `role="button"`, `tabindex="0"`, and
+  semantic `aria-label`s to the bare-character row controls (`× Remove
+  income`, `× Remove liability`, `🗑 Delete document`) so screen readers
+  announce them properly.
+- **No code-only sweeps needed.** AU-spelling pass: searched for
+  Authoriz/Customiz/Organiz/Color/etc. — every hit was either an HTTP header
+  name (must remain `Authorization`) or a CSS property (`color`). No copy
+  changes required.
+- **Print stylesheet** already shipped in the integration round (`@page{
+  margin:16mm}` + `print-color-adjust:exact` + `break-inside:avoid` on the
+  submission pack); the in-app commentary print rules were validated.
+
+**Verification:** `node --check` clean; jsdom smoke **142/142** (3 new Phase 4
+checks: Assessment popover uses verdict-hero; row × buttons carry aria-label;
+integrity chip uses mono typography).
+
+## Round (redesign · Phase 3) — Screen polish (Pipeline · Client · Review · Compliance · AI Pilot)
+
+Targeted polish on the remaining journey screens to bring them into the
+Editorial + Clinical language. No backend or contract changes; primitives from
+Phase 1 reused throughout.
+
+- **Pipeline filter chips** now carry per-stage **mono counts** (`All 6 ·
+  My Review 1 · Docs Needed 1 · Approved 1`), so filtering is informative at
+  a glance.
+- **Client tab — compact entity editor** (new `.ent-compact` cards via
+  `renderEntityCompactEditor()`). Per-entity kind / role selects, name +
+  conditional ABN/trustee inputs, ownership %, **include-in-serviceability**
+  toggle, and a remove × when >1. `+ Individual/Joint/Company/Trust/SMSF/
+  Partnership` buttons add an entity inline. The full income/liability editor
+  stays on Calculate per the audit decision; this delivers the "compact
+  editor on Client" ambiguity choice.
+- **Extraction Review — serif source-text callouts.** Replaced the inline
+  `rev-src` snippet with a styled `<blockquote class="rev-quote">` showing
+  the full extracted source text in Newsreader italic, on a paper background
+  with an ink left-rule and ornamental quote marks. Low-confidence fields now
+  show a calm `Low conf.` status pill instead of an emoji warning.
+- **Compliance AI — calmer gating.** API-key-required / blocked / policy-flag
+  banners now use a two-column `.comp-gate` pattern (label · body) on paper
+  with role-coloured left rules — info=steel, warn=amber, blocked=red — and
+  Newsreader italic copy. The four generator cards become `.comp-card`s with
+  editorial section heads (caption + serif title); the Full Submission Pack
+  card is the featured `.comp-card.featured` (paper + ink rule). Buttons are
+  flat ink; emoji generator glyphs removed.
+- **AI Pilot — calm DEMO chip + ink hero.** Hero recoloured to flat ink with
+  serif headline and italic note; the loud yellow `DEMO` badge is replaced
+  with a hairline `.ai-demo-chip` (mono, white-on-ink, pill). The hero's `✦`
+  glyph is gone.
+
+**Verification:** `node --check` clean; jsdom smoke **139/139** (5 new Phase 3
+checks: filter-chip counts, Client compact editor, Review serif callout,
+Compliance comp-card surfaces, AI Pilot calm DEMO chip).
+
+## Round (redesign · Phase 2) — Shell: role toggle · Assessment screen · Conditions tab · actor-coloured timeline
+
+Phase 2 of the broader frontend refresh — wiring the new design system through
+the shell. No backend changes; existing screens keep working.
+
+**Role toggle (Broker | Assessor)** in the command bar — a segmented control
+(monospace, ink-on-page) next to the avatar. `setRole(role)` flips
+`state.role`, toggles `body.role-assessor`, updates button `aria-pressed`, and
+logs the role-switch to the timeline. Defaults to *Broker*.
+
+**Assessment tab** (Assessor role only). Added a 7th tab `data-tab="assessment"`
+that's CSS-hidden under broker mode (`body:not(.role-assessor) .os-tab[data-tab="assessment"]{display:none}`).
+Switching to broker while on Assessment auto-returns to Pipeline.
+
+**`renderAssessment` (new workspace screen)** — deterministic from existing
+signals, no new `/api/*` calls:
+- **Decision Engine Output** band: serif statement (`APPROVE` /
+  `RR05-Referred` / `DECLINE`) in role colour, italic plain-English note,
+  timestamp, and a lending-category block (A/B/C/D) with routing line.
+- **Decision Analysis** — `CodeChip` reasons derived from the file:
+  `LMI01` (LVR>80), `DTI01` (DTI>6), `IQA07` (forensic REVIEW), `CON01`
+  (open conflicts), `M033` (low-confidence extractions), `VAL01` (no certified
+  valuation), `SRV01` (FAIL serviceability).
+- **The 4 Cs** — Character · Capacity · Capital · Collateral, each
+  Strong/Adequate/Weak with a one-line italic basis pulled from
+  `computeServiceability()` + integrity/conflict signals + securities.
+- **Approve / Refer to DCA / Decline** action buttons; `logAssess(action)`
+  writes an `ASSESSOR_DECISION` audit entry with role `assessor`.
+
+**Conditions panel tab** (slide-over deal panel). New tab between Documents and
+Commentary. `derivedConditions()` auto-derives a list from current signals —
+`VAL01` (certified valuation), `INC02` (income docs present), `LMI01` (LVR>80),
+`DTI01` (DTI>6), `IQA0n` per forensic review doc, `CON0n` per open conflict.
+Each card shows the `CodeChip`, category, italic detail, resolve-at stage, and
+Outstanding/Satisfied. Progress bar at the top: "*N* of *M* satisfied".
+
+**Timeline actor dots.** `logEvent(text, actor)` now records an actor
+(`broker` / `processor` / `assessor` / `ai` / `system`), and each `.tl-event`
+renders a coloured `.tl-dot` prefix. `auditLog` passes its role through to
+`logEvent` so forensic / extraction / pipeline events show as `ai`, broker
+actions as `broker`, etc. Seeded timeline events tagged.
+
+**Calm copilot quick-actions** — replaced the emoji glyphs (📄 ✦ ⚖ 🛡) on the
+copilot panel with calm mono text labels (`Pack`, `Pilot`, `Compare`, `Scan`),
+matching "no mascot, no emoji" from the brief.
+
+**Verification:** `node --check` clean; jsdom smoke **134/134** (10 new Phase 2
+checks: role default + Assessment hidden; `setRole(assessor)` flips state +
+buttons; Assessment renders Decision Engine Output + 4 Cs + reason CodeChips;
+`logAssess` writes an Assessor audit entry; `setRole(broker)` returns to
+pipeline; Conditions panel tab renders derived `VAL01/INC02/LMI01/...`
+cards; timeline events carry actor-coloured dots; copilot quick-actions are
+calm text labels).
+
+## Round (redesign · integration) — Login split, Editorial pack, Verdict reveal, Violet sweep
+
+Four-pass integration of the finished design language into the live screens. No
+backend, contract, auth, or `lenders.js` changes; demo and live-backend modes
+both still work; every existing handler/ID/data flow preserved.
+
+**Pass 1 — Login split layout.** `#login` is now a two-column grid: left **ink**
+editorial hero (logo glyph + serif positioning line + a muted *Serviceable.*
+verdict motif + 25-lender / 3-layer / 100% proof points + foot caption); right
+clinical **paper** sign-in card at 8px radius. Kept exactly: `#loginEmail`,
+`#loginPass`, `onclick="doLogin()"`, the `#authExtra` slot, and the demo-creds
+block. Primary button is flat `--ink`; focus rings are steel
+`box-shadow:0 0 0 4px rgba(59,111,181,.16)` with `border-color:var(--steel)`.
+Gentle `loginFadeUp` entrance with a `prefers-reduced-motion` guard. Stacks
+under 860px to a compact ink header + form (proof tiles hide on mobile).
+
+**Pass 2 — Submission pack.** `buildPackHTML(r,pol,d,nl,ent,deal,bidText,
+servicingText)` rewritten as a credit-memo: Newsreader masthead + section
+titles, Plus Jakarta Sans column heads, DM Mono figures throughout; numbered
+sections **01–12** (Application Summary · Applicants & Entities · Securities ·
+Employment & Income · Liabilities · Serviceability · R&O · Commentary · Policy
+Alignment · Document Checklist · Broker Declaration · Source Documents). The
+Serviceability section now renders a **verdict band** (serif statement +
+italic note, ink rule + assessment-buffer block) and **four hairline gauges
+with ceiling ticks** (DSR / NDI / LVR / DTI). Commentary blocks use an ink
+margin rule and Newsreader body. Provenance appendix renders source-text in
+serif italic with mono confidence. Print button = `--ink` (no violet shadow);
+dedicated `@page{margin:16mm}` + `print-color-adjust:exact` +
+`break-inside:avoid` on sections / tables / gauges / commentary. Every data
+expression (`computeServiceability`, `getShadedIncome`, `assessLiability`,
+`lenderChecklist`, `collectProvenance`, `totalSecurityValue`, etc.) and the
+function signature are untouched.
+
+**Pass 3 — Verdict reveal.** A four-step pipeline (Reading documents · Shading
+income · Stress-testing · Checking policy) runs in `#calcResults` before the
+result panel paints. Each step animates ~420ms with a steel spinner that
+resolves to a green tick. The verdict then renders via the existing
+`renderCalcResults` (so gauges sweep on their own CSS transition), NDI
+**counts up** to the real value via `animateCount`, and a **"Caught before
+lodgement" stamp** + discreet **↻ replay** chip prepend to the results.
+Everything reads off `computeServiceability()` — no hardcoded figures.
+`useLender` and `applyLever` reset the reveal flag so switching lender or
+applying a lever re-runs the pipeline. `prefers-reduced-motion` skips the
+pipeline and renders the final state immediately.
+
+**Pass 4 — Violet sweep & motion guard.** Eradicated every remaining
+`rgba(91,79,245,…)`, `#5B4FF5`, `#8B5CF6`, `#A78BFA` outside the brand-mark
+`--logo-grad`. Sites recoloured to ink/steel tints:
+focus rings (`#globalSearch`, `.search input`, `.inp …:focus`) → steel
+`rgba(59,111,181,.16)`; `.copilot-suggestion`, `.bulk-drop:hover/.over`,
+`.pill.violet`, `.tile.sel`, `.addback-row`, `.market-card.active`,
+`.pilot-step.running .pilot-ico`, the dashboard KPI icon, the documents
+processing KPI, the market-row highlight, the Compliance "Full Pack" card,
+and the chart series in both flow visualisations all moved to ink/steel.
+The `rankLenders` non-AU default colour moved to ink. The `@keyframes glow`
+block was deleted (the brief bans glow). A single global
+`@media (prefers-reduced-motion: reduce)` block now collapses
+animation/transition durations to ~0 across the page.
+
+**Verification.** `node --check` clean. Sentinels confirmed empty:
+`rgba(91,79,245`, literal `#5B4FF5`/`#8B5CF6` outside `--logo-grad`,
+`animation:glow`. jsdom smoke **124/124 green**, including 7 new assertions:
+reveal completes → `state.calcRevealed=true`, caught-stamp present, replay
+button present, `useLender` re-resolves the reveal, `replayCalcReveal`
+returns to a revealed state, plus a DOM-wide scan confirming no violet
+literals leak outside the brand-mark gradient.
+
+## Round (redesign · Phase 1) — Editorial + clinical design system
+
+Frontend refresh: token system, fonts, and primitive components. No backend or
+contract changes; existing rendering keeps working via back-compat aliases.
+
+**Defaults locked for the 7 audit ambiguities** (Phase 0 deliverable, recorded
+here): single-file vanilla JS idiom retained; storybook lives at
+`?preview=1`; Client tab will gain a compact entity editor (Calculate keeps the
+full one); source-text rendered as a callout in Review (no image-overlay);
+Assessor decisions are deterministic off existing signals (no new API);
+Newsreader added as the serif; AU-spelling sweep happens during Phase 3 screens.
+
+**New token system** (`:root`):
+- Surfaces: `--page #EEEAE1`, `--paper #FBFAF6`, `--white #FFFFFF`.
+- Structural/interactive: `--ink #1E2A44` (replaces violet), `--steel #3B6FB5`.
+- Hairlines: `--line #E7E2D6` (warm, paper), `--line2 #EAEDF1` (cool, white).
+- Text: `--t1/t2`, plus `--t3-warm` and `--t3-cool` for paper vs clinical labels.
+- Status: `--green #0B6B4F`, `--amber #9A5A00`, `--red #A92626` (deepened).
+- Brand identity: `--logo-grad` keeps the violet gradient *only* on the brand
+  mark (`.logo-mark` + `.login-logo`). `--brand-grad` aliased to flat `--ink` so
+  every other surface (buttons, hero strips, wiz head, market hero, deal pill,
+  drawer handle) instantly recolours to ink.
+- Radii tightened: cards/inputs/buttons → 8px, pills → 100px, clinical squares → 2px.
+- Shadows minimal (`0 1px 2px rgba(60,50,30,.04)`); hairlines do the work;
+  `--sh-brand` glow removed.
+- Type: Newsreader loaded as `--serif`; Plus Jakarta Sans and DM Mono retained.
+
+**Primitive components** (CSS class + JS helper) ready for Phase 3 reuse:
+- `VerdictHero` (`.verdict-hero` + `verdictHero(verdict, note, label, value)`):
+  ruled caption · serif statement (Serviceable. / Borderline. / Does not service.)
+  in role colour · italic plain-English note · featured mono figure.
+- `MetricGauge` (`.metric-gauge` + `metricGauge(label, value, cap, {format})`):
+  hairline track with **ceiling tick** and a mono cap label.
+- `LedgerRow` (`.ledger`/`.ledger-row` + `ledgerRow({status,color,label,note,value})`):
+  status square · colour-dot · label · serif-italic note · right-aligned mono.
+- `CodeChip`, `StatusPill`, `IntegrityChip`, `ConfidenceBar`, surface helpers
+  (`.surface-paper`/`.surface-white`/`.rule`/`.caption`), `.serif`/`.num` helpers.
+
+**`?preview=1` storybook route.** A gallery page (renderered by `showDesignPreview`)
+showing every primitive on `--page`, including VerdictHero in all three states,
+two banks of MetricGauges, a multi-lender ledger with italic policy citations,
+status/integrity/code chips, and a typography exhibit.
+
+**Verification:** `node --check` clean; jsdom smoke **117/117 green** (8 new P1
+checks: verdictHero PASS/FAIL renderers, metricGauge cap-tick rendering and
+over-cap severity, ledgerRow value/note, codeChip output, integrityChip mapping,
+`showDesignPreview` gallery boots).
+
+**Visual impact note:** because the existing app uses `--bg / --surface / --brand`
+extensively, this round automatically recolours the running UI — backgrounds warm
+to paper, accents become ink, corners tighten to 8px. Old screens are now
+*calmer* but still use the legacy markup; Phase 3 will swap them to use the new
+primitives end-to-end. The brand-mark gradient survives only on the logo glyph.
+
+## Round (bugfix-27) — 5-stage fix: calculator output, deal capture, persistence, state desync, markup
+
+Surgical second bugfix pass building on the previous round, covering the remaining
+items in the 27-bug brief. No refactor outside the quoted edits.
+
+**Stage 1 — calculator output**
+- **1.2** Coerced every `nl.rate.toFixed(...)` site (4×) with `(+nl.rate||0).toFixed(...)`
+  so clearing the rate field doesn't crash the calculator.
+- **1.3** `fmtMoney` guards `NaN`/`undefined` → `"$0"` instead of `"$NaN"`.
+- **1.9** Rate-slider floor lowered `min="3"` → `min="2"` in all three sites
+  (detailed calc, manual editor, loan tab).
+- *(1.1 verdict, 1.4 HEM 28% floor, 1.5 card-limit DTI, 1.6 manual DTI, 1.7 self-emp shade ×, 1.8 engine lender id — already applied in the prior bugfix round; sentinels confirmed zero.)*
+
+**Stage 2 — deal capture**
+- *(2.1 wizard step 2 wiring, 2.2 unique deal id + real borrower name, 2.5 AI-Pilot 2-year income shape — already applied; sentinels zero.)*
+- `esc` promoted to top-level (now a `function esc` alias of `escHtml`); the local
+  redefinition inside `buildPackHTML` was removed.
+
+**Stage 3 — persistence**
+- **3.1** `saveDeal` snapshots `state.calc` onto `d.calc` when saving the active deal.
+  `loadDealIntoCalc` and `setActiveDeal` now restore from `d.calc` when present (so
+  reopening a saved deal returns its incomes/liabilities/entities — not the default).
+- **3.2** `loadDeals` maps Supabase rows through `mkDeal` so older saved records pick
+  up new schema defaults.
+- **3.3** `saveAccount` now writes a visible name (`#cmdUserName` added next to the
+  command-bar avatar) and stores it on `state.userName`.
+
+**Stage 4 — state desync**
+- **4.1** `advanceDeal` refuses to move a deal whose status isn't in the workflow
+  order (e.g. `MORE_INFO`) — was silently snapping back to `DOCS_PENDING`.
+- **4.2** When the slide-over panel is open on the active deal, `advanceDeal`
+  re-renders it so the status pill updates.
+- **4.4** The AI-progress ticker is held on `state._aiTicker`, idles when nothing is
+  processing, and re-renders only when `#page-dashboard` is mounted.
+- *(4.3 removeEntity min-1 guard, 4.5 portal `simUpload` doc creation, 4.6 seed dates — already applied.)*
+
+**Stage 5 — markup & polish**
+- **5.5** LVR fallback removed (`nl.amount/0.8`/`|| 1` were producing fake 80% / huge
+  LVRs); `computeServiceability` now returns `propValue` + `lvrAvailable`, and the
+  visible LVR sites (gauges, result boxes, deal-strip chip) render `'—'` when no
+  security value is set.
+- **5.6** `deleteDoc` looks up the target object first, then removes by stable
+  index — so deletion from a re-ordered list always removes the intended row. Added
+  a null guard around the re-render so it can be called when the Documents tab
+  isn't mounted.
+- *(5.2 user-string escaping, 5.4 panel close transition — already applied.)*
+
+**Verification:** `node --check` clean. Sentinels confirmed zero:
+`ndi>-500`, `892+Math.floor`, `name:'New Application'`, `*0.28`, bare
+`nl.rate.toFixed(`, `min="3" max="12"`, `(parseFloat(nl.amount)/0.8)`. jsdom smoke
+**109/109** green, including 6 new assertions: `fmtMoney(NaN)`→`"$0"`,
+`advanceDeal('MORE_INFO')` no-op, `deleteDoc` removes the targeted object across
+re-orderings, `saveDeal` attaches `d.calc` for the active deal, `loadDeals` runs rows
+through `mkDeal`.
+
+## Round (bugfix) — verdict logic, unique deal id + real borrower name, wizard data capture, DTI card-limit fix, manual DTI, HEM floor removal, self-emp shade display, portal upload, AI-pilot income shape, panel transition, output escaping, engine lender-id, seed dates
+
+Targeted, surgical bug fixes — no refactor. Every change quoted in the brief is applied verbatim across all occurrences.
+
+- **C1 — verdict logic.** `else if(ndi>-500 || dsr<dsrMax+10)` (2× in `computeServiceability` and `computeManual`) becomes `else if(ndi > -250 && dsr < dsrMax+5)`. A deal $50k/mo underwater now returns FAIL instead of BORDERLINE.
+- **C2 — unique deal id + real name.** `submitDeal` now generates a monotonic id (`'D-'+(maxNum+1)` from the existing DEALS) and names the new deal from the wizard's borrower fields (`firstName`+`lastName`) — fallback to entity 0 name, then `'New Application'`. Email/phone also carried.
+- **C3 — wizard borrower step.** Every input wired to `state.wizData` (`firstName/lastName/email/phone/dob`) and Dependants to `state.calc.dependants`; values restored from state on re-render. `state.wizData` defaults extended. `wizGo` syncs entity 0's name from the borrower fields.
+- **C4 — DTI no longer counts card limits as debt.** `totalLiab += parseFloat(l.balance)||0;` (2×) is guarded by `if(l.type!=='credit_card')`. A $15k card with $0 balance no longer inflates DTI by $15k.
+- **C5 — manual DTI.** Uses APRA-correct DTI = (existing-debt **balance** + new loan) / gross income. Adds an optional `existingDebtBalance` input (state + editor) for accuracy; otherwise a ~5-year-of-repayments proxy from the monthly figure.
+- **C6 — HEM floor.** The extra `income*0.28` / `incomeMo*0.28` floor (4 occurrences across `computeServiceability`, `computeManual`, `baseFigures`, and the manual editor copy) is removed. The HEM band table is already correct.
+- **H4 — self-emp shade ×.** `updateCalc` now computes the displayed × from the *assessable* base (post add-backs) the same way `getShadedIncome` does, so a self-employed line correctly shows e.g. ×0.80 instead of ×1.07.
+- **H5 — portal upload.** `simUpload` now creates a real DOC entry (then auto-verifies it) and logs to the timeline; the previous version only marked the tile done.
+- **H6 — AI Pilot output shape.** `applyExtractedProfile` emits incomes with the full 2-year shape (`amount_y1/amount_y2/use_average/evidence_years`) so the calculator's FY columns are populated.
+- **M1 — panel transition.** `.panel` gets `transition:transform`; `.panel.show` is now a transform toggle (not an animation), so the panel slides closed as well as open.
+- **M2 — output escaping.** A global `esc()` alias of `escHtml` is wired into deal-card name, panel email, panel portal copy, global-search results, Client-tab title, and the two `next_action_note` render sites. A name like `O'Brien & <Sons>` now renders literally.
+- **M5 — engine lender id.** Both engine income passes now call `getShadedIncome(inc, state.lender)` explicitly, so per-lender shading (Westpac OT, HSBC foreign) is applied consistently in baseline computations.
+- **L1 — seed dates.** D-891 and D-890 `next_action_date` are now relative to TODAY (+2 and +4 days) so the "Next action soon" banner is always live in the demo.
+
+**Verification:** `node --check` clean; sentinels confirmed absent (`grep -nE "ndi>-500|892\+Math\.floor|name:'New Application'|\*0\.28"` returns nothing); jsdom smoke **103/103** green — including new assertions B-C1 (severe shortfall → FAIL), B-C4 (card limit doesn't inflate DTI), B-H4 (self-emp shade respects assessable base), B-M2 (markup in deal name escaped, no injection), B-L1 (D-891 next action date ≥ today), B-H5 (portal upload creates a DOC).
+
+## Round (complexity) — reopenable deal panel, searchable lender picker with buffer explainer, true multi-entity applicant builder, full multi-security model with addresses/valuations/rental, aggregate-LVR rework
+
+Four corrective/additive fixes so the app can hold real broker complexity (multi-applicant, multi-security deals like AOL captures) without losing the simple consolidated output.
+
+**FIX 1 — Reopenable deal panel.** A floating right-edge pill ("⟨ <client> · <id>") appears whenever `state.activeDeal` is set and the slide-over `#panel` is closed; clicking it reopens. The Deal Strip gains an "Open details" (⛶) button next to the back arrow, and a new `togglePanel()` toggles open/closed. `Escape` closes the panel. The panel is never a dead end (three reopen affordances + the deal card).
+
+**FIX 2 — Lender picker.** Wizard step 1 now shows **all 25 AU lenders** (no accreditation gating at deal creation), grouped under "Banks (ADI)" and "Non-bank lenders" sub-headings, sorted alphabetically. A search input (`#lenderSearch` → `filterLenderTiles`) filters tiles live by label / type ("non-bank"/"adi"). Each tile shows type · **buffer %** · max LVR, and a one-line explainer defines buffer ("APRA 3% for banks; lower buffer = higher capacity").
+
+**FIX 3 — Multi-entity applicants.** Entity model now includes `{kind, name, role, abn, trustee_name, ownership_pct, included}`. Wizard step 3 is a true builder: entity cards with kind/role selects, name input, conditional ABN + trustee for company/trust/SMSF/partnership, ownership %, include-toggle, and per-entity income/liability counters with an "Edit financials →" link. `+ Individual/Joint/Company/Trust/SMSF/Partnership` buttons add; remove respects a minimum of one. `computeServiceability`, `baseFigures` and `figuresForLender` now multiply each entity's shaded income by `entityWeight()` (0 if `included===false`, else `ownership_pct/100`), so the engine consolidates cleanly into a **single PASS/BORDERLINE/FAIL verdict**. The submission pack gains a new "Applicants & Entities" section with kind/role/ABN/trustee/ownership.
+
+**FIX 4 — Multi-security model.** New `state.calc.securities[]` with `{address, suburb, state, postcode, property_type, purpose, transaction, value, value_basis, zoning, first_mortgage, existing_mortgage, existing_lender, rental_income, rental_frequency, owner_entity_id, title:{folio,section,block}}`. Wizard step 4 is split into **Part A — Securities** (cards, +Add another, collapsible Torrens title details) and **Part B — Loan structure**. The Loan tab uses the same builder. `totalSecurityValue()` sums `securities[].value` and falls back to `wizData.propValue` when empty — used by `updateWizLVR`, `computeServiceability` LVR, the deal strip, `buildBIDPrompt` and `buildPackHTML`. The submission pack adds a new "Securities" table (Address · Type · Purpose · Transaction · Value · Basis · Owner entity · Existing mortgage · Rental).
+
+**Persistence + demo seeding.** `persistDealIntel(dealId)` now also snapshots `{entities, securities}` to `deal.intel`; `setActiveDeal` restores them. Three demo templates (`DEMO_DEAL_INTEL`) are seeded so the multi-entity complexity is visible on activation: **D-891 Mitchell** (Sarah + Tom, 50/50, 1 OO security), **D-890 Chen Property Trust** (trust + corporate trustee + 2 guarantors + 3 investment securities with rental), **D-888 Patel SMSF** (SMSF + corporate trustee + 1 SMSF residential security). Demo provenance is also baked into the Mitchell template so source-tracing demos survive deal activation.
+
+**Copilot insights.** Now also flag entity count, security count, blank security values and included entities with no income.
+
+**Verification:** `node --check` clean; jsdom smoke **97/97 green**, including: panel open→pill appears→togglePanel reopens; 25 lenders rendered with search filtering and the buffer explainer; multi-entity (add/remove with min-1 guard, `included===false` excluded, `ownership_pct` scales income, single consolidated verdict in the result panel); multi-security (LVR = total lending / total security value, `propValue` fallback when empty, pack renders multi-row Securities table, Chen Trust seed has 4 entities + 3 securities, `deal.intel` survives a JSON round-trip).
+
 ## Round (doc-intelligence) — bulk ingest pipeline, classification, type-specific extraction, intelligent reconciliation, extraction review workspace, source tracing/provenance, missing-doc intelligence
 
 Drop a whole client file (up to 100 docs) and get back a classified, extracted,
