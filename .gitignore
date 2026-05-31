@@ -1,0 +1,7 @@
+# Cloudflare local-dev
+.dev.vars
+.wrangler/
+node_modules/
+
+# Build / OS
+.DS_Store

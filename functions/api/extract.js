@@ -1,39 +1,25 @@
 /* ============================================================
-   DebtIQ — Document extraction (Netlify Function)
-   Real OCR via Claude vision/PDF. Accepts base64 files, returns
-   structured income/liability data the calculator can ingest.
-   Key stays server-side; requires a valid Supabase session.
+   DebtIQ — Document extraction (Cloudflare Pages Function)
+   POST /api/extract
+   Real OCR via Claude vision / PDF. Accepts base64 files, returns
+   structured income/liability data the calculator can ingest. Key
+   stays server-side; requires a valid Supabase session.
    ============================================================ */
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
-};
-const json = (statusCode, obj) => ({ statusCode, headers: { ...CORS, 'content-type': 'application/json' }, body: JSON.stringify(obj) });
+import { CORS, json, corsPreflight, requireSupabaseSession, parseJsonLoose } from './_lib.js';
 
 const ALLOWED = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'application/pdf'];
 
-exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
-  if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
+export const onRequestOptions = () => corsPreflight();
 
-  const key = process.env.ANTHROPIC_API_KEY;
+export const onRequestPost = async ({ request, env }) => {
+  const key = env.ANTHROPIC_API_KEY;
   if (!key) return json(500, { error: 'ANTHROPIC_API_KEY not configured on the server' });
 
-  // Require a valid Supabase session.
-  const supaUrl = process.env.SUPABASE_URL;
-  const anon = process.env.SUPABASE_ANON_KEY;
-  if (supaUrl && anon) {
-    const token = (event.headers.authorization || event.headers.Authorization || '').replace(/^Bearer\s+/i, '').trim();
-    if (!token) return json(401, { error: 'Not authenticated' });
-    try {
-      const u = await fetch(supaUrl.replace(/\/$/, '') + '/auth/v1/user', { headers: { Authorization: 'Bearer ' + token, apikey: anon } });
-      if (!u.ok) return json(401, { error: 'Invalid or expired session' });
-    } catch (e) { return json(502, { error: 'Auth verification failed' }); }
-  }
+  const authFail = await requireSupabaseSession(request, env);
+  if (authFail) return authFail;
 
   let body;
-  try { body = JSON.parse(event.body || '{}'); } catch (e) { return json(400, { error: 'Bad JSON' }); }
+  try { body = await request.json(); } catch (e) { return json(400, { error: 'Bad JSON' }); }
   const files = Array.isArray(body.files) ? body.files.slice(0, 6) : [];
   if (!files.length) return json(400, { error: 'No files provided' });
 
@@ -62,8 +48,7 @@ exports.handler = async (event) => {
       const data = await res.json();
       if (!res.ok) return json(res.status, { error: (data && data.error && data.error.message) || 'Anthropic API error' });
       const text = (data && data.content && data.content[0] && data.content[0].text) || '';
-      let parsed = null;
-      try { parsed = JSON.parse(text); } catch (e) { const m = text.match(/\{[\s\S]*\}/); if (m) { try { parsed = JSON.parse(m[0]); } catch (e2) {} } }
+      const parsed = parseJsonLoose(text);
       return json(200, { docType, fields: (parsed && parsed.fields) || {}, raw: parsed ? undefined : text });
     } catch (e) { return json(502, { error: 'Upstream request failed' }); }
   }
@@ -87,13 +72,12 @@ Use annual gross figures for income (amount_y1 = most recent FY, amount_y2 = pri
     const data = await res.json();
     if (!res.ok) return json(res.status, { error: (data && data.error && data.error.message) || 'Anthropic API error' });
     const text = (data && data.content && data.content[0] && data.content[0].text) || '';
-    // Pull the JSON object out of the response defensively.
-    let parsed = null;
-    try { parsed = JSON.parse(text); }
-    catch (e) { const m = text.match(/\{[\s\S]*\}/); if (m) { try { parsed = JSON.parse(m[0]); } catch (e2) {} } }
+    const parsed = parseJsonLoose(text);
     if (!parsed) return json(200, { extracted: { applicant_name: '', incomes: [], liabilities: [] }, raw: text });
     return json(200, { extracted: parsed });
   } catch (e) {
     return json(502, { error: 'Upstream request failed' });
   }
 };
+
+export const onRequest = () => json(405, { error: 'Method not allowed' });

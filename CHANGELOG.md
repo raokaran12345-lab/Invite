@@ -1,5 +1,76 @@
 # DebtIQ v6 — Changelog
 
+## Round (platform migration) — Netlify → Cloudflare Pages + Pages Functions
+
+Moved every backend handler off Netlify Functions to Cloudflare Pages
+Functions. Static hosting moves to Cloudflare Pages in the same step.
+**Zero frontend changes** — the `/api/*` contract is preserved
+verbatim (Pages Functions' file-path-as-route covers it natively), so
+the `state.backend` auto-detect, the demo-mode fallback, and the
+existing Supabase session gating all work unchanged.
+
+- **New `functions/api/`** structure:
+  - `config.js` → `/api/config` (returns public Supabase vars)
+  - `claude.js` → `/api/claude` (Anthropic proxy)
+  - `extract.js` → `/api/extract` (Claude vision OCR)
+  - `classify.js` → `/api/classify` (document type ID)
+  - `forensics.js` → `/api/forensics` (three-layer tamper-signal scan)
+  - `_lib.js` — shared CORS / json / `requireSupabaseSession` /
+    `parseJsonLoose` helpers (kept tiny; each handler still
+    self-contained).
+- **Handler signatures converted** from Netlify's
+  `exports.handler = async (event) => ({ statusCode, headers, body })`
+  to Pages Functions' Web-standard
+  `export const onRequestPost = async ({ request, env }) => Response`.
+  Method-specific exports replace the `event.httpMethod` switch;
+  preflight `OPTIONS` is its own `onRequestOptions` export.
+- **One Node-ism rewritten** — `forensics.js` previously did
+  `Buffer.from(b64,'base64').toString('latin1')` on the Node runtime.
+  Replaced with the Web-standard `atob(b64)`, which Cloudflare Workers
+  supports natively. Confirmed byte-for-byte equivalent on a sample
+  payload, so the META01–META06 metadata-forensics rules behave
+  identically. No `nodejs_compat` flag needed.
+- **Env vars** — same three (`ANTHROPIC_API_KEY`, `SUPABASE_URL`,
+  `SUPABASE_ANON_KEY`), now read from `env.*` instead of
+  `process.env.*`. Set in the Cloudflare Pages project Settings →
+  Environment variables (Production + Preview).
+- **`wrangler.toml`** — minimal project config for local dev
+  (`wrangler pages dev .`). Secrets go in a gitignored `.dev.vars`.
+- **`.gitignore`** — added (was missing): ignores `.dev.vars`,
+  `.wrangler/`, `node_modules/`, `.DS_Store`.
+- **Deploy workflow** — `.github/workflows/cloudflare-deploy.yml`
+  uses `wrangler pages deploy . --project-name=debtiq`. Skips
+  cleanly when `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`
+  aren't set. **Recommended path is still the Cloudflare Pages →
+  Git integration in the dashboard** (no workflow secret management
+  needed); the action is a fallback.
+- **Retired**: `netlify.toml`, all of `netlify/functions/*`,
+  `.github/workflows/netlify-deploy.yml`.
+- **`BACKEND.md` rewritten** with the Cloudflare Pages setup
+  walkthrough, local dev steps, env-var table, and the same
+  security/RLS guidance.
+
+**Verification.** Imported each ported handler in Node and drove it
+with synthetic `request` / `env` objects:
+- `/api/config` returns the configured Supabase pair in normal mode,
+  empty strings in demo mode (same shape the boot code expects).
+- `/api/claude` returns 500 when `ANTHROPIC_API_KEY` is missing and
+  401 when Supabase is configured but the request carries no Bearer
+  token — same gating as before.
+- `/api/forensics` produces the expected META01 (Photoshop producer
+  string), META02 (modified-after-creation), and META03 (multiple
+  `%%EOF` markers) findings from a synthetic Photoshop-produced PDF
+  — proves the `atob` ↔ `Buffer.from(b64).toString('latin1')` swap
+  preserves the exact byte stream the metadata regexes consume.
+
+**Frontend smoke** still 192/192 — `index.html` was not touched.
+
+Files touched: `functions/api/*` (new), `wrangler.toml` (new),
+`.gitignore` (new), `BACKEND.md` (rewrite),
+`.github/workflows/cloudflare-deploy.yml` (new); removed
+`netlify/`, `netlify.toml`, `.github/workflows/netlify-deploy.yml`.
+No `supabase/`, `lenders.js`, or `index.html` changes.
+
 ## Round (brand system v1.0) — Full app rollout (tokens · ink monogram · screens · voice)
 
 A non-feature compliance refactor. Backend, schema, auth, IDs, render

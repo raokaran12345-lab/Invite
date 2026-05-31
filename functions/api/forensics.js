@@ -1,5 +1,6 @@
 /* ============================================================
    DebtIQ — Document forensics / tamper-signal detection
+   POST /api/forensics  (Cloudflare Pages Function)
    Three layers, all server-side:
      1. PDF metadata & structure forensics (pure JS, no AI)
      2. AI visual/content forensics (Claude vision via the key held here)
@@ -8,12 +9,7 @@
    HONESTY: this detects TAMPERING SIGNALS. A clean result means
    "no signals found", NOT that a document is authentic/genuine.
    ============================================================ */
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
-};
-const json = (statusCode, obj) => ({ statusCode, headers: { ...CORS, 'content-type': 'application/json' }, body: JSON.stringify(obj) });
+import { CORS, json, corsPreflight, requireSupabaseSession, parseJsonLoose } from './_lib.js';
 
 const DISCLAIMER = 'Signal-based analysis. Absence of signals is not proof of authenticity. A clean result means no tampering indicators were found, not that the document is verified genuine.';
 
@@ -44,7 +40,10 @@ function parsePdfDate(s){
 function metadataForensics(base64){
   const findings = [];
   let str = '';
-  try { str = Buffer.from(base64, 'base64').toString('latin1'); } catch (e) { return findings; }
+  // atob() decodes base64 → a binary string (each char is the byte value 0-255),
+  // exactly the same payload Buffer.from(b64,'base64').toString('latin1') produced
+  // on the Netlify (Node) runtime.
+  try { str = atob(base64); } catch (e) { return findings; }
   if (str.slice(0, 1024).indexOf('%PDF') === -1 && str.indexOf('%PDF') === -1) return findings; // not a PDF
 
   const grab = (re) => { const m = re.exec(str); return m ? m[1] : ''; };
@@ -107,11 +106,6 @@ async function callAnthropic(key, { system, content, max_tokens }){
   const data = await res.json();
   if (!res.ok) throw new Error((data && data.error && data.error.message) || 'Anthropic API error');
   return (data && data.content && data.content[0] && data.content[0].text) || '';
-}
-function parseJsonLoose(text){
-  try { return JSON.parse(text); }
-  catch (e) { const m = text.match(/\{[\s\S]*\}/); if (m) { try { return JSON.parse(m[0]); } catch (e2) {} } }
-  return null;
 }
 
 const VISUAL_SYSTEM =
@@ -176,26 +170,17 @@ async function crossCheck(key, documents){
 }
 
 /* ---------- handler ---------- */
-exports.handler = async (event) => {
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
-  if (event.httpMethod !== 'POST') return json(405, { error: 'Method not allowed' });
+export const onRequestOptions = () => corsPreflight();
 
-  const key = process.env.ANTHROPIC_API_KEY;
+export const onRequestPost = async ({ request, env }) => {
+  const key = env.ANTHROPIC_API_KEY;
   if (!key) return json(500, { error: 'ANTHROPIC_API_KEY not configured on the server' });
 
-  // Require a valid Supabase session (same gate as claude.js / extract.js).
-  const supaUrl = process.env.SUPABASE_URL, anon = process.env.SUPABASE_ANON_KEY;
-  if (supaUrl && anon) {
-    const token = (event.headers.authorization || event.headers.Authorization || '').replace(/^Bearer\s+/i, '').trim();
-    if (!token) return json(401, { error: 'Not authenticated' });
-    try {
-      const u = await fetch(supaUrl.replace(/\/$/, '') + '/auth/v1/user', { headers: { Authorization: 'Bearer ' + token, apikey: anon } });
-      if (!u.ok) return json(401, { error: 'Invalid or expired session' });
-    } catch (e) { return json(502, { error: 'Auth verification failed' }); }
-  }
+  const authFail = await requireSupabaseSession(request, env);
+  if (authFail) return authFail;
 
   let body;
-  try { body = JSON.parse(event.body || '{}'); } catch (e) { return json(400, { error: 'Bad JSON' }); }
+  try { body = await request.json(); } catch (e) { return json(400, { error: 'Bad JSON' }); }
 
   // ---- Cross-document consistency mode ----
   if (body.mode === 'crosscheck') {
@@ -235,3 +220,5 @@ exports.handler = async (event) => {
     disclaimer: DISCLAIMER
   });
 };
+
+export const onRequest = () => json(405, { error: 'Method not allowed' });
