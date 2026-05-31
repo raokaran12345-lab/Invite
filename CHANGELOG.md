@@ -1,5 +1,71 @@
 # DebtIQ v6 — Changelog
 
+## Broker overhaul — Phase 3: deal-as-spine + atomic stepped builder
+
+The deal is the spine, and Calculate is a view of it. Restructured
+the calculator into named, numbered steps so the architecture is
+visible, not just true. AI Pilot wears the same banner so the shared
+record is obvious from both sides.
+
+- **Deal-spine banner** — small editorial line at the top of both
+  Calculate and AI Pilot: deal ID + a one-line note that the two
+  pages share the same record + a CTA to jump between them. Hidden
+  when no deal is active.
+- **Step framework primitives.** `stepHeader(num, title, desc, badge)`
+  emits the numbered head with a serif title, italic intent line, and
+  a status badge (`ok` / `attn` / `note` / `muted`). `.step-frame`
+  wraps each atom as a clinical card on the editorial canvas.
+- **Step 1 — Purpose** (new). Four tile options
+  (Purchase / Refinance / Investment / Construction) in a radiogroup.
+  Persisted to `state.calc.purpose`; seeded on deal creation from
+  the wizard's `dealType` via `wizDealTypeToPurpose()` (Owner Occupier
+  / First Home / SMSF / Commercial → purchase; Investment → investment;
+  Refinance → refinance).
+- **Step 2 — Applicants & details.** Wraps the existing entity cards
+  in a labelled step frame; per-entity Income (Step 4) and
+  Liabilities (Step 5) remain nested inside each card with their
+  existing tables.
+- **Step 3 — Securities.** Wraps the existing `securitiesBuilderHTML()`
+  builder. Step badge reads "ok" when securities are listed,
+  "needs attention" when implicit-only.
+- **Step 6 — Assets.** Rendered as a deferred step frame — clear
+  "Coming soon" note pointing users to the Documents tab for now.
+  This is honest about scope: per-entity asset rows need a careful
+  state-model addition and are queued for a follow-up.
+- **Step 7 — Living expenses & loan structure.** The existing
+  loan-amount / rate / term / adults / dependants block, re-headed
+  with a description that names HEM and the rate buffer explicitly.
+- **Step 8 — Result.** Lives in the right pane (the existing
+  verdict hero + gauges). No structural change; the step framework
+  acknowledges this is the deliberate "calm output" half of the
+  calculator.
+- **AI Pilot copy** updated — the hero paragraph now explains that
+  Pilot writes into the same record the Calculator reads from
+  ("enter once, never re-key") and surfaces the spine banner.
+- **Architectural note: shared record.** `state.calc` was already the
+  single source of truth for both Calculate and AI Pilot —
+  `applyExtractedProfile()` writes directly into `state.calc.entities`,
+  `state.calc.newLoan` and friends. Phase 3 makes this *visible*
+  through the spine banner + step framework; no data flow was changed
+  (low regression risk on `mergeExtracted()`, `reconcile()`, lender
+  ranking, or the serviceability engine).
+- **Smoke harness** +17 Phase 3 checks (helper primitives, default
+  purpose, wizard → calc purpose mapping, step frames 1-7 present,
+  Step 6 deferred-state visible, Purpose tile activation reflects
+  state, AI Pilot spine banner + copy, banner hidden when no active
+  deal). **247/247 passing.**
+
+**Deferred from Phase 3** — flagged for follow-up rather than
+half-shipped:
+- Per-entity Assets data model + UI (Step 6 placeholder shows the
+  intended scope).
+- Multipart scenarios under one deal (split loans, scenario
+  comparison). Needs deal-level `scenarios:[]` array + a switcher
+  + scenario-aware deal save/restore — designed as its own pass.
+- Step-by-step progressive disclosure animation (the current
+  rendering shows all steps at once; happy-path collapse on
+  completion is a polish item, queued behind core flow validation).
+
 ## Broker overhaul — Phase 2: consolidated right dock
 
 Replaced three separate right-side surfaces — the always-open AI

@@ -456,6 +456,71 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .dock-rail-btn.active{background:var(--ink-bg);color:var(--accent-editorial);border-color:var(--hairline)}
 .dock-rail-divider{width:24px;height:1px;background:var(--hairline);margin:4px 0}
 
+/* ============================================================
+   PHASE 3 — Stepped builder primitives
+   The deal is the spine. Calculate is a view of the deal record,
+   shared with AI Pilot. Each step is an editable atom.
+   ============================================================ */
+.deal-spine-banner{
+  display:flex;align-items:center;gap:10px;padding:8px 12px;margin-bottom:14px;
+  border:1px solid var(--hairline);border-left:3px solid var(--accent-editorial);
+  border-radius:6px;background:var(--surface-paper);font-size:12px;color:var(--text-secondary);
+  font-family:var(--ui);line-height:1.5;
+}
+.deal-spine-banner .dsb-id{font-family:var(--mono);font-weight:700;color:var(--text-primary);font-size:11px;letter-spacing:.02em}
+.deal-spine-banner .dsb-sep{color:var(--text-muted);opacity:.6}
+.deal-spine-banner .dsb-note{font-family:var(--serif);font-style:italic;color:var(--text-muted);font-size:12.5px;line-height:1.4;flex:1}
+.deal-spine-banner .dsb-cta{margin-left:auto;font-size:11px;font-weight:700;color:var(--accent-interactive);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px}
+.deal-spine-banner .dsb-cta:hover{background:var(--steel-bg)}
+.deal-spine-banner .dsb-cta:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+
+/* Stepped builder frame — each atom wears a clear number, title, brief intent. */
+.step-frame{
+  background:var(--surface-clinical);border:1px solid var(--hairline);border-radius:8px;
+  margin-bottom:16px;overflow:hidden;
+}
+.step-frame-head{
+  display:flex;align-items:flex-start;gap:12px;padding:14px 16px;
+  border-bottom:1px solid var(--hairline);background:var(--surface-paper);
+}
+.step-frame-num{
+  font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.04em;
+  color:var(--text-muted);background:var(--ink-bg);
+  width:28px;height:28px;border-radius:6px;
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.step-frame-title-wrap{flex:1;min-width:0}
+.step-frame-title{
+  font-family:var(--serif);font-weight:500;font-size:17px;line-height:1.25;color:var(--text-primary);
+  letter-spacing:-.005em;
+}
+.step-frame-desc{
+  font-family:var(--serif);font-style:italic;font-size:12.5px;color:var(--text-muted);
+  margin-top:2px;line-height:1.45;
+}
+.step-frame-badge{
+  flex-shrink:0;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.04em;
+  padding:4px 8px;border-radius:var(--r-pill);text-transform:uppercase;
+}
+.step-frame-badge.ok{background:var(--green-bg);color:var(--green)}
+.step-frame-badge.attn{background:var(--amber-bg);color:var(--amber)}
+.step-frame-badge.muted{background:var(--ink-bg);color:var(--text-muted)}
+.step-frame-badge.note{background:var(--steel-bg);color:var(--accent-interactive)}
+.step-frame-body{padding:16px}
+.step-frame.deferred .step-frame-body{padding:14px 16px;color:var(--text-muted);font-family:var(--serif);font-style:italic;font-size:13px;line-height:1.5}
+
+/* Purpose tiles (Step 1) */
+.purpose-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.purpose-tile{
+  background:var(--surface-paper);border:1.5px solid var(--hairline);border-radius:6px;
+  padding:12px 14px;cursor:pointer;text-align:left;font-family:var(--ui);transition:border-color .12s,background .12s;
+}
+.purpose-tile:hover{border-color:var(--text-muted)}
+.purpose-tile:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.purpose-tile.active{border-color:var(--accent-editorial);background:var(--ink-bg)}
+.purpose-tile .pt-name{font-weight:700;font-size:13px;color:var(--text-primary)}
+.purpose-tile .pt-desc{font-family:var(--serif);font-style:italic;font-size:11.5px;color:var(--text-muted);margin-top:3px;line-height:1.4}
+
 /* AI Copilot pane internals — preserved IDs (cpInsights, cpChatLog, cpQuery) */
 .cp-insights{flex:1;overflow-y:auto;padding:10px}
 .copilot-insight{
@@ -1939,6 +2004,9 @@ const state = {
   // Wizard shares state.calc — only non-calc wizard inputs live here.
   wizData:{lender:null, dealType:null, propValue:1000000, firstName:'', lastName:'', email:'', phone:'', dob:''},
   calc:{
+    // Purpose (Phase 3 Step 1) — shapes everything after it. Hydrated from
+    // state.wizData.dealType on deal creation (see startNewDeal / setActiveDeal).
+    purpose:'purchase',
     entities:[
       {id:'e_1', kind:'individual', name:'Primary Borrower', role:'borrower', abn:'', trustee_name:'',
        ownership_pct:100, included:true, open:true,
@@ -2846,6 +2914,8 @@ function submitDeal(){
     const wd = state.wizData;
     const borrowerName = [wd.firstName, wd.lastName].filter(Boolean).join(' ').trim()
       || (state.calc.entities[0] && state.calc.entities[0].name) || 'New Application';
+    // Phase 3 — seed the calc.purpose from wizard dealType so Step 1 is pre-filled.
+    state.calc.purpose = wizDealTypeToPurpose(wd.dealType);
     const newDeal = mkDeal({id, name:borrowerName, lender:wd.lender||'CBA', amount:amt, status:'SUBMITTED', lvr:+(amt/pv*100).toFixed(1), progress:null, type:wd.dealType||'Owner Occupier', primary_email:wd.email||'', primary_phone:wd.phone||''});
     persistDealIntel(id);  // persist entities + securities + provenance onto the new deal
     DEALS.unshift(newDeal);
@@ -2860,6 +2930,51 @@ function submitDeal(){
 /* ============================================================
    PAGE: SERVICEABILITY
    ============================================================ */
+/* ============================================================
+   PHASE 3 — Stepped builder primitives
+   ============================================================ */
+const CALC_PURPOSES = [
+  {id:'purchase',     label:'Purchase',     desc:'New property, full LVR + LMI rules apply.'},
+  {id:'refinance',    label:'Refinance',    desc:'Move an existing loan, including cash-out tests.'},
+  {id:'investment',   label:'Investment',   desc:'Rental gross-up + IO/PI handling.'},
+  {id:'construction', label:'Construction', desc:'Progress payments, contract value rules.'}
+];
+function setCalcPurpose(p){
+  if(!CALC_PURPOSES.some(x=>x.id===p)) return;
+  state.calc.purpose = p;
+  if(typeof renderCalcEditor==='function') renderCalcEditor();
+  if(typeof updateStatusStrip==='function') updateStatusStrip();
+}
+// Maps the wizard's 6 deal-type tiles into the 4 calc purposes (Step 1).
+function wizDealTypeToPurpose(dealType){
+  if(!dealType) return 'purchase';
+  if(/Refinance/i.test(dealType))  return 'refinance';
+  if(/Investment/i.test(dealType)) return 'investment';
+  return 'purchase';
+}
+function stepHeader(num, title, desc, badge){
+  const b = badge && badge.label ? `<span class="step-frame-badge ${escHtml(badge.tone||'muted')}">${escHtml(badge.label)}</span>` : '';
+  return `<div class="step-frame-head">
+    <span class="step-frame-num" aria-hidden="true">${num}</span>
+    <div class="step-frame-title-wrap">
+      <div class="step-frame-title">${escHtml(title)}</div>
+      ${desc?`<div class="step-frame-desc">${escHtml(desc)}</div>`:''}
+    </div>
+    ${b}
+  </div>`;
+}
+function dealSpineBanner(){
+  if(!state.activeDeal) return '';
+  const d = DEALS.find(x=>x.id===state.activeDeal);
+  if(!d) return '';
+  return `<div class="deal-spine-banner" role="note">
+    <span class="dsb-id">${escHtml(d.id)}</span>
+    <span class="dsb-sep">·</span>
+    <span class="dsb-note">This is the deal. Calculate and AI Pilot share the same record — anything entered here flows both ways.</span>
+    <button type="button" class="dsb-cta" onclick="goTab('aipilot')">Open AI Pilot</button>
+  </div>`;
+}
+
 function renderServiceability(el){
   const auLender = state.market==='AU' && Object.keys(lenderDB()).length
     ? `<div class="card" style="padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -2875,6 +2990,7 @@ function renderServiceability(el){
     </div>`;
   el.innerHTML = `
     <div class="page-head"><h1>Serviceability Calculator</h1><p>Live assessment — updates on every keystroke · ${m().flag} ${m().label}</p></div>
+    ${dealSpineBanner()}
     ${tabs}
     ${auLender}
     <div class="calc-split">
@@ -2895,7 +3011,20 @@ function renderCalcEditor(){
   const _yr = TODAY.getFullYear(), _mo = TODAY.getMonth(), _ce = (_mo>=6)?_yr:_yr-1;
   const fyCur = String(_ce-1).slice(2)+'/'+String(_ce).slice(2);   // last completed FY (e.g. 24/25)
   const fyPri = String(_ce-2).slice(2)+'/'+String(_ce-1).slice(2); // prior FY (e.g. 23/24)
-  let html = state.calc.entities.map((ent, ei)=>`
+  /* ---- Step 1: Purpose ---- */
+  const purposeId = state.calc.purpose || 'purchase';
+  const stepPurpose = `<div class="step-frame">${stepHeader('1','Purpose','What shape of deal is this? Sets the rules for every step after.',{label:'Required',tone:purposeId?'ok':'attn'})}
+    <div class="step-frame-body">
+      <div class="purpose-grid" role="radiogroup" aria-label="Deal purpose">
+        ${CALC_PURPOSES.map(p=>`<button type="button" class="purpose-tile ${purposeId===p.id?'active':''}" role="radio" aria-checked="${purposeId===p.id}" onclick="setCalcPurpose('${p.id}')">
+          <div class="pt-name">${escHtml(p.label)}</div>
+          <div class="pt-desc">${escHtml(p.desc)}</div>
+        </button>`).join('')}
+      </div>
+    </div></div>`;
+  /* ---- Step 2: Applicants (existing entity cards wrapped) ---- */
+  const entCount = state.calc.entities.length;
+  const entHtml = state.calc.entities.map((ent, ei)=>`
     <div class="entity-card">
       <div class="entity-head" onclick="state.calc.entities[${ei}].open=!state.calc.entities[${ei}].open;renderCalcEditor()">
         <h4>${ent.name}</h4>
@@ -2963,21 +3092,37 @@ function renderCalcEditor(){
     </div>`).join('');
 
   const nl = state.calc.newLoan;
-  html += `<div class="entity-card"><div class="entity-body" style="padding:16px">
-    <div class="subsec" style="margin-top:0">New Loan</div>
-    <div class="inp" style="margin-bottom:12px"><label>Loan Amount (${m().sym})</label><input type="number" value="${nl.amount}" oninput="state.calc.newLoan.amount=+this.value;updateCalc()"></div>
-    <div class="slider-row"><label><span>Interest Rate</span><span class="mono" id="nlRateLbl">${(+nl.rate||0).toFixed(2)}%</span></label>
-      <input type="range" min="2" max="12" step="0.01" value="${nl.rate}" oninput="state.calc.newLoan.rate=+this.value;updateCalc()"></div>
-    <div class="slider-row"><label><span>Term</span><span class="mono" id="nlTermLbl">${nl.term} yrs</span></label>
-      <input type="range" min="5" max="30" step="1" value="${nl.term}" oninput="state.calc.newLoan.term=+this.value;updateCalc()"></div>
-    <div class="slider-row"><label><span>Adults</span><span class="mono" id="nlAdLbl">${state.calc.adults||1}</span></label>
-      <input type="range" min="1" max="2" step="1" value="${state.calc.adults||1}" oninput="state.calc.adults=+this.value;setText('nlAdLbl',this.value);updateCalc()"></div>
-    <div class="slider-row"><label><span>Dependants</span><span class="mono" id="nlDepLbl">${state.calc.dependants}</span></label>
-      <input type="range" min="0" max="6" step="1" value="${state.calc.dependants}" oninput="state.calc.dependants=+this.value;updateCalc()"></div>
-    <div class="assessed-note" id="nlAssessed">Assessed rate: ${((+nl.rate||0)+buffer*100).toFixed(2)}% (contract ${(+nl.rate||0).toFixed(2)}% + ${(buffer*100).toFixed(0)}% ${activePolicy()?(activePolicy().label+' '):''}buffer)</div>
-  </div></div>
-  <button class="btn ghost" style="margin-top:4px" onclick="addEntity()">+ Add Entity</button>`;
-  ed.innerHTML = html;
+  /* ---- Step 7: Living expenses + Loan structure ---- */
+  const stepLoan = `<div class="step-frame">${stepHeader('7','Living expenses & loan structure','Household shape feeds HEM (a floor on declared expenses). Loan amount + rate + term close the picture.',{label:'Required',tone:'ok'})}
+    <div class="step-frame-body">
+      <div class="inp" style="margin-bottom:12px"><label>Loan Amount (${m().sym})</label><input type="number" value="${nl.amount}" oninput="state.calc.newLoan.amount=+this.value;updateCalc()"></div>
+      <div class="slider-row"><label><span>Interest Rate</span><span class="mono" id="nlRateLbl">${(+nl.rate||0).toFixed(2)}%</span></label>
+        <input type="range" min="2" max="12" step="0.01" value="${nl.rate}" oninput="state.calc.newLoan.rate=+this.value;updateCalc()"></div>
+      <div class="slider-row"><label><span>Term</span><span class="mono" id="nlTermLbl">${nl.term} yrs</span></label>
+        <input type="range" min="5" max="30" step="1" value="${nl.term}" oninput="state.calc.newLoan.term=+this.value;updateCalc()"></div>
+      <div class="slider-row"><label><span>Adults</span><span class="mono" id="nlAdLbl">${state.calc.adults||1}</span></label>
+        <input type="range" min="1" max="2" step="1" value="${state.calc.adults||1}" oninput="state.calc.adults=+this.value;setText('nlAdLbl',this.value);updateCalc()"></div>
+      <div class="slider-row"><label><span>Dependants</span><span class="mono" id="nlDepLbl">${state.calc.dependants}</span></label>
+        <input type="range" min="0" max="6" step="1" value="${state.calc.dependants}" oninput="state.calc.dependants=+this.value;updateCalc()"></div>
+      <div class="assessed-note" id="nlAssessed">Assessed rate: ${((+nl.rate||0)+buffer*100).toFixed(2)}% (contract ${(+nl.rate||0).toFixed(2)}% + ${(buffer*100).toFixed(0)}% ${activePolicy()?(activePolicy().label+' '):''}buffer)</div>
+    </div></div>`;
+  /* ---- Step 2: Applicants wrap ---- */
+  const stepApplicants = `<div class="step-frame">${stepHeader('2','Applicants & details', entCount>1 ? `${entCount} entities — incomes and liabilities collapse inside each.` : 'Each entity carries its own incomes (Step 4) and liabilities (Step 5).', {label:entCount?'auto-filled':'attn',tone:entCount?'note':'attn'})}
+    <div class="step-frame-body">
+      ${entHtml}
+      <button class="btn ghost" style="margin-top:4px" onclick="addEntity()">+ Add Entity</button>
+    </div></div>`;
+  /* ---- Step 3: Securities ---- */
+  const secCount = (state.calc.securities||[]).length;
+  const stepSecurities = `<div class="step-frame">${stepHeader('3','Securities', secCount?`${secCount} ${secCount===1?'security':'securities'} listed — LVR rolls up across the lot.`:'Add the property/properties this loan is secured against.', {label:secCount?'ok':'attn',tone:secCount?'ok':'attn'})}
+    <div class="step-frame-body">
+      ${securitiesBuilderHTML()}
+    </div></div>`;
+  /* ---- Step 6: Assets (deferred — entity-level asset rows are coming) ---- */
+  const stepAssets = `<div class="step-frame deferred">${stepHeader('6','Assets',null,{label:'Coming soon',tone:'muted'})}
+    <div class="step-frame-body">For now, attach asset evidence (statements, super, vehicles) on the <b>Documents</b> tab — AI Pilot extracts them into the deal record. Per-entity asset rows land in a follow-up.</div></div>`;
+  /* ---- Compose: 1 → 2 (which contains 4+5) → 3 → 6 → 7. Step 8 (Result) lives in the right pane. ---- */
+  ed.innerHTML = stepPurpose + stepApplicants + stepSecurities + stepAssets + stepLoan;
 }
 function addEntity(kind){
   state.calc.entities.push(newEntity(kind));
@@ -4786,10 +4931,11 @@ let pilotResult = null;
 
 function renderAIPilot(el){
   el.innerHTML = `
+    ${dealSpineBanner()}
     <div class="market-hero ai-hero">
       <div class="caption" style="color:rgba(255,255,255,.55)">Autopilot · ${state.anthropicKey?'live':'demo'}</div>
       <h2 class="serif" style="font-weight:500;font-size:30px;letter-spacing:-.005em;margin-top:6px">AI Pilot ${state.anthropicKey?'':'<span class="ai-demo-chip">DEMO</span>'}</h2>
-      <p class="serif-italic" style="margin-top:6px;opacity:.92;max-width:640px">End-to-end — extract documents, assess serviceability, match a lender, draft the submission. One shared file, zero re-keying.${state.anthropicKey?'':' <span class="serif" style="font-style:normal;font-weight:500;color:rgba(255,255,255,.92)">Add a backend API key to enable live document processing.</span>'}</p>
+      <p class="serif-italic" style="margin-top:6px;opacity:.92;max-width:640px">End-to-end — extract documents, assess serviceability, match a lender, draft the submission. Everything Pilot finds writes into the same deal record the Calculator reads from — enter once, never re-key.${state.anthropicKey?'':' <span class="serif" style="font-style:normal;font-weight:500;color:rgba(255,255,255,.92)">Add a backend API key to enable live document processing.</span>'}</p>
       <button class="btn" id="pilotBtn" style="margin-top:18px;background:#fff;color:var(--ink);font-weight:700;border:none" onclick="runAIPilot()">${pilotState==='done'?'Re-run AI Pilot':'Run AI Pilot'}</button>
     </div>
     <div id="pilotSteps" style="max-width:760px"></div>
