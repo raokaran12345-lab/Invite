@@ -281,12 +281,18 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
 }
 .dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 2s infinite}
 
-/* Command Bar */
+/* Command Bar — broker chrome.
+   Spacing parity with the assessor command bar (Part A item A2): same
+   height token, same hairline weight, same padding rhythm, same gap.
+   Palette stays light (paper) — assessor stays dark (ink) — to keep
+   the visual distinction between client work and lender review. */
 #cmdBar{
-  height:var(--cmdbar-h);flex-shrink:0;background:var(--surface);
+  height:54px;flex-shrink:0;background:var(--surface);
   border-bottom:1px solid var(--hairline);display:flex;align-items:center;
-  padding:0 18px;gap:14px;z-index:100;
+  padding:10px 18px;gap:14px;z-index:100;
 }
+/* Subtle separators rhyme with assessor's `.ac-cmd-sep` */
+.cmd-sep{display:inline-block;width:1px;height:18px;background:var(--hairline);margin:0 4px;flex-shrink:0}
 .cmd-left{display:flex;align-items:center;gap:9px;flex-shrink:0}
 .cmd-centre{flex:1;max-width:480px;margin:0 auto;position:relative}
 /* Logo home button — focusable, role-aware home target. Same hit area in both shells. */
@@ -478,6 +484,21 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .step-frame{
   background:var(--surface-clinical);border:1px solid var(--hairline);border-radius:8px;
   margin-bottom:16px;overflow:hidden;
+}
+.step-frame.collapsed .step-frame-body{display:none}
+.step-frame.collapsed .step-frame-head{border-bottom:none}
+.step-frame-head[role="button"]{cursor:pointer;transition:background .12s}
+.step-frame-head[role="button"]:hover{background:var(--ink-bg)}
+.step-frame-head[role="button"]:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.step-frame-summary{
+  font-family:var(--ui);font-size:12.5px;color:var(--text-secondary);
+  margin-top:3px;line-height:1.45;
+}
+.step-frame-summary .mono{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--text-primary);font-weight:600}
+.step-frame-edit{
+  flex-shrink:0;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.04em;
+  color:var(--accent-interactive);background:var(--steel-bg);padding:4px 8px;border-radius:var(--r-pill);
+  text-transform:uppercase;display:inline-flex;align-items:center;gap:3px;
 }
 .step-frame-head{
   display:flex;align-items:flex-start;gap:12px;padding:14px 16px;
@@ -2952,15 +2973,89 @@ function wizDealTypeToPurpose(dealType){
   if(/Investment/i.test(dealType)) return 'investment';
   return 'purchase';
 }
-function stepHeader(num, title, desc, badge){
+
+/* ============================================================
+   Step disclosure (A9) — completed steps auto-collapse to a
+   one-line summary; broker can re-expand at any time. The
+   user's explicit choice always wins over the auto rule, so
+   the page never fights the broker.
+   ============================================================ */
+function isStepComplete(num){
+  const c = state.calc || {};
+  if(num==='1') return !!c.purpose;
+  if(num==='2'){
+    return Array.isArray(c.entities) && c.entities.some(e=>
+      e.included !== false &&
+      Array.isArray(e.incomes) &&
+      e.incomes.some(i => (parseFloat(i.amount_y1) || parseFloat(i.amount) || 0) > 0)
+    );
+  }
+  if(num==='3'){
+    return Array.isArray(c.securities) && c.securities.some(s => (parseFloat(s.value)||0) > 0);
+  }
+  if(num==='6') return false;   // deferred step — never auto-collapse
+  if(num==='7'){
+    return c.newLoan && (parseFloat(c.newLoan.amount)||0) > 0 && (parseFloat(c.newLoan.rate)||0) > 0;
+  }
+  return false;
+}
+function isStepCollapsed(num){
+  if(num==='6') return false;   // always expanded
+  const m = state.calc && state.calc.stepsManual;
+  const choice = m && m[num];
+  if(choice === 'open')      return false;
+  if(choice === 'collapsed') return true;
+  return isStepComplete(num);
+}
+function toggleStepCollapse(num){
+  state.calc.stepsManual = state.calc.stepsManual || {};
+  state.calc.stepsManual[num] = isStepCollapsed(num) ? 'open' : 'collapsed';
+  renderCalcEditor();
+}
+function stepSummary(num){
+  const c = state.calc || {};
+  if(num==='1'){
+    const p = (CALC_PURPOSES.find(x=>x.id===c.purpose) || {}).label || '—';
+    return `<span class="mono">${escHtml(p)}</span>`;
+  }
+  if(num==='2'){
+    const n = (c.entities||[]).filter(e=>e.included!==false).length;
+    const incLines = (c.entities||[]).reduce((s,e)=>s+((e.incomes||[]).length),0);
+    const liabLines = (c.entities||[]).reduce((s,e)=>s+((e.liabilities||[]).length),0);
+    return `<span class="mono">${n}</span> ${n===1?'applicant':'applicants'} · <span class="mono">${incLines}</span> income, <span class="mono">${liabLines}</span> liability ${liabLines===1?'line':'lines'}`;
+  }
+  if(num==='3'){
+    const secs = c.securities || [];
+    const total = secs.reduce((s,x)=>s+(parseFloat(x.value)||0),0);
+    return `<span class="mono">${secs.length}</span> ${secs.length===1?'security':'securities'} · <span class="mono">${fmtMoney(total)}</span> total`;
+  }
+  if(num==='7'){
+    const nl = c.newLoan || {};
+    return `<span class="mono">${fmtMoney(nl.amount)}</span> over <span class="mono">${nl.term||30}</span> yrs at <span class="mono">${(+nl.rate||0).toFixed(2)}%</span>`;
+  }
+  return '';
+}
+function stepHeader(num, title, desc, badge, opts){
+  opts = opts || {};
+  const collapsed  = !!opts.collapsed;
+  const summary    = opts.summary || '';
+  const clickable  = opts.clickable !== false;
   const b = badge && badge.label ? `<span class="step-frame-badge ${escHtml(badge.tone||'muted')}">${escHtml(badge.label)}</span>` : '';
-  return `<div class="step-frame-head">
+  const sumLine = collapsed && summary ? `<div class="step-frame-summary">${summary}</div>` : '';
+  const editChip = collapsed ? `<span class="step-frame-edit">Edit</span>` : '';
+  // Clickable head — both mouse + keyboard. Body shows/hides via the parent
+  // .step-frame.collapsed CSS rule so the markup stays cheap.
+  const interactiveAttrs = clickable
+    ? ` role="button" tabindex="0" aria-expanded="${collapsed?'false':'true'}" onclick="toggleStepCollapse('${num}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleStepCollapse('${num}')}"`
+    : '';
+  return `<div class="step-frame-head"${interactiveAttrs}>
     <span class="step-frame-num" aria-hidden="true">${num}</span>
     <div class="step-frame-title-wrap">
       <div class="step-frame-title">${escHtml(title)}</div>
-      ${desc?`<div class="step-frame-desc">${escHtml(desc)}</div>`:''}
+      ${collapsed ? '' : (desc?`<div class="step-frame-desc">${escHtml(desc)}</div>`:'')}
+      ${sumLine}
     </div>
-    ${b}
+    ${editChip}${b}
   </div>`;
 }
 function dealSpineBanner(){
@@ -3013,7 +3108,8 @@ function renderCalcEditor(){
   const fyPri = String(_ce-2).slice(2)+'/'+String(_ce-1).slice(2); // prior FY (e.g. 23/24)
   /* ---- Step 1: Purpose ---- */
   const purposeId = state.calc.purpose || 'purchase';
-  const stepPurpose = `<div class="step-frame">${stepHeader('1','Purpose','What shape of deal is this? Sets the rules for every step after.',{label:'Required',tone:purposeId?'ok':'attn'})}
+  const s1Collapsed = isStepCollapsed('1');
+  const stepPurpose = `<div class="step-frame ${s1Collapsed?'collapsed':''}">${stepHeader('1','Purpose','What shape of deal is this? Sets the rules for every step after.',{label:'Required',tone:purposeId?'ok':'attn'},{collapsed:s1Collapsed, summary:stepSummary('1')})}
     <div class="step-frame-body">
       <div class="purpose-grid" role="radiogroup" aria-label="Deal purpose">
         ${CALC_PURPOSES.map(p=>`<button type="button" class="purpose-tile ${purposeId===p.id?'active':''}" role="radio" aria-checked="${purposeId===p.id}" onclick="setCalcPurpose('${p.id}')">
@@ -3092,9 +3188,8 @@ function renderCalcEditor(){
     </div>`).join('');
 
   const nl = state.calc.newLoan;
-  /* ---- Step 7: Living expenses + Loan structure ---- */
-  const stepLoan = `<div class="step-frame">${stepHeader('7','Living expenses & loan structure','Household shape feeds HEM (a floor on declared expenses). Loan amount + rate + term close the picture.',{label:'Required',tone:'ok'})}
-    <div class="step-frame-body">
+  /* ---- Step 7: Living expenses + Loan structure (body only — wrapped below) ---- */
+  const stepLoan = `<div class="step-frame-body">
       <div class="inp" style="margin-bottom:12px"><label>Loan Amount (${m().sym})</label><input type="number" value="${nl.amount}" oninput="state.calc.newLoan.amount=+this.value;updateCalc()"></div>
       <div class="slider-row"><label><span>Interest Rate</span><span class="mono" id="nlRateLbl">${(+nl.rate||0).toFixed(2)}%</span></label>
         <input type="range" min="2" max="12" step="0.01" value="${nl.rate}" oninput="state.calc.newLoan.rate=+this.value;updateCalc()"></div>
@@ -3105,24 +3200,32 @@ function renderCalcEditor(){
       <div class="slider-row"><label><span>Dependants</span><span class="mono" id="nlDepLbl">${state.calc.dependants}</span></label>
         <input type="range" min="0" max="6" step="1" value="${state.calc.dependants}" oninput="state.calc.dependants=+this.value;updateCalc()"></div>
       <div class="assessed-note" id="nlAssessed">Assessed rate: ${((+nl.rate||0)+buffer*100).toFixed(2)}% (contract ${(+nl.rate||0).toFixed(2)}% + ${(buffer*100).toFixed(0)}% ${activePolicy()?(activePolicy().label+' '):''}buffer)</div>
-    </div></div>`;
+    </div>`;
   /* ---- Step 2: Applicants wrap ---- */
-  const stepApplicants = `<div class="step-frame">${stepHeader('2','Applicants & details', entCount>1 ? `${entCount} entities — incomes and liabilities collapse inside each.` : 'Each entity carries its own incomes (Step 4) and liabilities (Step 5).', {label:entCount?'auto-filled':'attn',tone:entCount?'note':'attn'})}
+  const s2Collapsed = isStepCollapsed('2');
+  const stepApplicants = `<div class="step-frame ${s2Collapsed?'collapsed':''}">${stepHeader('2','Applicants & details', entCount>1 ? `${entCount} entities — incomes and liabilities collapse inside each.` : 'Each entity carries its own incomes (Step 4) and liabilities (Step 5).', {label:entCount?'auto-filled':'attn',tone:entCount?'note':'attn'}, {collapsed:s2Collapsed, summary:stepSummary('2')})}
     <div class="step-frame-body">
       ${entHtml}
       <button class="btn ghost" style="margin-top:4px" onclick="addEntity()">+ Add Entity</button>
     </div></div>`;
   /* ---- Step 3: Securities ---- */
   const secCount = (state.calc.securities||[]).length;
-  const stepSecurities = `<div class="step-frame">${stepHeader('3','Securities', secCount?`${secCount} ${secCount===1?'security':'securities'} listed — LVR rolls up across the lot.`:'Add the property/properties this loan is secured against.', {label:secCount?'ok':'attn',tone:secCount?'ok':'attn'})}
+  const s3Collapsed = isStepCollapsed('3');
+  const stepSecurities = `<div class="step-frame ${s3Collapsed?'collapsed':''}">${stepHeader('3','Securities', secCount?`${secCount} ${secCount===1?'security':'securities'} listed — LVR rolls up across the lot.`:'Add the property/properties this loan is secured against.', {label:secCount?'ok':'attn',tone:secCount?'ok':'attn'}, {collapsed:s3Collapsed, summary:stepSummary('3')})}
     <div class="step-frame-body">
       ${securitiesBuilderHTML()}
     </div></div>`;
   /* ---- Step 6: Assets (deferred — entity-level asset rows are coming) ---- */
-  const stepAssets = `<div class="step-frame deferred">${stepHeader('6','Assets',null,{label:'Coming soon',tone:'muted'})}
+  // Deferred step never collapses (the body IS the message).
+  const stepAssets = `<div class="step-frame deferred">${stepHeader('6','Assets',null,{label:'Coming soon',tone:'muted'},{clickable:false})}
     <div class="step-frame-body">For now, attach asset evidence (statements, super, vehicles) on the <b>Documents</b> tab — AI Pilot extracts them into the deal record. Per-entity asset rows land in a follow-up.</div></div>`;
+  /* ---- Step 7: Living expenses + Loan structure header now collapse-aware ---- */
+  const s7Collapsed = isStepCollapsed('7');
+  const stepLoanWrapped = `<div class="step-frame ${s7Collapsed?'collapsed':''}">${stepHeader('7','Living expenses & loan structure','Household shape feeds HEM (a floor on declared expenses). Loan amount + rate + term close the picture.',{label:'Required',tone:'ok'}, {collapsed:s7Collapsed, summary:stepSummary('7')})}
+    ${stepLoan}
+    </div>`;
   /* ---- Compose: 1 → 2 (which contains 4+5) → 3 → 6 → 7. Step 8 (Result) lives in the right pane. ---- */
-  ed.innerHTML = stepPurpose + stepApplicants + stepSecurities + stepAssets + stepLoan;
+  ed.innerHTML = stepPurpose + stepApplicants + stepSecurities + stepAssets + stepLoanWrapped;
 }
 function addEntity(kind){
   state.calc.entities.push(newEntity(kind));

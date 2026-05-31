@@ -1,5 +1,61 @@
 # DebtIQ v6 — Changelog
 
+## Lending Group brief — Phase 0/1: audit + Part A polish (A2 + A9)
+
+Round-2 brief. Phase 0 was an audit-only pass with one new artefact:
+the **proposed Supabase migration** for the Lending Group model
+(`supabase/migrations/0001_lending_groups.sql`). The migration is
+DRAFT — uncommitted-by-default — and must be applied manually via the
+Supabase SQL editor. No live database change.
+
+Phase 1 picked up the two Part A items that the previous overhaul
+left half-done after the user's confirmation pass:
+
+- **A2 — broker shell spacing parity.** Broker command bar promoted to
+  `height:54px` and `padding:10px 18px` so it matches the assessor's
+  `.ac-cmd-bar` rhythm exactly. Hairline thickness, gap, vertical
+  separators all aligned. Broker chrome stays light paper; assessor
+  stays dark ink — by design (per user confirmation), to keep the
+  visual distinction between client work and lender review.
+  Added the `.cmd-sep` primitive that rhymes with assessor's
+  `.ac-cmd-sep`.
+- **A9 — progressive disclosure on Calculate.** Completed steps
+  auto-collapse to a one-line summary; broker can re-expand any step
+  at any time, and that explicit choice always wins over the auto
+  rule (the page never fights the broker).
+  - `isStepComplete(num)` — Step 1 = purpose set, Step 2 = at least
+    one included entity with at least one positive income, Step 3 =
+    at least one security with a value, Step 7 = loan amount + rate
+    both > 0. Step 6 is the deferred stub and never collapses.
+  - `isStepCollapsed(num)` — `state.calc.stepsManual[num]` wins; else
+    falls back to `isStepComplete(num)`.
+  - `toggleStepCollapse(num)` — toggles + persists user intent.
+  - `stepSummary(num)` — emits a calm one-liner (mono+tabular for
+    the numbers): "Refinance" / "2 applicants · 4 income, 1 liability
+    line" / "1 security · $1,000,000 total" / "$785,000 over 30 yrs
+    at 6.24%".
+  - `stepHeader(num, title, desc, badge, opts)` now accepts a
+    `{ collapsed, summary, clickable }` options bag. The head becomes
+    a `role="button"` with `aria-expanded`, full keyboard handling
+    (Enter + Space), and a small steel "Edit" pill on collapsed steps.
+    CSS gates body visibility via `.step-frame.collapsed`.
+- **Smoke** +8 Part A checks (command-bar height + padding, helper
+  exposure, Step 1 auto-collapse, summary line render, Step 6
+  deferred head is not interactive, user-toggle persists). **265/265
+  passing.**
+
+**Schema migration — for review only**
+`supabase/migrations/0001_lending_groups.sql` (NEW). Five new tables:
+`lending_groups`, `facilities`, `securities`, `facility_securities`
+(many-to-many), plus three additive columns on existing `deals`
+(`group_id`, `purpose`, `entity_kind`). Full RLS mirrors the existing
+`deals` policies; `public.touch_updated_at()` trigger reused. The
+existing `deals.data jsonb` blob is untouched so `loadDeals()` /
+`saveDeal()` continue to work byte-for-byte. Apply via the Supabase
+SQL editor when ready; the frontend will adopt the new shape during
+Phase 2 of this brief and gracefully fall back to the existing shape
+when the new tables don't exist.
+
 ## Broker overhaul — Phase 4: voice & finish
 
 Calm copy, semantic tokens everywhere they belong, monospaced
