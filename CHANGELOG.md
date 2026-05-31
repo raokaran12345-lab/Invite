@@ -1,5 +1,56 @@
 # DebtIQ v6 — Changelog
 
+## Lending Group brief — Phase 4: polish + voice + re-verify
+
+Final pass on the round-2 lending-group work. Small but deliberate
+quality fixes; full smoke re-verified end-to-end across the new
+Pipeline Deals/Groups round-trip.
+
+- **"Signal not a gate" hint on the group detail.** When a group has
+  any unresolved blockers, an amber inline callout surfaces above
+  the rollup: *"N pending items across the group — listed under
+  each deal below. You can still generate the pack; strict
+  stability is a quality signal, not a submission gate."* This
+  makes the user's locked decision (strict rules but still
+  submittable) explicit in the UI, so brokers see exactly what's
+  pending without thinking the system is blocking them.
+- **Group pack button stays enabled regardless of stability.** The
+  Generate-group-pack CTA never disables — confirmed by smoke.
+- **AU spelling sweep.** Searched the codebase for US/UK divergence
+  hotspots (organise/organize, finalise/finalize, analyse/analyze,
+  customise, optimise, colour/color, behaviour/behavior, favourite,
+  enrolment, licence/license). The only remaining `behavior` hits
+  are the DOM-API `scrollIntoView({behavior:'smooth'})` and CSS
+  `scroll-behavior:auto` — both must stay (browser API + CSS
+  keyword). "Credit licence (ACL)" already correct (noun = -ce).
+- **Brand voice review of the new Phase 2/3 surfaces.**
+  - Group empty state, proposal banner body, recut hint, fac-hint,
+    pack lede paragraph, and signal-not-gate body all use the
+    italic Georgia serif for soft copy (matches the existing
+    editorial voice for explanatory text).
+  - Stability pills, rollup labels, deal-row IDs, facility tags,
+    pack pills, and pack table headers all use Menlo/mono with
+    tabular-nums + uppercase letter-spacing (matches the existing
+    "data atom" type system).
+  - Group titles, page heads, deal-card names, and pack section H2s
+    use the serif at 500 weight with -.005em letter-spacing (matches
+    the existing display type).
+- **Keyboard + focus accessibility on every new control.**
+  - Pipeline toggle: role="tablist", aria-selected, focus-visible ring.
+  - Group cards + group deal cards: role="button", tabindex=0,
+    Enter/Space keydown handlers.
+  - Facility rows in group detail: tabindex=0, `M` keyboard shortcut
+    to open the move chooser (per the multiway re-cut decision).
+  - Facility editor P&I/IO toggle: role="tablist", aria-selected,
+    focus-visible ring.
+  - Security chips: aria-pressed=true|false per toggle state.
+- **Smoke harness final** — +4 Phase 4 checks (317/317 passing):
+  - signal-not-gate hint renders for unstable groups
+  - group pack button is never disabled
+  - Pipeline Groups view persists through tab round-trip
+  - Pipeline Deals view returns to the existing deal grid intact
+    (no regression in the Phase-1 dashboard render path)
+
 ## Lending Group brief — Phase 3: facility editor + re-cut UI + group pack
 
 Second half of Part B. The model from Phase 2 is now interactive end
