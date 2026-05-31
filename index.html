@@ -728,10 +728,10 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .inp label{font-size:12px;font-weight:600;color:var(--t2)}
 .inp input,.inp select,.inp textarea{padding:11px 13px;border:1.5px solid var(--border);border-radius:var(--r-input);background:var(--paper);transition:.15s}
 .inp input:focus,.inp select:focus,.inp textarea:focus{outline:none;border-color:var(--steel);background:#fff;box-shadow:0 0 0 4px rgba(59,111,181,.16)}
-.upload-zone{border:2px dashed #CBD2DC;border-radius:var(--r-input);padding:22px;text-align:center;cursor:pointer;transition:.18s;color:var(--t3);font-weight:600}
+.upload-zone{border:2px dashed var(--line2);border-radius:var(--r-input);padding:22px;text-align:center;cursor:pointer;transition:.18s;color:var(--t3);font-weight:600}
 .upload-zone:hover{border-color:var(--brand);color:var(--brand)}
 .upload-zone.done{border-style:solid;border-color:var(--green);background:rgba(5,150,105,.06);color:var(--green)}
-.lvr-badge{padding:16px;border-radius:var(--r-input);text-align:center;font-weight:800;font-size:24px;margin-top:14px}
+.lvr-badge{padding:16px;border-radius:var(--r-input);text-align:center;font-weight:800;font-size:24px;margin-top:14px;font-family:var(--mono);font-variant-numeric:tabular-nums}
 
 /* ============================================================
    SERVICEABILITY CALCULATOR
@@ -824,7 +824,7 @@ tr:last-child td{border-bottom:none}
 @media(max-width:700px){
   .phone{width:100%;max-width:360px;height:auto;min-height:520px;justify-self:center}
 }
-.dz{border:2px dashed #CBD2DC;border-radius:14px;padding:16px;text-align:center;margin-bottom:11px;font-size:12px;font-weight:600;color:var(--t3);cursor:pointer;transition:.18s}
+.dz{border:2px dashed var(--line2);border-radius:14px;padding:16px;text-align:center;margin-bottom:11px;font-size:12px;font-weight:600;color:var(--t3);cursor:pointer;transition:.18s}
 .dz.done{border-style:solid;border-color:var(--green);background:rgba(5,150,105,.07);color:var(--green)}
 .toggle-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
 .switch{width:42px;height:24px;border-radius:var(--r-pill);background:var(--line2);position:relative;cursor:pointer;transition:.18s;flex-shrink:0}
@@ -2515,7 +2515,7 @@ function panelDocs(el, d){
     </div>
     <button class="btn" style="margin-top:12px;width:100%" onclick="document.getElementById('panelDocUp').click()">⬆ Upload more</button>
     <input type="file" id="panelDocUp" multiple accept="image/*,application/pdf" style="display:none" onchange="panelUpload('${d.id}', this.files)">${ocrNote}`
-  : `<div style="border:2px dashed #CBD2DC;border-radius:14px;padding:26px;text-align:center;color:var(--t3)">
+  : `<div style="border:2px dashed var(--line2);border-radius:14px;padding:26px;text-align:center;color:var(--t3)">
       <p style="font-weight:600;margin-bottom:10px">No documents yet</p>
       <button class="btn primary" onclick="document.getElementById('panelDocUp').click()">⬆ Upload</button>
       <input type="file" id="panelDocUp" multiple accept="image/*,application/pdf" style="display:none" onchange="panelUpload('${d.id}', this.files)">
@@ -2921,7 +2921,7 @@ function submitDeal(){
     DEALS.unshift(newDeal);
     DOCS.forEach(x=>{ if(x.deal==='NEW') x.deal=id; });   // retag wizard docs to the new deal
     saveDeal(newDeal);                                    // persist when signed in
-    toast(`Deal ${id} submitted successfully!`, 'ok');
+    toast(`Deal ${id} submitted.`, 'ok');
     logEvent(`Deal ${id} submitted to ${lenderLabel(newDeal.lender)}`);
     state.wizStep=1; closeWizardModal(); setActiveDeal(id);
   }, 1600);
@@ -3034,7 +3034,7 @@ function renderCalcEditor(){
         </div>
       </div>
       ${ent.open?`<div class="entity-body">
-        <div class="subsec">Income</div>
+        <div class="subsec">Income <span style="font-family:var(--serif);font-style:italic;font-weight:400;font-size:11.5px;color:var(--text-muted);margin-left:6px">Step 4 — variable types (overtime, bonus, commission, rental) are shaded per lender policy. Hover the assessed value for the rule.</span></div>
         <div class="row-head"><span>Type</span><span>FY ${fyCur}</span><span>FY ${fyPri}</span><span>Avg</span><span>Assessed</span><span></span></div>
         ${ent.incomes.map((inc,ii)=>{
           const shaded = getShadedIncome(inc, state.lender);
@@ -3069,7 +3069,7 @@ function renderCalcEditor(){
             <span class="row-x" role="button" tabindex="0" aria-label="Remove income" onclick="removeIncome(${ei},${ii})">×</span>
           </div>${cond}${ab}`;}).join('')}
         <button class="add-row" onclick="addIncome(${ei})">+ Add income</button>
-        <div class="subsec">Liabilities</div>
+        <div class="subsec">Liabilities <span style="font-family:var(--serif);font-style:italic;font-weight:400;font-size:11.5px;color:var(--text-muted);margin-left:6px">Step 5 — credit cards stress to 3.8% of limit; HECS to 1%; amortising debt at rate + buffer.</span></div>
         <div class="row-head liab"><span>Type</span><span>Balance/Limit</span><span>Rate%</span><span>Term</span><span>Assessed/mo</span><span></span></div>
         ${ent.liabilities.map((l,li)=>{
           const assessed = assessLiability(l, buffer);
@@ -4390,13 +4390,13 @@ function renderCompare(el){
     : '';
   el.innerHTML = `
     <div class="page-head"><h1>Lender Comparison</h1><p>${m().flag} ${m().label} — ${rows.length} lenders, will-they-approve THIS deal for ${fmtMoney(loan)} over ${term} years</p></div>
-    ${recommended?`<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--brand)"><span class="pill violet">★ AI Recommended</span> <b style="margin-left:8px">${recommended.label}</b> <span class="pill ${recommended.isAdi?'gray':'amber'}" style="margin-left:6px">${recommended.isAdi?'ADI':'Non-bank'} · ${(recommended.buffer*100).toFixed(0)}% buffer</span> — capacity <span class="mono">${fmtMoney(recommended.capacity||0)}</span>, NDI <span class="mono">${fmtMoney(recommended.ndi)}/mo</span>.</div>`:`<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--red)">No lender services this loan as structured — see the Calculator for the levers to fix it.</div>`}
+    ${recommended?`<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--brand)"><span class="pill violet">AI recommended</span> <b style="margin-left:8px">${recommended.label}</b> <span class="pill ${recommended.isAdi?'gray':'amber'}" style="margin-left:6px">${recommended.isAdi?'ADI':'Non-bank'} · ${(recommended.buffer*100).toFixed(0)}% buffer</span> — capacity <span class="mono">${fmtMoney(recommended.capacity||0)}</span>, NDI <span class="mono">${fmtMoney(recommended.ndi)}/mo</span>.</div>`:`<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--red)">No lender services this loan as structured — see the Calculator for the levers to fix it.</div>`}
     ${auNote}
     <div class="table-card">
       <table><thead><tr><th>Lender</th><th>Type</th><th>Buffer</th><th>Capacity</th><th>Verdict</th><th>Policy edge for this deal</th><th></th></tr></thead>
       <tbody>${rows.map((x)=>`
         <tr class="${x===recommended?'best-row':''}">
-          <td style="font-weight:700"><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${x.color};margin-right:7px"></span>${x.label}${x===recommended?' ★':''}</td>
+          <td style="font-weight:700"><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${x.color};margin-right:7px"></span>${x.label}${x===recommended?' <span class="pill" style="background:var(--green-bg);color:var(--green);font-size:10px;padding:1px 6px;margin-left:4px">recommended</span>':''}</td>
           <td><span class="pill ${x.isAdi?'gray':'amber'}">${x.isAdi?'ADI':'Non-bank'}</span></td>
           <td class="mono">${(x.buffer*100).toFixed(0)}%</td>
           <td class="mono">${x.capacity!=null?fmtMoney(x.capacity):'—'}</td>
@@ -4447,7 +4447,7 @@ function renderIntel(el){
         <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">${auRates?'Live rate board':'Cash rate'}</h3>
         <div class="table-card">
           ${auRates ? `<table><thead><tr><th>Lender</th><th>Type</th><th>Rate</th><th>Buffer</th><th>Assessed</th></tr></thead><tbody>
-            ${auRates.map(x=>`<tr><td style="font-weight:700"><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${x.color};margin-right:7px"></span>${x.label}${x.rate===bestRate?' 🏆':''}</td>
+            ${auRates.map(x=>`<tr><td style="font-weight:700"><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${x.color};margin-right:7px"></span>${x.label}${x.rate===bestRate?' <span class="pill" style="background:var(--green-bg);color:var(--green);font-size:10px;padding:1px 6px;margin-left:4px">best</span>':''}</td>
               <td><span class="pill ${x.type==='ADI'?'gray':'amber'}">${x.type}</span></td>
               <td class="mono">${x.rate.toFixed(2)}%</td><td class="mono">${(x.buffer*100).toFixed(0)}%</td>
               <td class="mono">${(x.rate+x.buffer*100).toFixed(2)}%</td></tr>`).join('')}
@@ -4994,7 +4994,7 @@ function finishPilot(){
   COMMENTARY[0].text = mockCommentary('pilot');   // synchronous draft (safe if user navigates away)
   pilotResult = {r, top};
   pilotState = 'done';
-  const btn = document.getElementById('pilotBtn'); if(btn){ btn.style.opacity=1; btn.textContent='▶ Re-run AI Pilot'; }
+  const btn = document.getElementById('pilotBtn'); if(btn){ btn.style.opacity=1; btn.textContent='Re-run AI Pilot'; }
   renderPilotResults();
   toast('AI Pilot complete — deal assessed end-to-end', 'ok');
 }
@@ -5493,9 +5493,9 @@ function renderCompliance(el){
     <div class="card" style="padding:20px;margin-bottom:16px">
       <h3 style="font-size:15px;font-weight:700;margin-bottom:6px">Document extraction tester</h3>
       <p style="font-size:12.5px;color:var(--t3);margin-bottom:12px">Drag a payslip, tax return or statement (PNG/JPEG/PDF) to see the raw JSON the model returns. PDFs are rasterised in your browser first. ${aiLive()?'':'<b>Backend required</b> — connect to run live.'}</p>
-      <div id="ocrDrop" onclick="document.getElementById('ocrTestInput').click()" ondragover="event.preventDefault();this.style.borderColor='var(--brand)'" ondragleave="this.style.borderColor='#CBD2DC'" ondrop="event.preventDefault();this.style.borderColor='#CBD2DC';testExtract(event.dataTransfer.files)" style="border:2px dashed #CBD2DC;border-radius:14px;padding:26px;text-align:center;color:var(--t3);cursor:pointer;font-weight:600">⬆ Drag &amp; drop a document, or click to choose</div>
+      <div id="ocrDrop" onclick="document.getElementById('ocrTestInput').click()" ondragover="event.preventDefault();this.style.borderColor='var(--brand)'" ondragleave="this.style.borderColor='var(--line2)'" ondrop="event.preventDefault();this.style.borderColor='var(--line2)';testExtract(event.dataTransfer.files)" style="border:2px dashed var(--line2);border-radius:14px;padding:26px;text-align:center;color:var(--t3);cursor:pointer;font-weight:600">⬆ Drag &amp; drop a document, or click to choose</div>
       <input type="file" id="ocrTestInput" accept="image/*,application/pdf" multiple style="display:none" onchange="testExtract(this.files)">
-      <pre id="ocrTestOut" class="mono" style="margin-top:12px;background:var(--ink);color:#A7F3D0;padding:14px;border-radius:12px;font-size:11.5px;white-space:pre-wrap;max-height:280px;overflow:auto;display:block">// extracted JSON appears here</pre>
+      <pre id="ocrTestOut" class="mono" style="margin-top:12px;background:var(--ink);color:var(--green-on-ink);padding:14px;border-radius:12px;font-size:11.5px;white-space:pre-wrap;max-height:280px;overflow:auto;display:block">// extracted JSON appears here</pre>
     </div>
     <div id="complianceOutput" style="display:flex;flex-direction:column;gap:12px"></div>`;
 }
@@ -5646,12 +5646,12 @@ function generateCopilotInsights(){
   });
   if(state.market==='AU'){
     const best = cheapestServiceableLender();
-    if(best && best.l!==state.lender) insights.push({ type:'suggestion', icon:'★', text:`${best.label} recommended — services this deal`, action:{ label:'Switch', fn:`useLender('${best.l}')` } });
+    if(best && best.l!==state.lender) insights.push({ type:'suggestion', icon:'ℹ', text:`${best.label} recommended — services this deal`, action:{ label:'Switch', fn:`useLender('${best.l}')` } });
   }
   if(r.dti>6) insights.push({ type:'warning', icon:'⚠', text:`DTI ${r.dti.toFixed(1)}x — APRA restricted (>6x)` });
   const deal = DEALS.find(d=>d.id===state.activeDeal);
   const dealDocs = DOCS.filter(d=>d.deal===state.activeDeal);
-  if(deal && dealDocs.length===0) insights.push({ type:'error', icon:'📎', text:'No documents uploaded', action:{ label:'Upload', fn:`goTab('documents')` } });
+  if(deal && dealDocs.length===0) insights.push({ type:'error', icon:'⚠', text:'No documents uploaded', action:{ label:'Upload', fn:`goTab('documents')` } });
   if(deal && dealDocs.length){
     const worst = worstForensicStatus(state.activeDeal);
     if(worst==='REVIEW'){ const n = dealDocs.filter(d=>d.forensic && /REVIEW/i.test(d.forensic.status||'')).length; insights.push({ type:'urgent', icon:'⚠', text:`Document integrity: ${n} document(s) need review`, action:{ label:'Review', fn:`goTab('documents')` } }); }
@@ -5662,14 +5662,14 @@ function generateCopilotInsights(){
     const conflicts=((state.conflicts&&state.conflicts[state.activeDeal])||[]).filter(c=>!c.resolved).length;
     if(conflicts) insights.push({ type:'urgent', icon:'⚖', text:`${conflicts} document conflict(s) to resolve`, action:{ label:'Resolve', fn:`goTab('documents')` } });
     const need=dealDocs.filter(d=>d.extracted && Object.keys(d.extracted.fields||{}).length && !d.reviewed).length;
-    if(need) insights.push({ type:'warning', icon:'📝', text:`${need} extraction(s) need review`, action:{ label:'Review', fn:`goReview()` } });
+    if(need) insights.push({ type:'warning', icon:'▲', text:`${need} extraction(s) need review`, action:{ label:'Review', fn:`goReview()` } });
     const missing=missingDocTypes(state.activeDeal);
-    if(missing.length) insights.push({ type:'info', icon:'📂', text:`Missing: ${missing.map(t=>(DOC_TYPES[t]||{}).label||t).slice(0,3).join(', ')}`, action:{ label:'Docs', fn:`goTab('documents')` } });
+    if(missing.length) insights.push({ type:'info', icon:'ℹ', text:`Missing: ${missing.map(t=>(DOC_TYPES[t]||{}).label||t).slice(0,3).join(', ')}`, action:{ label:'Docs', fn:`goTab('documents')` } });
     // Multi-entity / multi-security insights
     const nEnts = state.calc.entities.length;
     const nSecs = (state.calc.securities||[]).length;
-    if(nEnts>1) insights.push({ type:'info', icon:'👥', text:`${nEnts} applicants/entities on this file` });
-    if(nSecs>1) insights.push({ type:'info', icon:'🏠', text:`${nSecs} securities · LVR ${r.lvr.toFixed(1)}% across all` });
+    if(nEnts>1) insights.push({ type:'info', icon:'ℹ', text:`${nEnts} applicants/entities on this file` });
+    if(nSecs>1) insights.push({ type:'info', icon:'ℹ', text:`${nSecs} securities · LVR ${r.lvr.toFixed(1)}% across all` });
     const blankSec = (state.calc.securities||[]).find(s=>!(parseFloat(s.value)||0));
     if(blankSec) insights.push({ type:'warning', icon:'⚠', text:'One or more securities has no value entered', action:{ label:'Loan', fn:`goTab('loan')` } });
     const noIncomeEnt = state.calc.entities.filter(e=>e.included!==false && (!e.incomes||!e.incomes.length||e.incomes.every(i=>!(parseFloat(i.amount_y1||i.amount)||0))));
@@ -5680,7 +5680,7 @@ function generateCopilotInsights(){
   if(r.lvr>90) insights.push({ type:'warning', icon:'⚠', text:`LVR ${r.lvr.toFixed(1)}% — LMI required` });
   if(deal && deal.next_action_date){
     const days = Math.ceil((new Date(deal.next_action_date)-new Date())/864e5);
-    if(days<=1) insights.push({ type:'urgent', icon:'🔔', text: days<=0 ? `Overdue: ${esc(deal.next_action_note||'Follow up')}` : `Due tomorrow: ${esc(deal.next_action_note||'Follow up')}` });
+    if(days<=1) insights.push({ type:'urgent', icon:'⚠', text: days<=0 ? `Overdue: ${esc(deal.next_action_note||'Follow up')}` : `Due tomorrow: ${esc(deal.next_action_note||'Follow up')}` });
   }
   return insights;
 }
@@ -6081,7 +6081,7 @@ function renderPolicyDrawer(){
       <thead><tr><th>Lender</th><th>Buffer</th><th>Assessed</th><th>Capacity</th><th>Verdict</th><th></th></tr></thead>
       <tbody>${rows.map(x=>`
         <tr class="${x===recommended?'pd-row-best':''} ${x.l===state.lender?'pd-row-cur':''}">
-          <td style="font-weight:700"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${x.color||'var(--brand)'};margin-right:6px"></span>${x.label}${x===recommended?' ★':''}<div style="font-weight:500;color:var(--t3);font-size:10.5px">${x.isAdi?'ADI':'Non-bank'}</div></td>
+          <td style="font-weight:700"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${x.color||'var(--brand)'};margin-right:6px"></span>${x.label}${x===recommended?' <span class="pill" style="background:var(--green-bg);color:var(--green);font-size:9.5px;padding:1px 6px;margin-left:4px">recommended</span>':''}<div style="font-weight:500;color:var(--t3);font-size:10.5px">${x.isAdi?'ADI':'Non-bank'}</div></td>
           <td class="mono">${(x.buffer*100).toFixed(0)}%</td>
           <td class="mono">${x.aRate.toFixed(2)}%</td>
           <td class="mono">${x.capacity!=null?fmtMoney(x.capacity):'—'}</td>
@@ -6201,11 +6201,18 @@ function renderSettingsOverlay(){
 
 /* ---------- Client tab ---------- */
 function noDealPrompt(tab, message){
-  return `<div style="text-align:center;padding:80px 20px;color:var(--t3)">
-    <div style="font-size:40px;margin-bottom:14px;opacity:.15">${tab==='Client'?'👤':tab==='Loan'?'🏠':'📂'}</div>
-    <h3 style="font-size:16px;font-weight:700;margin-bottom:8px">No deal selected</h3>
-    <p style="font-size:13px;margin-bottom:20px">${message}</p>
-    <button class="btn primary" onclick="goTab('pipeline')">← Go to Pipeline</button>
+  return `<div style="text-align:center;padding:80px 20px;color:var(--text-muted)">
+    <div style="margin:0 auto 16px;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);opacity:.4">
+      <svg viewBox="0 0 32 32" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="miter" aria-hidden="true">
+        <line x1="4" y1="29" x2="28" y2="29" stroke-width="0.6" opacity=".4"/>
+        <path d="M9 5 L9 27 L17 27 C22.5 27 26 22.5 26 16 C26 9.5 22.5 5 17 5 Z" fill="none"/>
+        <line x1="5.5" y1="5" x2="12.5" y2="5" stroke-width="0.7"/>
+        <line x1="5.5" y1="27" x2="12.5" y2="27" stroke-width="0.7"/>
+      </svg>
+    </div>
+    <h3 style="font-family:var(--serif);font-weight:500;font-size:18px;color:var(--text-primary);margin-bottom:8px;letter-spacing:-.005em">No deal selected</h3>
+    <p style="font-family:var(--serif);font-style:italic;font-size:13px;color:var(--text-muted);margin-bottom:22px;line-height:1.5;max-width:360px;margin-left:auto;margin-right:auto">${message}</p>
+    <button class="btn primary" onclick="goTab('pipeline')">Go to Pipeline</button>
   </div>`;
 }
 function renderIncomeSummarySection(){
@@ -6459,12 +6466,12 @@ async function enterApp(){
     if(a) a.style.display='flex';
     if(aiLive()) await loadDeals();
     initAssessorShell();
-    toast(state.user ? ('Welcome, '+(state.user.email||'assessor')+'!') : 'Welcome, Assessor.', 'ok');
+    toast(state.user ? ('Welcome, '+(state.user.email||'assessor')+'.') : 'Welcome, Assessor.', 'ok');
     return;
   }
   document.getElementById('app').style.display='flex';
   if(aiLive()) await loadDeals();
-  toast(state.user ? ('Welcome, '+(state.user.email||'broker')+'!') : 'Welcome back, Jordan!', 'ok');
+  toast(state.user ? ('Welcome, '+(state.user.email||'broker')+'.') : 'Welcome back.', 'ok');
   init();
 }
 document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });

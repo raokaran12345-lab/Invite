@@ -1,5 +1,54 @@
 # DebtIQ v6 — Changelog
 
+## Broker overhaul — Phase 4: voice & finish
+
+Calm copy, semantic tokens everywhere they belong, monospaced
+numbers, AU framing. Small but felt-everywhere.
+
+- **Calmer toasts.** "Deal D-XYZ submitted successfully!" →
+  "Deal D-XYZ submitted." "Welcome back, Jordan!" → "Welcome back."
+  Same for the broker + assessor variants.
+- **Decorative emoji removed** from AI Copilot insights:
+  📎 (no docs), 👥 (multi-applicant), 🏠 (multi-security),
+  📂 (missing docs), 📝 (extraction review), 🔔 (overdue) all
+  replaced with the calmer ⚠ / ▲ / ℹ glyph family already in use
+  for semantic state. Document-type icons (used in extraction
+  listings) intentionally kept — they're functional, not decoration.
+- **Marketing glyphs out** of lender comparison tables. The "★"
+  next to recommended lenders and "🏆" next to the best rate become
+  small editorial pills ("recommended" / "best") in the green
+  semantic colour. AI Pilot button drops its "▶" play arrow.
+- **noDealPrompt empty state** retired the 👤 / 🏠 / 📂 ghost emoji
+  in favour of the ink monogram SVG already used by the logo;
+  copy moved to serif italic for the brand voice.
+- **Raw hex literals scrubbed** from components — `#CBD2DC` (5
+  dashed-border instances in upload zones and the OCR test pane)
+  now `var(--line2)`; `#A7F3D0` (the green-on-ink JSON output)
+  now `var(--green-on-ink)`. Inline JS handlers updated to use
+  CSS variable references too (`this.style.borderColor='var(--line2)'`)
+  since the browser resolves them at paint time.
+- **Numbers wear mono + tabular**. `.lvr-badge` (the wizard's
+  large LVR/loan/security badge) was sized for impact but rendered
+  in Plus Jakarta; now `font-family:var(--mono)` +
+  `font-variant-numeric:tabular-nums` so the digits don't jiggle
+  as values change.
+- **Inline rule explainers.** Income and Liabilities subsection
+  headers in the calculator now carry a tiny italic note:
+  - Income: "variable types (overtime, bonus, commission, rental)
+    are shaded per lender policy. Hover the assessed value for the
+    rule."
+  - Liabilities: "credit cards stress to 3.8% of limit; HECS to 1%;
+    amortising debt at rate + buffer."
+- **AU spelling pass** confirmed clean (no `analyze`, `customize`,
+  `organization`, `behavior`, `optimize`, `prioritize` in
+  user-facing strings). `autocomplete="organization"` retained on
+  the login form — it's an HTML attribute name browsers expect in
+  US spelling.
+- **Smoke harness** +10 Phase 4 checks (raw-hex scrub, toast tone,
+  emoji removal in insights + tables + empty state, mono on LVR
+  badge, inline shading + liability explainers, monogram in
+  noDealPrompt). **257/257 passing.**
+
 ## Broker overhaul — Phase 3: deal-as-spine + atomic stepped builder
 
 The deal is the spine, and Calculate is a view of it. Restructured
