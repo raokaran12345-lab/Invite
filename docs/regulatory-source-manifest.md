@@ -86,11 +86,18 @@ remote, the Anthropic API) are reachable. The official regulator domains
 (apra.gov.au, asic.gov.au, oaic.gov.au, austrac.gov.au, legislation.gov.au)
 are therefore **not retrievable from here at all** — retrying will not help.
 
-**Update — official PDFs supplied by the human.** The owner subsequently
-provided the official **APG 223** (Sep 2022) and **RG 273** (24 Jun 2020)
-PDFs plus the ASIC responsible-lending overview page. The agent extracted the
-operative clauses directly from those documents and **verified 4 of 11 rules**
-(`REG_SOURCES[...].verified = true`, with the quoted clause + citation):
+**Update — official documents supplied by the human (two batches).** The owner
+provided **APG 223** (Sep 2022) + **RG 273** (24 Jun 2020) PDFs, the **ASIC
+INFO 146** disclosure-obligations overview, the **OAIC** APP / NDB /
+privacy-legislation pages, and the **AUSTRAC** homepage. The agent extracted
+the operative clauses directly and **verified 5 of 11 rules + 1 partial**
+(`REG_SOURCES[...]`, with the quoted clause + citation). INFO 146 added the
+disclosure spine (Credit Guide top-6 lenders [reg 27A(3)] + AFCA/EDR [reg 28P] +
+fees [reg 28D]; Quote [reg 28D]; Proposal fees/indirect remuneration [regs
+28F/28G]; written assessment "not unsuitable" [reg 28Q]). The OAIC pages
+partially verify privacy (Privacy Act >$3M coverage, 13 APPs, NDB serious-harm
+trigger) — but not APP 5 content, the ADM 10-Dec-2026 wording, or NDB timeframes.
+The AUSTRAC homepage is nav-only (no operative VOI/reporting-entity text):
 
 | Rule | Verified from | Operative clause |
 |---|---|---|

@@ -827,6 +827,7 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .reg-badge.unverified{background:var(--amber-bg);color:var(--amber)}
 .reg-cite{font-size:11px;color:var(--t3-cool)}
 .reg-cite.unverified .mono{color:var(--amber)}
+.reg-cite.partial .mono{color:var(--brass)}
 .reg-cite.ok .mono{color:var(--green)}
 .ws-ratio tr.unverified td{background:rgba(154,90,0,.04)}
 .reg-clause{margin-top:6px;font-size:11px;line-height:1.5;color:var(--t2);font-family:var(--serif);font-style:italic;border-left:2px solid var(--green);padding-left:9px}
@@ -3234,14 +3235,22 @@ const REG_SOURCES = {
     scope:'broker' },
   disclosure: {
     instrument:'ASIC INFO 146', kind:'guide',
-    sections:['Credit Guide (s126 NCCP)','Quote (reg 28D)','Credit Proposal Disclosure (regs 28E/28G, s121)','Preliminary Assessment (s116/s132)','pre-contractual (s16 NCC)'],
+    sections:['Credit Guide (s126 NCCP; regs 28, 28P, 27A(3))','Quote (reg 28D)','Proposal document — fees reg 28F, indirect remuneration reg 28G','Written/Preliminary assessment "not unsuitable" (reg 28Q)'],
     url:'https://www.asic.gov.au/regulatory-resources/credit/responsible-lending/responsible-lending-disclosure-obligations-overview-for-credit-licensees-and-representatives/',
-    encoded:'DISCLOSURE_DOCS field validation + versioned signed-copy capture', verified:false, scope:'broker' },
+    encoded:'DISCLOSURE_DOCS field validation + versioned signed-copy capture',
+    verified:true, verifiedAt:'2026-05-31', version:'ASIC INFO 146 (overview page, May 2026)',
+    clause:'Credit Guide gives preliminary information about the licensee and must include the EDR scheme (AFCA) contact details [reg 28P(2)(b)], "the six credit providers or lessors you conduct the most business with" [reg 27A(3)], and fees/charges [reg 28D]. Quote tells the consumer the estimated cost of the services [reg 28D]. Proposal document discloses fees and charges [reg 28F] and indirect remuneration [reg 28G]. The written assessment is that the contract is "not unsuitable" for the consumer [reg 28Q].',
+    match:'DISCLOSURE_DOCS encodes Credit Guide (ACL, fees, top-6 lenders, commission range, volume-bonus statement, IDR/EDR), Quote, Credit Proposal Disclosure, Preliminary Assessment, Needs Analysis, Pre-contractual — matching the INFO 146 document set + reg fields. LEGAL-REVIEW the exact field wording.',
+    scope:'broker' },
   privacy_adm: {
     instrument:'Privacy Act 1988 + APPs (2024 amdt)', kind:'law',
     sections:['APP 1/5/6/11/12/13','ADM disclosure (mandatory 10 Dec 2026)','NDB triggers/timeframes'],
     url:'https://www.oaic.gov.au/privacy/australian-privacy-principles',
-    encoded:'ADM disclosure + APP5 notice + retention/deletion + audit + breach runbook', verified:false, scope:'direct' },
+    encoded:'ADM disclosure + APP5 notice + retention/deletion + audit + breach runbook',
+    verified:false, partial:true, verifiedAt:'2026-05-31',
+    clause:'OAIC (overview) confirms: the Privacy Act 1988 applies to organisations with annual turnover > $3 million (and some others); there are 13 Australian Privacy Principles governing collection/use/disclosure, governance/accountability, integrity/correction and access; under the NDB scheme you "must notify affected individuals and us when a data breach involving personal information is likely to result in serious harm".',
+    note:'PARTIAL: OAIC landing pages confirm coverage threshold, the 13 APPs, and the NDB serious-harm trigger — but NOT the operative APP 5 collection-notice content, the ADM-disclosure wording (2024 amendment, mandatory 10 Dec 2026), or NDB timeframes. Supply the APP guidelines + the 2024 amendment text to fully verify. Whether DebtIQ is covered (>$3M turnover) is itself a LEGAL-REVIEW.',
+    scope:'direct' },
   voi_aml: {
     instrument:'AML/CTF Act 2006 + 2024 reforms (AUSTRAC)', kind:'law',
     sections:['reporting-entity definition','KYC/CDD','SMR','VOI standard'],
@@ -3262,13 +3271,18 @@ function regSource(id){ return REG_SOURCES[id] || null; }
 /* Inline provenance chip for the worksheet rule rows. */
 function regProvenance(id){
   const s = REG_SOURCES[id]; if(!s) return '';
-  const status = s.verified ? `verified` : `not verified at source — LEGAL-REVIEW`;
-  return `<span class="reg-cite ${s.verified?'ok':'unverified'}" title="${escHtml(s.instrument+' — '+s.sections.join('; '))}">`
+  const state = s.verified ? 'ok' : (s.partial ? 'partial' : 'unverified');
+  const status = s.verified ? 'verified' : (s.partial ? 'partly verified — LEGAL-REVIEW' : 'not verified at source — LEGAL-REVIEW');
+  return `<span class="reg-cite ${state}" title="${escHtml(s.instrument+' — '+s.sections.join('; '))}">`
     + `${escHtml(s.instrument)} · <span class="mono">${status}</span></span>`;
 }
 function regVerifiedCount(){
   const ids = Object.keys(REG_SOURCES);
-  return { verified: ids.filter(k=>REG_SOURCES[k].verified).length, total: ids.length };
+  return {
+    verified: ids.filter(k=>REG_SOURCES[k].verified).length,
+    partial: ids.filter(k=>!REG_SOURCES[k].verified && REG_SOURCES[k].partial).length,
+    total: ids.length
+  };
 }
 
 /* ============================================================
@@ -8174,7 +8188,7 @@ function renderComplianceEvidence(r){
 
     <div class="ce-section">
       <h3 class="ce-h3">Disclosure document spine</h3>
-      <p class="ce-sub">Generated, versioned, timestamped, with signed-copy capture. Required fields are validated against the reg content lists.</p>
+      <p class="ce-sub">Generated, versioned, timestamped, with signed-copy capture. Required fields are validated against the reg content lists. Source: ${regProvenance('disclosure')}.</p>
       ${discCards}
     </div>
 
@@ -8205,7 +8219,7 @@ function renderComplianceEvidence(r){
     <div class="ce-grid2">
       <div class="ce-section">
         <h3 class="ce-h3">Automated-decision disclosure (ADM)</h3>
-        <p class="ce-sub">DebtIQ uses AI to assist assessment. Borrowers must be told, and given a plain explanation.</p>
+        <p class="ce-sub">DebtIQ uses AI to assist assessment. Borrowers must be told, and given a plain explanation. Source: ${regProvenance('privacy_adm')}.</p>
         <div class="ce-note">
           <b>Plain-language explanation.</b> This service uses automated tools to help assess your application — reading your documents and calculating serviceability against lender rules. A <b>person reviews</b> the outcome; automated steps do not solely decide your loan. You can ask how a result was reached. <span class="mono">LEGAL-REVIEW</span>: final wording for the privacy notice (due 10 Dec 2026).
         </div>

@@ -54,14 +54,13 @@ every engine/compliance rule cites its instrument + sections-to-extract +
 official URL + a `verified` flag, surfaced in the serviceability worksheet's
 **Regulatory provenance** section.
 
-**Source-verification status: 4 / 11 verified at source.** The owner supplied
-the official **APG 223** and **RG 273** PDFs; the agent extracted the operative
-clauses and verified those rules (clause + citation stored in `REG_SOURCES`).
-Live fetching of the rest is still blocked (the regulator domains return HTTP
-403 in this environment), and APS 220 Att. C / RG 209 / INFO 146 / Privacy /
-AML / ARNECC / CDR were not supplied — they remain `LEGAL-REVIEW`. Action:
-supply those instruments (or run from a network-permitted env) and set the
-matching `REG_SOURCES[...].verified`.
+**Source-verification status: 5 / 11 verified + 1 partial.** The owner supplied
+official PDFs/pages (APG 223, RG 273, ASIC INFO 146 disclosure overview, OAIC
+APP/NDB/privacy-legislation pages, AUSTRAC homepage). The agent extracted the
+operative clauses and verified the rules below (clause + citation stored in
+`REG_SOURCES`). The remainder stay `LEGAL-REVIEW`: APS 220 Att. C, RG 209
+operative text, AML/CTF, ARNECC, CDR were not supplied (only nav/overview), and
+the egress block persists.
 
 | Rule | Instrument | Verified? |
 |---|---|---|
@@ -69,11 +68,11 @@ matching `REG_SOURCES[...].verified`.
 | HEM floor (higher-of) | APRA APG 223 | ✅ verified (clause quoted) |
 | Income shading (≥20% non-salary) | APRA APG 223 | ✅ verified (clause quoted) |
 | BID R&O narrative | ASIC RG 273 (ss 158LA/158LB) | ✅ verified (clause quoted) |
+| Disclosure spine field content | ASIC INFO 146 (regs 27A/28/28D/28F/28G/28P/28Q) | ✅ verified (clause quoted) |
+| ADM + APP5 + retention + NDB | Privacy Act + APPs (OAIC) | ◑ partial (coverage + 13 APPs + NDB trigger confirmed; APP5/ADM/timeframe pending) |
 | DTI ≥6× / 20% bucket / exemptions | APRA APS 220 Att. C | ❌ pending (doc not supplied) |
 | Responsible-lending trail | ASIC RG 209 | ❌ pending (only overview page) |
-| Disclosure field content | ASIC INFO 146 | ❌ pending (doc not supplied) |
-| ADM + APP5 + retention + NDB | Privacy Act + APPs (2024) | ❌ pending |
-| VOI capture | AML/CTF Act + 2024 reforms | ❌ pending |
+| VOI capture | AML/CTF Act + 2024 reforms | ❌ pending (AUSTRAC nav only; reporting-entity status LEGAL-REVIEW) |
 | Settlement coordination | ARNECC MOR/MPR; ECNL | ❌ pending |
 | CDR out-of-scope | CDR (ACCC/OAIC) | ❌ pending |
 
