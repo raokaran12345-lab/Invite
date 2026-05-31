@@ -818,6 +818,18 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .ce-kv-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px;color:var(--t1)}
 .ce-kv-row:last-of-type{border-bottom:none}
 
+/* Regulatory provenance (source manifest) */
+.reg-link{color:var(--steel);text-decoration:none;font-weight:600;font-size:12px}
+.reg-link:hover{text-decoration:underline}
+.reg-sec{font-size:10.5px;color:var(--t3-cool);margin-top:2px;line-height:1.4}
+.reg-badge{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:3px 8px;border-radius:var(--r-pill)}
+.reg-badge.ok{background:var(--green-bg);color:var(--green)}
+.reg-badge.unverified{background:var(--amber-bg);color:var(--amber)}
+.reg-cite{font-size:11px;color:var(--t3-cool)}
+.reg-cite.unverified .mono{color:var(--amber)}
+.reg-cite.ok .mono{color:var(--green)}
+.ws-ratio tr.unverified td{background:rgba(154,90,0,.04)}
+
 /* ============================================================
    SETTLEMENT tracker (Phase 7)
    ============================================================ */
@@ -3148,6 +3160,94 @@ function activePolicy(id){
 }
 function activeBuffer(id){ const p=activePolicy(id); return p ? p.buffer : m().buffer; }
 function activeDsrMax(id){ const p=activePolicy(id); return p ? p.dsr_max : m().dsrMax; }
+
+/* ============================================================
+   REGULATORY SOURCE PROVENANCE  (per docs/regulatory-source-manifest.md)
+   ------------------------------------------------------------
+   Every engine/compliance rule carries its source instrument + the
+   sections to extract + the official URL + a `verified` flag. The
+   manifest's rule: DO NOT treat any threshold as authoritative until
+   the operative clause is read from the official text. Until then,
+   `verified:false` → the worksheet shows the rule as LEGAL-REVIEW.
+
+   On the build run that ingested the manifest, fetches to apra.gov.au /
+   asic.gov.au / oaic.gov.au returned HTTP 403 in the environment, so the
+   agent could NOT verify at source — every entry stays verified:false.
+   A human (or a network-permitted run) extracts the clause and sets
+   `verified` to the instrument + section + version date.
+   ============================================================ */
+const REG_SOURCES = {
+  buffer: {
+    instrument:'APRA APG 223', kind:'guide',
+    sections:['Serviceability buffer (interest-rate add-on)'],
+    url:'https://www.apra.gov.au/sites/default/files/2022-06/Final%20Prudential%20Practice%20Guide%20APG%20223%20Residential%20Mortgage%20Lending.pdf',
+    encoded:'+3.00% over the actual rate (per lender; non-ADI may differ)',
+    verified:false, scope:'ADI' },
+  hem_floor: {
+    instrument:'APRA APG 223', kind:'guide',
+    sections:['Living-expense assessment (HEM as a floor / greater-of)'],
+    url:'https://www.apra.gov.au/sites/default/files/2022-06/Final%20Prudential%20Practice%20Guide%20APG%20223%20Residential%20Mortgage%20Lending.pdf',
+    encoded:'max(declared, HEM band)', verified:false, scope:'ADI' },
+  income_shading: {
+    instrument:'APRA APG 223', kind:'guide',
+    sections:['Income treatment / shading expectations'],
+    url:'https://www.apra.gov.au/prudential-practice-guide-apg-223-residential-mortgage-lending',
+    encoded:'per-lender income shading (lenders.js income_shading)', verified:false, scope:'per-lender' },
+  dti_flag: {
+    instrument:'APRA APS 220 — Attachment C', kind:'standard',
+    sections:['DTI ≥6× threshold','20% portfolio bucket basis','OO vs investor separation','quarterly measurement','exemptions: OO bridging; new-dwelling purchase/construction'],
+    url:'https://www.apra.gov.au/credit-risk-management',
+    contextUrl:'https://www.apra.gov.au/activation-of-debt-to-income-limits-as-a-macroprudential-policy-tool',
+    encoded:'≥6× → 20%-bucket FLAG (not a block); OO/investor split; bridging + new-build exempt',
+    verified:false, scope:'ADI' },
+  bid: {
+    instrument:'ASIC RG 273', kind:'guide',
+    sections:['Best-interests obligation (Pt 3-5A NCCPA)','conflict priority rule','alternatives considered','record-keeping'],
+    url:'https://download.asic.gov.au/media/5641325/rg273-published-24-june-2020.pdf',
+    encoded:'R&O/BID narrative → attributed audit trail', verified:false, scope:'broker' },
+  responsible_lending: {
+    instrument:'ASIC RG 209', kind:'guide',
+    sections:['reasonable inquiries + verification','"not unsuitable" assessment','living-expense inquiry/verification'],
+    url:'https://asic.gov.au/regulatory-resources/credit/responsible-lending/',
+    encoded:'extraction→verification→serviceability trail; living-expense reconciliation', verified:false, scope:'broker' },
+  disclosure: {
+    instrument:'ASIC INFO 146', kind:'guide',
+    sections:['Credit Guide (s126 NCCP)','Quote (reg 28D)','Credit Proposal Disclosure (regs 28E/28G, s121)','Preliminary Assessment (s116/s132)','pre-contractual (s16 NCC)'],
+    url:'https://www.asic.gov.au/regulatory-resources/credit/responsible-lending/responsible-lending-disclosure-obligations-overview-for-credit-licensees-and-representatives/',
+    encoded:'DISCLOSURE_DOCS field validation + versioned signed-copy capture', verified:false, scope:'broker' },
+  privacy_adm: {
+    instrument:'Privacy Act 1988 + APPs (2024 amdt)', kind:'law',
+    sections:['APP 1/5/6/11/12/13','ADM disclosure (mandatory 10 Dec 2026)','NDB triggers/timeframes'],
+    url:'https://www.oaic.gov.au/privacy/australian-privacy-principles',
+    encoded:'ADM disclosure + APP5 notice + retention/deletion + audit + breach runbook', verified:false, scope:'direct' },
+  voi_aml: {
+    instrument:'AML/CTF Act 2006 + 2024 reforms (AUSTRAC)', kind:'law',
+    sections:['reporting-entity definition','KYC/CDD','SMR','VOI standard'],
+    url:'https://www.austrac.gov.au/',
+    encoded:'structured VOI capture; VOI = settlement pre-condition', verified:false, scope:'LEGAL-REVIEW: reporting-entity status' },
+  settlement: {
+    instrument:'ARNECC MOR & MPR; ECNL', kind:'law',
+    sections:['subscriber eligibility','mandated-jurisdiction lodgement','trust-money handling'],
+    url:'https://www.arnecc.gov.au/',
+    encoded:'coordinate-only; no trust money; ELNO isolated mock adapter', verified:false, scope:'ARCH/LEGAL-REVIEW' },
+  cdr: {
+    instrument:'Consumer Data Right (ACCC/OAIC)', kind:'law',
+    sections:['accreditation','privacy safeguards'],
+    url:'https://www.cdr.gov.au/',
+    encoded:'out of scope (document-upload model); direct feeds = gating project', verified:false, scope:'LEGAL/ARCH-REVIEW' }
+};
+function regSource(id){ return REG_SOURCES[id] || null; }
+/* Inline provenance chip for the worksheet rule rows. */
+function regProvenance(id){
+  const s = REG_SOURCES[id]; if(!s) return '';
+  const status = s.verified ? `verified` : `not verified at source — LEGAL-REVIEW`;
+  return `<span class="reg-cite ${s.verified?'ok':'unverified'}" title="${escHtml(s.instrument+' — '+s.sections.join('; '))}">`
+    + `${escHtml(s.instrument)} · <span class="mono">${status}</span></span>`;
+}
+function regVerifiedCount(){
+  const ids = Object.keys(REG_SOURCES);
+  return { verified: ids.filter(k=>REG_SOURCES[k].verified).length, total: ids.length };
+}
 
 /* ============================================================
    DTI policy — APRA 2026 high-DTI treatment (MASTER Phase 4)
@@ -9589,6 +9689,7 @@ function renderWorksheet(el){
       ${renderWsStep4(d)}
       ${renderWsStep5(d)}
       ${renderWsStep6(d)}
+      ${renderWsRegSources()}
 
       <div class="ws-verdict" role="status">
         <div>
@@ -9829,6 +9930,35 @@ function renderWsStep5(d){
   </section>`;
 }
 
+/* Regulatory provenance for the engine rules shown in the worksheet.
+   Per the source manifest: each rule cites its instrument + section + URL,
+   with a verified-at-source flag. Unverified → LEGAL-REVIEW. */
+function renderWsRegSources(){
+  const vc = regVerifiedCount();
+  const rows = ['buffer','hem_floor','income_shading','dti_flag'].map(id=>{
+    const s = REG_SOURCES[id]; if(!s) return '';
+    const labels = { buffer:'Serviceability buffer', hem_floor:'HEM floor', income_shading:'Income shading', dti_flag:'DTI flag' };
+    return `<tr class="${s.verified?'':'unverified'}">
+      <td class="ws-r-name">${esc(labels[id])}</td>
+      <td><a href="${esc(s.url)}" target="_blank" rel="noopener" class="reg-link">${esc(s.instrument)}</a><div class="reg-sec">${esc(s.sections.join(' · '))}</div></td>
+      <td class="mono" style="font-size:11px">${esc(s.encoded)}</td>
+      <td class="num"><span class="reg-badge ${s.verified?'ok':'unverified'}">${s.verified?'verified':'LEGAL-REVIEW'}</span></td>
+    </tr>`;
+  }).join('');
+  return `<section class="ws-step">
+    <header class="ws-step-head">
+      <span class="ws-step-num">§</span>
+      <span class="ws-step-title">Regulatory provenance</span>
+      <span class="ws-step-sub">Each rule's source instrument · <span class="mono">${vc.verified}/${vc.total}</span> verified at source.</span>
+    </header>
+    ${vc.verified < vc.total ? `<div class="ce-note" style="margin:0 12px 10px"><b>Source verification pending.</b> Thresholds below are encoded from the regulatory source manifest's orientation, <b>not yet read from the official instruments</b> (fetch returned HTTP 403 in the build environment). Verify at source before relying on them — <span class="mono">LEGAL-REVIEW</span>.</div>`:''}
+    <table class="ws-ratio">
+      <thead><tr><th>Rule</th><th>Instrument &amp; sections to extract</th><th>Encoded</th><th class="num">Status</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </section>`;
+}
+
 function renderWsStep6(d){
   const r = d.r;
   const da = r.dtiAssess || dtiAssessment(r.dti, d.lender, (state.calc||{}).purpose);
@@ -9879,7 +10009,7 @@ function renderWsStep6(d){
       </tbody>
     </table>
     <p style="font-size:11px;color:var(--t3-cool);font-family:var(--serif);font-style:italic;margin:10px 12px 0;line-height:1.5">
-      DTI is shown as a <b>lender-appetite flag</b>, not a serviceability ceiling — a high DTI consumes the lender's high-DTI bucket but does not, on its own, decline the loan. Segment: <b>${da.segment==='investment'?'investment':'owner-occupier'}</b>${da.exempt?` · <b>exempt</b> (${(state.calc&&state.calc.purpose)==='construction'?'new-build/construction':'bridging'})`:''}. <span class="mono">LEGAL-REVIEW</span>: thresholds indicative pending the compliance map (§5).
+      DTI is shown as a <b>lender-appetite flag</b>, not a serviceability ceiling — a high DTI consumes the lender's high-DTI bucket but does not, on its own, decline the loan. Segment: <b>${da.segment==='investment'?'investment':'owner-occupier'}</b>${da.exempt?` · <b>exempt</b> (${(state.calc&&state.calc.purpose)==='construction'?'new-build/construction':'bridging'})`:''}. Source: ${regProvenance('dti_flag')}.
     </p>
   </section>`;
 }

@@ -1,5 +1,40 @@
 # DebtIQ v6 — Changelog
 
+## MASTER program — Regulatory Source Manifest ingest + provenance layer
+
+Ingested the authority document (`docs/regulatory-source-manifest.md`) and
+honoured its core rule: **don't treat any threshold as authoritative until
+the operative clause is read from the official instrument.**
+
+- **Attempted source fetches** of every official URL (APRA APS 220 / APG 223,
+  ASIC RG 273 / RG 209 / INFO 146, OAIC APPs). **All returned HTTP 403** in
+  this environment — the regulators' sites block automated egress here, so the
+  agent could **not** verify clauses at source.
+- **`REG_SOURCES` provenance registry** (in `index.html`) — every engine /
+  compliance rule now cites its **instrument + sections-to-extract + official
+  URL + scope + a `verified` flag**, mapped exactly to the manifest's nine
+  instruments (buffer/HEM/shading → APG 223; DTI → APS 220 Att. C; BID →
+  RG 273; responsible lending → RG 209; disclosure → INFO 146; ADM/privacy →
+  Privacy Act + APPs; VOI → AML/CTF; settlement → ARNECC/ECNL; CDR).
+- **Everything is `verified:false`** (fetch blocked) → surfaced as
+  `LEGAL-REVIEW`. No manifest paraphrase was promoted to "confirmed"; the
+  Phase-4 thresholds (6× / 20% / +3%) are now explicitly tagged as encoded-
+  but-**not-yet-verified-at-source**.
+- **Serviceability worksheet** gains a **Regulatory provenance** section: a
+  table of each rule → instrument (clickable official link) → sections to
+  extract → what's encoded → `verified` / `LEGAL-REVIEW` badge, with an honest
+  "source verification pending (HTTP 403)" banner. The DTI footnote now cites
+  APS 220 Att. C via `regProvenance()`.
+- **`REVIEW-REGISTER.md`** updated with the 0/11 source-verification table and
+  the exact "extract clause → set verified" action for a network-permitted run.
+- Smoke: +7 provenance checks; worksheet-step assertion updated to 7 sections
+  (**380/380 passing**).
+
+> To complete verification: run the fetches from a network-permitted
+> environment (or open the URLs manually), extract the operative clauses, and
+> set each `REG_SOURCES[...].verified` to instrument + section + version date.
+
+
 ## MASTER program — Phase 8 (CDR decision) + Phase 9 (finish & verify)
 
 Closing gates of the program.
