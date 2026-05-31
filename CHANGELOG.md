@@ -1,5 +1,53 @@
 # DebtIQ v6 — Changelog
 
+## MASTER program — Phase 6: compliance-evidence features
+
+Built the FEATURES that **evidence and enable** the compliance-map
+obligations — product scaffolding, **not** legal conclusions. The code
+never states the portal "is compliant", holds a licence, or is an
+AML/CDR entity.
+
+> **LEGAL-REVIEW (carried):** disclosure field content & wording, the
+> volume-bonus statement, IDR/EDR membership, ACL number, ADM notice
+> wording, VOI certified/original/NAATI rules, AML reporting-entity
+> status, sub-processor DPAs, and the NDB plan are for counsel.
+
+- **Disclosure-document spine.** `DISCLOSURE_DOCS` registry of six docs
+  (Credit Guide, Quote, Credit Proposal Disclosure, Preliminary
+  Assessment, Needs Analysis, Pre-contractual) with per-doc **required-
+  field lists**. `generateDisclosure()` validates fields, **versions**,
+  and **timestamps**; `signDisclosure()` captures a **signed copy**
+  (signer + method + time) and blocks signing until fields are complete.
+  Everything is attributed to the audit trail.
+- **BID & suitability (§3–4).** The existing R&O generator stays; added a
+  **living-expense reconciliation** (declared vs HEM floor) and framed
+  the extraction→verification→serviceability trail as suitability
+  evidence.
+- **VOI capture (§6).** Structured per category (primary photographic /
+  secondary government / financial), in-date checks, verified flag,
+  capture method. `voiComplete()` makes **VOI completeness a settlement
+  pre-condition** (consumed by Phase 7). AML flagged `LEGAL-REVIEW`.
+- **ADM disclosure (§9).** Plain-language automated-decision explanation
+  + version-stamped acknowledgement (`acknowledgeADM()`). Wording flagged
+  `LEGAL-REVIEW` (privacy-notice text due 10 Dec 2026).
+- **Privacy / retention (§9).** APP 5 collection notice (`recordAPP5()`),
+  retention period control (`setRetention()`), and a privileged,
+  re-auth'd, logged **PII deletion** action (`deleteClientPII()`). Least-
+  privilege + audit come from the Phase 5 access layer.
+- **UI.** A "Compliance & evidence" layer appended to the Compliance page
+  — disclosure spine cards (generate / re-generate / capture signed copy,
+  with missing-field + signed-by readouts), VOI matrix, suitability
+  reconciliation, ADM notice + acknowledgement, and privacy/retention
+  controls. Guarded re-render (`rerenderCompliance()`).
+- **Persistence.** `state.compliance` keyed by deal id, localStorage
+  (`debtiq.compliance.v1`), hydrated on boot. No backend contract change;
+  persisting to Supabase is flagged `ARCH-REVIEW`.
+- **`COMPLIANCE.md`** — disclosure register, **data-flow map**, **breach-
+  response runbook stub**, ADM explanation, and the full evidence map,
+  all with `LEGAL-REVIEW`/`ARCH-REVIEW` markers.
+- Smoke: +11 Phase 6 checks (**359/359 passing**).
+
+
 ## MASTER program — Phase 4: serviceability engine, 2026 rules
 
 Updated the engine to the current APRA framing. Buffer **+3%**, the

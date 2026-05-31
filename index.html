@@ -775,6 +775,49 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .acc-yes{color:var(--green);font-weight:700}
 .acc-no{color:var(--line);font-weight:700}
 
+/* ============================================================
+   COMPLIANCE & EVIDENCE pane (Phase 6)
+   ============================================================ */
+.ce-wrap{margin-top:24px;padding-top:20px;border-top:2px solid var(--line)}
+.ce-head{margin-bottom:18px}
+.ce-section{border:1px solid var(--line);border-radius:8px;background:var(--surface-clinical);padding:16px 18px;margin-bottom:16px}
+.ce-h3{font-family:var(--serif);font-weight:500;font-size:16px;color:var(--t1);margin-bottom:4px;letter-spacing:-.005em}
+.ce-sub{font-size:12.5px;color:var(--t2);margin-bottom:12px;line-height:1.5}
+.ce-fine{font-family:var(--serif);font-style:italic;font-size:11.5px;color:var(--t3-cool);line-height:1.5;margin-top:10px}
+.ce-muted{color:var(--t3-cool);font-size:11px}
+.ce-grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:880px){.ce-grid2{grid-template-columns:1fr}}
+.ce-disc{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px dashed var(--line)}
+.ce-disc:last-child{border-bottom:none}
+.ce-disc-title{font-weight:600;font-size:13.5px;color:var(--t1)}
+.ce-disc-reg{font-size:10.5px;color:var(--t3-cool);margin-top:2px}
+.ce-missing{font-size:11.5px;color:var(--amber);margin-top:4px;font-style:italic;font-family:var(--serif)}
+.ce-signed{font-size:11.5px;color:var(--green);margin-top:4px}
+.ce-disc-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
+.ce-chip{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.03em;padding:3px 9px;border-radius:var(--r-pill);text-transform:uppercase}
+.ce-chip.ok{background:var(--green-bg);color:var(--green)}
+.ce-chip.warn{background:var(--amber-bg);color:var(--amber)}
+.ce-chip.muted{background:var(--ink-bg);color:var(--t3-cool)}
+.ce-voi-method{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.ce-pill{font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:var(--r-pill);border:1px solid var(--line);background:var(--white);color:var(--t2);cursor:pointer}
+.ce-pill.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.ce-voi-row{display:grid;grid-template-columns:1.4fr 1.3fr auto auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line)}
+.ce-voi-row:last-of-type{border-bottom:none}
+.ce-voi-label{font-size:12.5px;font-weight:600;color:var(--t1)}
+.ce-input{font-size:12px;padding:6px 9px;border:1px solid var(--line);border-radius:6px;background:var(--white);color:var(--t1);width:100%}
+.ce-check{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--t2);white-space:nowrap;cursor:pointer}
+.ce-recon{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:6px}
+.ce-recon-cell{display:flex;flex-direction:column;gap:3px;padding:9px 11px;background:var(--paper);border:1px solid var(--line);border-radius:6px}
+.ce-rl{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--t3-warm)}
+.ce-recon-cell .mono{font-size:14px;color:var(--t1)}
+.ce-note{font-size:12.5px;line-height:1.55;color:var(--t2);background:var(--steel-bg);border-left:3px solid var(--steel);border-radius:6px;padding:11px 13px;margin-bottom:12px}
+.ce-note b{color:var(--t1)}
+.ce-ack{font-family:var(--mono);font-size:11.5px;padding:8px 12px;border-radius:6px;margin-top:6px}
+.ce-ack.ok{background:var(--green-bg);color:var(--green)}
+.ce-ack.warn{background:var(--amber-bg);color:var(--amber)}
+.ce-kv-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px;color:var(--t1)}
+.ce-kv-row:last-of-type{border-bottom:none}
+
 /* Purpose tiles (Step 1) */
 .purpose-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
 .purpose-tile{
@@ -7533,6 +7576,190 @@ ${(()=>{ const prov=collectProvenance(); if(!prov.length) return ''; return `<se
 /* ============================================================
    COMPLIANCE AI
    ============================================================ */
+/* ============================================================
+   COMPLIANCE-EVIDENCE MODEL  (MASTER program — Phase 6)
+   ------------------------------------------------------------
+   Builds the FEATURES that evidence/enable the obligations in the
+   (pending) compliance map — disclosure documents, BID/suitability
+   trail, VOI capture, ADM disclosure, APP5 notices, retention. It is
+   product scaffolding, NOT a legal determination.
+
+   LEGAL-REVIEW (carried): exact field lists, disclosure wording, the
+   ADM notice text, VOI standard specifics, and AML reporting-entity
+   status are for qualified counsel. The code never states the portal
+   "is compliant", holds a licence, or is an AML/CDR entity.
+
+   Persistence: localStorage (COMPLIANCE_LS_KEY), keyed by deal id —
+   mirrors how deals already persist; no backend contract changes.
+   ============================================================ */
+const COMPLIANCE_LS_KEY = 'debtiq.compliance.v1';
+// Disclosure spine — each entry lists the fields the reg content lists
+// require (validated at generate time). Wording/lists are LEGAL-REVIEW.
+const DISCLOSURE_DOCS = [
+  { type:'credit_guide', label:'Credit Guide', reg:'NCCP s.113/126/160',
+    fields:['licensee_name','acl_number','fees','top_lenders','commission_range','volume_bonus_statement','idr_edr'] },
+  { type:'quote', label:'Quote', reg:'NCCP s.114',
+    fields:['licensee_name','acl_number','fees','services'] },
+  { type:'credit_proposal', label:'Credit Proposal Disclosure', reg:'NCCP s.121',
+    fields:['licensee_name','acl_number','lender','commission_range','fees'] },
+  { type:'preliminary_assessment', label:'Preliminary Assessment', reg:'NCCP s.116/120',
+    fields:['client_name','requirements_objectives','financial_situation','not_unsuitable_reason'] },
+  { type:'needs_analysis', label:'Needs Analysis', reg:'Best Interests Duty',
+    fields:['client_name','requirements_objectives','priorities','scope'] },
+  { type:'pre_contractual', label:'Pre-contractual Statement', reg:'NCCP s.16/17',
+    fields:['lender','amount','rate','term','fees'] }
+];
+const VOI_CATEGORIES = [
+  { id:'primary_photo', label:'Primary photographic (passport / driver licence)', tier:'A' },
+  { id:'secondary_gov', label:'Secondary government (Medicare / birth cert)', tier:'B' },
+  { id:'financial', label:'Financial (bank card / statement)', tier:'C' }
+];
+
+/* Re-render the Compliance page only when it's actually mounted. */
+function rerenderCompliance(){
+  const el = document.getElementById('page-compliance');
+  if(el) renderCompliance(el);
+}
+function loadCompliance(){
+  try{ const o = JSON.parse(localStorage.getItem(COMPLIANCE_LS_KEY)||'null'); if(o && typeof o==='object') state.compliance = o; }catch(e){}
+}
+function saveCompliance(){ try{ localStorage.setItem(COMPLIANCE_LS_KEY, JSON.stringify(state.compliance||{})); }catch(e){} }
+function complianceFor(dealId){
+  const id = dealId || state.activeDeal || '_unsaved';
+  state.compliance = state.compliance || {};
+  if(!state.compliance[id]) state.compliance[id] = { disclosures:[], voi:null, adm:null, app5:null, retention:null };
+  return state.compliance[id];
+}
+/* Source a disclosure field from the deal / settings / lender data.
+   Returns '' when missing so validation can flag it. */
+function discFieldValue(field){
+  const deal = DEALS.find(d=>d.id===state.activeDeal) || {};
+  const pol = activePolicy();
+  const acl = (document.getElementById('setAcl')||{}).value || '389201';
+  const lic = state.userName || (state.user&&state.user.email) || 'DebtIQ brokerage';
+  const top = Object.values(lenderDB()).slice(0,6).map(p=>p.label||'').filter(Boolean);
+  const map = {
+    licensee_name: lic,
+    acl_number: acl,
+    fees: 'Nil broker fee (lender-paid commission)',     // LEGAL-REVIEW: confirm fee disclosure
+    top_lenders: top.length>=6 ? top.join(', ') : '',
+    commission_range: 'Upfront 0.55–0.70% + trail 0.15–0.20% p.a.', // LEGAL-REVIEW
+    volume_bonus_statement: 'No volume-based benefits are received that could influence this recommendation.', // LEGAL-REVIEW
+    idr_edr: 'IDR: complaints@brokerage.com · EDR: AFCA member 00000', // LEGAL-REVIEW: real membership no.
+    services: 'Credit assistance — sourcing and arranging a home loan.',
+    lender: pol ? (pol.label||state.lender) : (deal.lender||''),
+    client_name: deal.name || (state.calc.entities[0]&&state.calc.entities[0].name) || '',
+    amount: state.calc.newLoan ? fmtMoney(state.calc.newLoan.amount) : '',
+    rate: state.calc.newLoan ? (state.calc.newLoan.rate+'%') : '',
+    term: state.calc.newLoan ? (state.calc.newLoan.term+'yr') : '',
+    requirements_objectives: (CALC_PURPOSES.find(p=>p.id===state.calc.purpose)||{}).label || '',
+    financial_situation: 'Income, commitments and expenses captured from verified documents.',
+    not_unsuitable_reason: 'Loan services on assessed income with the +3% buffer and HEM floor applied.',
+    priorities: 'Rate, repayment certainty, features as stated by the client.',
+    scope: 'Residential lending across the accredited panel.'
+  };
+  return map[field] != null ? map[field] : '';
+}
+function generateDisclosure(type){
+  if(!requirePermission('pack.generate','generate a disclosure document')) return;
+  const def = DISCLOSURE_DOCS.find(d=>d.type===type); if(!def) return;
+  const fields = {}; const missing = [];
+  def.fields.forEach(f=>{ const v = discFieldValue(f); fields[f]=v; if(!v) missing.push(f); });
+  const c = complianceFor();
+  const prior = c.disclosures.filter(x=>x.type===type);
+  const doc = {
+    id: type+'_'+(prior.length+1),
+    type, label:def.label, reg:def.reg,
+    version: prior.length+1,
+    generatedAt: new Date().toISOString(),
+    fields,
+    validation:{ complete: missing.length===0, missing },
+    signed: null
+  };
+  c.disclosures.unshift(doc);
+  saveCompliance();
+  auditLog('DISCLOSURE_GENERATED', `${def.label} v${doc.version}${missing.length?` (${missing.length} field(s) missing)`:''}`, 'Broker','broker');
+  toast(`${def.label} v${doc.version} generated${missing.length?` — ${missing.length} field(s) to complete`:''}.`, missing.length?'info':'ok');
+  rerenderCompliance();
+}
+function signDisclosure(docId){
+  const c = complianceFor();
+  const doc = c.disclosures.find(d=>d.id===docId); if(!doc) return;
+  if(!doc.validation.complete){ toast('Complete the missing fields before capturing a signed copy.', 'err'); return; }
+  const who = (typeof window.prompt==='function') ? window.prompt('Name of the person acknowledging receipt:', (doc.fields.client_name||'Client')) : (doc.fields.client_name||'Client');
+  if(who===null) return;
+  doc.signed = { at:new Date().toISOString(), by:who.trim()||'Client', method:'e-acknowledged' };
+  saveCompliance();
+  auditLog('DISCLOSURE_SIGNED', `${doc.label} v${doc.version} acknowledged by ${doc.signed.by}`, 'Broker','broker');
+  toast(`${doc.label} signed copy captured.`, 'ok');
+  rerenderCompliance();
+}
+/* ---------- VOI ---------- */
+function setVoiDoc(catId, type, inDate){
+  const c = complianceFor();
+  c.voi = c.voi || { method:'face_to_face', documents:[], status:'incomplete' };
+  let entry = c.voi.documents.find(d=>d.category===catId);
+  if(!entry){ entry = { category:catId, type:'', inDate:true, verified:false }; c.voi.documents.push(entry); }
+  if(type!=null) entry.type = type;
+  if(inDate!=null) entry.inDate = inDate;
+  entry.verified = !!(entry.type && entry.inDate);
+  voiRecomputeStatus();
+}
+function setVoiMethod(method){ const c=complianceFor(); c.voi=c.voi||{method,documents:[],status:'incomplete'}; c.voi.method=method; voiRecomputeStatus(); }
+function voiRecomputeStatus(){
+  const c = complianceFor(); if(!c.voi){ return; }
+  // Standard: at least one in-date primary photographic ID verified.
+  const primary = (c.voi.documents||[]).find(d=>d.category==='primary_photo' && d.verified);
+  const complete = !!primary;
+  c.voi.status = complete ? 'complete' : 'incomplete';
+  if(complete && !c.voi.completedAt){ c.voi.completedAt = new Date().toISOString(); auditLog('VOI_COMPLETED','Primary photographic ID verified, in date','Broker','broker'); }
+  if(!complete) c.voi.completedAt = null;
+  saveCompliance();
+  rerenderCompliance();
+}
+function voiComplete(dealId){ const c=(state.compliance||{})[dealId||state.activeDeal]; return !!(c && c.voi && c.voi.status==='complete'); }
+/* ---------- ADM disclosure ---------- */
+const ADM_NOTICE_VERSION = '2026-05-draft';
+function acknowledgeADM(){
+  const c = complianceFor();
+  c.adm = { acknowledged:true, at:new Date().toISOString(), by:(state.userName||'Broker'), version:ADM_NOTICE_VERSION };
+  saveCompliance();
+  auditLog('ADM_ACKNOWLEDGED', `ADM/privacy notice ${ADM_NOTICE_VERSION}`, 'Broker','broker');
+  toast('Automated-decision disclosure acknowledged.', 'ok');
+  rerenderCompliance();
+}
+/* ---------- APP5 collection notice ---------- */
+function recordAPP5(){
+  const c = complianceFor();
+  c.app5 = { recorded:true, at:new Date().toISOString() };
+  saveCompliance();
+  auditLog('APP5_NOTICE','Collection notice presented at document upload','Broker','broker');
+  toast('APP 5 collection notice recorded.', 'ok');
+  rerenderCompliance();
+}
+/* ---------- Retention / deletion ---------- */
+function setRetention(years){
+  const c = complianceFor();
+  c.retention = c.retention || {};
+  c.retention.policyYears = +years||7;
+  c.retention.deleteAfter = new Date(Date.now()+ (+years||7)*365*864e5).toISOString();
+  saveCompliance();
+  auditLog('RETENTION_SET', `${years} year(s)`, 'Broker','broker');
+  rerenderCompliance();
+}
+function deleteClientPII(){
+  if(!requirePermission('pii.export','delete client PII')) return;   // same privilege tier as export
+  requireReauth('delete client PII for this deal', ()=>{
+    const c = complianceFor();
+    c.retention = c.retention || {};
+    c.retention.deletedAt = new Date().toISOString();
+    saveCompliance();
+    auditLog('PII_DELETED', `Deal ${state.activeDeal||'(unsaved)'} client PII marked for deletion`, 'Broker','broker');
+    toast('Client PII deletion recorded (logged). Backend purge is an ARCH-REVIEW step.', 'ok');
+    rerenderCompliance();
+  });
+}
+
 function renderCompliance(el){
   const r = computeServiceability();
   const validation = validateBIDBeforeGenerate(r);
@@ -7563,7 +7790,121 @@ function renderCompliance(el){
       <input type="file" id="ocrTestInput" accept="image/*,application/pdf" multiple style="display:none" onchange="testExtract(this.files)">
       <pre id="ocrTestOut" class="mono" style="margin-top:12px;background:var(--ink);color:var(--green-on-ink);padding:14px;border-radius:12px;font-size:11.5px;white-space:pre-wrap;max-height:280px;overflow:auto;display:block">// extracted JSON appears here</pre>
     </div>
-    <div id="complianceOutput" style="display:flex;flex-direction:column;gap:12px"></div>`;
+    <div id="complianceOutput" style="display:flex;flex-direction:column;gap:12px"></div>
+    ${renderComplianceEvidence(r)}`;
+}
+
+/* ============================================================
+   COMPLIANCE & EVIDENCE — Phase 6 UI (appended to the page)
+   ============================================================ */
+function renderComplianceEvidence(r){
+  const c = complianceFor();
+  const adm = c.adm, app5 = c.app5, voi = c.voi, ret = c.retention;
+  // Disclosure spine cards.
+  const discCards = DISCLOSURE_DOCS.map(def=>{
+    const latest = (c.disclosures||[]).filter(d=>d.type===def.type)[0];
+    const statusChip = !latest ? `<span class="ce-chip muted">Not generated</span>`
+      : latest.signed ? `<span class="ce-chip ok">Signed v${latest.version}</span>`
+      : latest.validation.complete ? `<span class="ce-chip warn">v${latest.version} · unsigned</span>`
+      : `<span class="ce-chip warn">v${latest.version} · ${latest.validation.missing.length} field(s) missing</span>`;
+    return `<div class="ce-disc">
+      <div class="ce-disc-main">
+        <div class="ce-disc-title">${esc(def.label)}</div>
+        <div class="ce-disc-reg mono">${esc(def.reg)}</div>
+        ${latest && !latest.validation.complete ? `<div class="ce-missing">Missing: ${latest.validation.missing.map(esc).join(', ')}</div>`:''}
+        ${latest && latest.signed ? `<div class="ce-signed">Acknowledged by <b>${esc(latest.signed.by)}</b> · ${new Date(latest.signed.at).toLocaleString('en-AU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>`:''}
+      </div>
+      <div class="ce-disc-actions">
+        ${statusChip}
+        <button class="acc-mini" onclick="generateDisclosure('${def.type}')">${latest?'Re-generate':'Generate'}</button>
+        ${latest && latest.validation.complete && !latest.signed ? `<button class="acc-mini" onclick="signDisclosure('${esc(latest.id)}')">Capture signed copy</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  // VOI.
+  const voiRows = VOI_CATEGORIES.map(cat=>{
+    const entry = voi && (voi.documents||[]).find(d=>d.category===cat.id);
+    return `<div class="ce-voi-row">
+      <div><div class="ce-voi-label">${esc(cat.label)}</div><div class="mono ce-muted">Tier ${cat.tier}</div></div>
+      <input type="text" class="ce-input" placeholder="Document type / number" value="${esc(entry&&entry.type||'')}" onchange="setVoiDoc('${cat.id}', this.value, null)">
+      <label class="ce-check"><input type="checkbox" ${entry&&entry.inDate?'checked':''} onchange="setVoiDoc('${cat.id}', null, this.checked)"> In date</label>
+      <span class="ce-chip ${entry&&entry.verified?'ok':'muted'}">${entry&&entry.verified?'Verified':'—'}</span>
+    </div>`;
+  }).join('');
+  const voiStatus = voiComplete(state.activeDeal)
+    ? `<span class="ce-chip ok">VOI complete</span>`
+    : `<span class="ce-chip warn">VOI incomplete — settlement pre-condition</span>`;
+
+  return `
+  <div class="ce-wrap">
+    <div class="ce-head">
+      <h2 class="serif" style="font-weight:500;font-size:22px;letter-spacing:-.005em;color:var(--t1)">Compliance &amp; evidence</h2>
+      <p class="serif-italic" style="font-size:13px;color:var(--t2)">Features that <b>evidence and enable</b> the obligations — disclosure spine, BID/suitability trail, VOI, ADM disclosure, privacy &amp; retention. <span class="mono">LEGAL-REVIEW</span>: wording &amp; field lists are for counsel; nothing here asserts the portal is compliant.</p>
+    </div>
+
+    <div class="ce-section">
+      <h3 class="ce-h3">Disclosure document spine</h3>
+      <p class="ce-sub">Generated, versioned, timestamped, with signed-copy capture. Required fields are validated against the reg content lists.</p>
+      ${discCards}
+    </div>
+
+    <div class="ce-grid2">
+      <div class="ce-section">
+        <h3 class="ce-h3">Verification of identity (VOI)</h3>
+        <div class="ce-voi-method">
+          Method:
+          ${['face_to_face','video','agent'].map(mth=>`<button class="ce-pill ${voi&&voi.method===mth?'active':''}" onclick="setVoiMethod('${mth}')">${mth==='face_to_face'?'Face-to-face':mth==='video'?'Video':'Agent'}</button>`).join('')}
+          ${voiStatus}
+        </div>
+        ${voiRows}
+        <p class="ce-fine">Standard requires at least one in-date primary photographic ID. <span class="mono">LEGAL-REVIEW</span>: certified/original/NAATI rules. <span class="mono">AML → LEGAL-REVIEW</span> (reporting-entity status).</p>
+      </div>
+
+      <div class="ce-section">
+        <h3 class="ce-h3">Responsible-lending suitability</h3>
+        <p class="ce-sub">Living-expense reconciliation — declared vs HEM floor.</p>
+        <div class="ce-recon">
+          <div class="ce-recon-cell"><span class="ce-rl">Declared / mo</span><span class="mono">${state.calc.declaredExpensesMonthly!=null?fmtMoney(state.calc.declaredExpensesMonthly):'— not declared —'}</span></div>
+          <div class="ce-recon-cell"><span class="ce-rl">HEM benchmark</span><span class="mono">${fmtMoney(r.HEM)}</span></div>
+          <div class="ce-recon-cell"><span class="ce-rl">Applied floor</span><span class="mono">${fmtMoney(state.calc.declaredExpensesMonthly!=null?Math.max(state.calc.declaredExpensesMonthly,r.HEM):r.HEM)}</span></div>
+        </div>
+        <p class="ce-fine">Suitability evidence = the extraction → verification → serviceability trail (captured in the audit log). The +3% buffer and HEM floor are applied in every assessment.</p>
+      </div>
+    </div>
+
+    <div class="ce-grid2">
+      <div class="ce-section">
+        <h3 class="ce-h3">Automated-decision disclosure (ADM)</h3>
+        <p class="ce-sub">DebtIQ uses AI to assist assessment. Borrowers must be told, and given a plain explanation.</p>
+        <div class="ce-note">
+          <b>Plain-language explanation.</b> This service uses automated tools to help assess your application — reading your documents and calculating serviceability against lender rules. A <b>person reviews</b> the outcome; automated steps do not solely decide your loan. You can ask how a result was reached. <span class="mono">LEGAL-REVIEW</span>: final wording for the privacy notice (due 10 Dec 2026).
+        </div>
+        ${adm && adm.acknowledged
+          ? `<div class="ce-ack ok">Acknowledged · ${new Date(adm.at).toLocaleString('en-AU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})} · ${esc(adm.version)}</div>`
+          : `<button class="btn primary" onclick="acknowledgeADM()">Acknowledge ADM disclosure</button>`}
+      </div>
+
+      <div class="ce-section">
+        <h3 class="ce-h3">Privacy &amp; retention</h3>
+        <p class="ce-sub">APP 5 collection notice + retention controls. Least-privilege + audit are handled by the access layer (Phase 5).</p>
+        <div class="ce-kv-row">
+          <span>APP 5 collection notice</span>
+          ${app5 && app5.recorded ? `<span class="ce-chip ok">Recorded</span>` : `<button class="acc-mini" onclick="recordAPP5()">Record notice</button>`}
+        </div>
+        <div class="ce-kv-row">
+          <span>Retention period</span>
+          <select class="acc-role-select" onchange="setRetention(this.value)">
+            ${[5,7,10].map(y=>`<option value="${y}" ${ret&&ret.policyYears===y?'selected':''}>${y} years</option>`).join('')}
+          </select>
+        </div>
+        ${ret && ret.deletedAt
+          ? `<div class="ce-ack warn">PII deletion recorded · ${new Date(ret.deletedAt).toLocaleString('en-AU',{day:'2-digit',month:'short'})}</div>`
+          : `<button class="acc-mini danger" style="margin-top:8px" onclick="deleteClientPII()">Delete client PII (logged)</button>`}
+        <p class="ce-fine">Data-flow map + breach runbook live in <b>COMPLIANCE.md</b>. <span class="mono">LEGAL-REVIEW</span>: sub-processor DPAs. <span class="mono">ARCH-REVIEW</span>: backend purge on deletion.</p>
+      </div>
+    </div>
+  </div>`;
 }
 function validateBIDBeforeGenerate(r){
   const pol = activePolicy();
@@ -9557,6 +9898,7 @@ function showDesignPreview(){
   loadDockState();            // pull right-dock collapse/tab state from localStorage
   loadLendingGroups();        // pull lending-group slice (Phase 2 of the round-2 brief)
   loadAccessState();          // pull RBAC org/membership slice (Phase 5 — owner-held)
+  loadCompliance();           // pull compliance-evidence slice (Phase 6)
   startSession();             // begin the session clock (timeout + re-auth tracking)
   await initBackend();
   renderLoginMode();
