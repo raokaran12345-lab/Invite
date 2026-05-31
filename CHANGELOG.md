@@ -1,5 +1,55 @@
 # DebtIQ v6 — Changelog
 
+## Broker overhaul — Phase 2: consolidated right dock
+
+Replaced three separate right-side surfaces — the always-open AI
+copilot panel, the floating Policy & Rates drawer, and the bottom
+Live Timeline strip — with **one tabbed, collapsible right dock**.
+Closable. Persisted. Same mental model whichever tab you're on.
+
+- **New `#rightDock`** (`<aside>`) sits where `#copilotPanel` used to
+  be. Four tabs: **AI Copilot · Policy · Timeline · Conditions**.
+  Header carries the dock title, model metadata, the live AI dot,
+  and a collapse chevron.
+- **Collapse to rail.** Clicking the chevron collapses the dock to a
+  48px-wide vertical icon strip (`AI · PO · TL · CN`) and gives the
+  width back to the workspace. The rail's expand button opens it back
+  up. State persists per browser (`debtiq.dock.v1` localStorage).
+- **Tab switch from rail expands the dock** to the chosen tab —
+  calmer than a silent no-op when the user clicks into a collapsed
+  surface.
+- **Floating Policy & Rates drawer + `#pdHandle` retired** —
+  `togglePolicyDrawer()` is now a back-compat shim that routes
+  through `expandRightDock('policy')`. `renderPolicyDrawer()` no
+  longer needs its `policyDrawerOpen` guard and writes into the
+  dock's policy pane.
+- **Bottom Live Timeline strip retired.** `renderTimeline()` writes
+  vertical events into the Timeline pane (no more truncation; the
+  dock body scrolls). `toggleTimeline()` shim routes through
+  `expandRightDock('timeline')`. Dot colours upgraded for legibility
+  on the light dock background.
+- **Conditions tab** uses the existing `derivedConditions()` engine
+  via `panelConditions()` — outstanding/satisfied cards with the
+  same code chips. A small count badge sits on the Conditions tab
+  showing outstanding items; tab gains `.has-attention` styling when
+  > 0. Tab refreshes automatically on `setActiveDeal` /
+  `clearActiveDeal`; empty state when no deal is active.
+- **CSS housekeeping.** Removed orphaned styles for `#liveTimeline`,
+  `.tl-label`, `.pd-handle`, `#policyDrawer`, `.pd-head`, `.pd-title`,
+  `.pd-icon`, `.pd-btns`. Kept `.pd-ctx`, `.pd-row-*`, `.tl-event`,
+  `.tl-dot`, `.tl-time`, `.tl-text` since they're still used inside
+  the dock panes. Print + responsive selectors updated to reference
+  `#rightDock`.
+- **State + persistence.** New `state.rightDockOpen` /
+  `state.rightDockTab` keys hydrated from localStorage on boot
+  (separate key from broker preferences — preferences are a
+  considered choice, dock state is ephemeral session UI).
+- **Smoke harness.** +14 Phase 2 checks (dock structure, tab switch
+  + aria-selected, collapse/expand, rail render, conditions cards,
+  conditions empty state, persistence round-trip, legacy shims).
+  Two existing assertions about the retired drawer + timeline strip
+  rewritten to target the dock instead. **230/230 passing.**
+
 ## Broker overhaul — Phase 1: shell · home routing · account · settings
 
 First phase of the broker-side architecture + UX pass driven by user

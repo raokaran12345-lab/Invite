@@ -389,15 +389,74 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 #workspace{flex:1;overflow-y:auto;min-width:0}
 .workspace-page{padding:24px;min-height:100%;animation:fadeUp .3s cubic-bezier(.22,1,.36,1)}
 
-/* AI Copilot panel */
-#copilotPanel{
+/* ============================================================
+   RIGHT DOCK (Phase 2) — tabbed, collapsible to a rail
+   Tabs: AI Copilot · Policy · Timeline · Conditions
+   Replaces the former #copilotPanel, #policyDrawer + handle,
+   and #liveTimeline strip. One docked surface, one mental model.
+   ============================================================ */
+#rightDock{
   width:var(--copilot-w);flex-shrink:0;background:var(--surface);
-  border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;
+  border-left:1px solid var(--hairline);display:flex;flex-direction:column;overflow:hidden;
+  transition:width .22s cubic-bezier(.22,1,.36,1);
 }
-.cp-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0}
-.cp-title{font-size:13px;font-weight:700}
-.cp-model{font-size:10px;color:var(--t4);margin-left:2px}
-.cp-dot{width:7px;height:7px;border-radius:50%;background:var(--t4);margin-left:auto;animation:pulse 2s infinite}
+#rightDock.collapsed{ width:48px; }
+#rightDock.collapsed .dock-tabs,
+#rightDock.collapsed .dock-body{ display:none; }
+.dock-head{
+  display:flex;align-items:center;gap:8px;padding:10px 12px;
+  border-bottom:1px solid var(--hairline);flex-shrink:0;background:var(--surface);
+}
+.dock-head-title{font-size:13px;font-weight:700;color:var(--text-primary)}
+.dock-head-model{font-size:10px;color:var(--text-muted);margin-left:2px;font-family:var(--mono)}
+.dock-head-dot{width:7px;height:7px;border-radius:50%;background:var(--text-muted);animation:pulse 2s infinite}
+.dock-head-spacer{flex:1}
+.dock-collapse-btn{
+  width:28px;height:28px;border-radius:6px;border:1px solid var(--hairline);background:var(--surface);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted);
+}
+.dock-collapse-btn:hover{background:var(--ink-bg);color:var(--text-primary)}
+.dock-collapse-btn:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.dock-tabs{
+  display:flex;border-bottom:1px solid var(--hairline);background:var(--surface);flex-shrink:0;
+  padding:0 6px;gap:2px;
+}
+.dock-tab{
+  flex:1;background:none;border:none;padding:8px 6px;font-size:11.5px;font-weight:600;
+  color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;
+  font-family:var(--ui);letter-spacing:.01em;transition:color .12s,border-color .12s;
+  white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:5px;
+}
+.dock-tab:hover{color:var(--text-primary)}
+.dock-tab.active{color:var(--text-primary);border-bottom-color:var(--accent-editorial)}
+.dock-tab:focus-visible{outline:none;box-shadow:var(--focus-ring);border-radius:4px}
+.dock-tab-count{
+  font-family:var(--mono);font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:8px;
+  background:var(--ink-bg);color:var(--text-secondary);min-width:14px;
+}
+.dock-tab.has-attention .dock-tab-count{background:var(--amber-bg);color:var(--amber)}
+.dock-body{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;background:var(--surface)}
+.dock-pane{display:none;flex:1;overflow:hidden;flex-direction:column;min-height:0}
+.dock-pane.active{display:flex}
+.dock-pane-scroll{flex:1;overflow-y:auto;padding:12px}
+.dock-empty{
+  padding:32px 16px;text-align:center;color:var(--text-muted);
+  font-family:var(--serif);font-style:italic;font-size:13px;line-height:1.5;
+}
+/* Collapsed rail — vertical icon strip */
+.dock-rail{display:none;flex-direction:column;align-items:center;padding:8px 0;gap:4px;flex:1}
+#rightDock.collapsed .dock-rail{display:flex}
+.dock-rail-btn{
+  width:36px;height:36px;border-radius:8px;border:1px solid transparent;background:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;color:var(--text-muted);
+  font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.04em;
+}
+.dock-rail-btn:hover{background:var(--ink-bg);color:var(--text-primary)}
+.dock-rail-btn:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.dock-rail-btn.active{background:var(--ink-bg);color:var(--accent-editorial);border-color:var(--hairline)}
+.dock-rail-divider{width:24px;height:1px;background:var(--hairline);margin:4px 0}
+
+/* AI Copilot pane internals — preserved IDs (cpInsights, cpChatLog, cpQuery) */
 .cp-insights{flex:1;overflow-y:auto;padding:10px}
 .copilot-insight{
   display:flex;align-items:flex-start;gap:9px;padding:9px 11px;border-radius:10px;margin-bottom:7px;
@@ -428,20 +487,12 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 #cpQuery{flex:1;padding:9px 12px;border:none;outline:none;font-size:12.5px;background:#fff}
 .cp-chat-input button{padding:0 13px;background:var(--brand);color:#fff;border:none;cursor:pointer;font-weight:700;font-size:14px}
 
-/* Live timeline */
-#liveTimeline{
-  height:var(--timeline-h);flex-shrink:0;background:var(--ink);color:rgba(255,255,255,.7);
-  display:flex;align-items:center;padding:0 20px;font-size:12px;cursor:pointer;overflow:hidden;
-  transition:height .3s cubic-bezier(.22,1,.36,1);
-}
-#liveTimeline.expanded{height:var(--timeline-h-expanded);align-items:flex-start;padding-top:14px;flex-wrap:wrap;gap:8px 0}
-.tl-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);margin-right:14px;flex-shrink:0}
-#tlEvents{display:flex;align-items:center;overflow:hidden;flex:1}
-#liveTimeline.expanded #tlEvents{flex-wrap:wrap}
-.tl-event{display:flex;align-items:center;gap:6px;white-space:nowrap;padding:0 12px;border-right:1px solid rgba(255,255,255,.1)}
-.tl-time{color:rgba(255,255,255,.35);font-family:var(--mono);font-size:11px}
-.tl-text{color:rgba(255,255,255,.75)}
-.tl-sep{color:rgba(255,255,255,.2);padding:0 6px}
+/* Timeline pane content — lives inside the right dock (Phase 2). */
+#tlEvents{display:flex;flex-direction:column;gap:6px}
+.tl-event{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:6px;background:var(--surface-paper);border-left:2px solid var(--hairline)}
+.tl-event:hover{background:var(--ink-bg)}
+.tl-time{color:var(--text-muted);font-family:var(--mono);font-size:10.5px;letter-spacing:.02em;flex-shrink:0;min-width:60px}
+.tl-text{color:var(--text-secondary);font-size:12.5px;line-height:1.45;flex:1}
 
 /* Settings overlay */
 .settings-overlay{position:fixed;inset:0;background:rgba(15,15,26,.5);backdrop-filter:blur(4px);z-index:800;display:none;align-items:center;justify-content:center}
@@ -459,23 +510,11 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .deal-pill .dp-arrow{margin-right:4px;opacity:.85}
 .deal-pill .dp-id{display:block;font-size:10px;font-weight:600;opacity:.85;margin-top:2px}
 
-/* Floating Policy & Rates drawer (per-file lender policy + rates) */
-.pd-handle{position:fixed;top:50%;right:0;transform:translateY(-50%);z-index:651;background:var(--brand-grad);color:#fff;border:none;cursor:pointer;writing-mode:vertical-rl;padding:18px 9px;border-radius:12px 0 0 12px;font-weight:700;font-size:12px;letter-spacing:.07em;box-shadow:var(--sh-brand);transition:.15s}
-.pd-handle:hover{filter:brightness(1.08)}
-.pd-handle.hidden{display:none}
-#policyDrawer{position:fixed;top:var(--cmdbar-h);bottom:var(--timeline-h);right:0;width:0;background:var(--surface);border-left:1px solid var(--border);box-shadow:-12px 0 40px rgba(0,0,0,.16);z-index:650;display:flex;flex-direction:column;overflow:hidden;transition:width .28s cubic-bezier(.22,1,.36,1)}
-#policyDrawer.open{width:min(440px,96vw)}
-#policyDrawer.open.wide{width:min(720px,96vw)}
-.pd-head{flex-shrink:0;padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;white-space:nowrap}
-.pd-title{font-size:14px;font-weight:800}
-.pd-sub{font-size:11px;color:var(--t3)}
-.pd-btns{margin-left:auto;display:flex;gap:6px}
-.pd-icon{width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--bg);cursor:pointer;color:var(--t2);font-size:15px;display:flex;align-items:center;justify-content:center}
-.pd-icon:hover{background:var(--brand-bg);color:var(--brand)}
-.pd-body{flex:1;overflow-y:auto;padding:14px 16px}
-.pd-ctx{font-size:12px;color:var(--t2);background:var(--bg);border-radius:10px;padding:9px 11px;margin-bottom:12px;line-height:1.6}
-.pd-row-best td{background:rgba(5,150,105,.07)}
-.pd-row-cur td{box-shadow:inset 3px 0 0 var(--brand)}
+/* Policy & Rates content — lives inside the right dock (Phase 2).
+   Floating handle + drawer retired; renderPolicyDrawer() writes into the dock. */
+.pd-ctx{font-size:12px;color:var(--t2);background:var(--bg);border-radius:8px;padding:9px 11px;margin-bottom:12px;line-height:1.6}
+.pd-row-best td{background:rgba(11,107,79,.07)}
+.pd-row-cur td{box-shadow:inset 3px 0 0 var(--ink)}
 
 /* Document forensics */
 .fz-chip{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:var(--r-pill);font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:11px;font-weight:600;letter-spacing:.02em;cursor:pointer;border:1px solid var(--line2);background:#fff;transition:filter .12s}
@@ -820,7 +859,7 @@ tr:last-child td{border-bottom:none}
 
 /* Responsive */
 @media(max-width:900px){
-  #copilotPanel{display:none}
+  #rightDock{display:none}
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
   .calc-split{grid-template-columns:1fr}
   .calc-results{position:static}
@@ -834,7 +873,7 @@ tr:last-child td{border-bottom:none}
   .cmd-centre{max-width:200px}
 }
 @media print {
-  #login, #cmdBar, #dealStrip, #tabStrip, #copilotPanel, #liveTimeline,
+  #login, #cmdBar, #dealStrip, #tabStrip, #rightDock,
   .page-head button, .mini-btn, .btn, .toolbar, .tabs,
   .wiz-head, .skip-link,
   #toasts, #loader { display: none !important; }
@@ -997,13 +1036,13 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
 .cond-card .cc-actions{margin-top:8px;display:flex;gap:8px}
 
 /* Timeline — actor-coloured dots prefixed to each event */
-.tl-event .tl-dot{width:7px;height:7px;border-radius:50%;background:var(--t4);margin-right:6px;display:inline-block;vertical-align:middle;flex-shrink:0}
+.tl-event .tl-dot{width:7px;height:7px;border-radius:50%;background:var(--text-muted);margin-top:6px;display:inline-block;flex-shrink:0}
 /* Actor colours on the (dark) timeline use the on-ink legibility variants of the brand tokens. */
-.tl-event .tl-dot.broker{background:var(--steel-on-ink)}
-.tl-event .tl-dot.processor{background:var(--amber-on-ink)}
-.tl-event .tl-dot.assessor{background:var(--green-on-ink)}
+.tl-event .tl-dot.broker{background:var(--steel)}
+.tl-event .tl-dot.processor{background:var(--amber)}
+.tl-event .tl-dot.assessor{background:var(--green)}
 .tl-event .tl-dot.ai{background:var(--brass)}
-.tl-event .tl-dot.system{background:var(--t3-warm)}
+.tl-event .tl-dot.system{background:var(--text-muted)}
 
 /* Calm copilot quick-actions (no mascot/emoji) */
 .cp-actions button{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:10.5px;font-weight:600;letter-spacing:.06em;color:var(--t2);text-transform:uppercase}
@@ -1602,56 +1641,84 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
   <div id="canvas">
     <div id="workspace" role="main"></div>
 
-    <!-- AI COPILOT PANEL -->
-    <div id="copilotPanel">
-      <div class="cp-header">
-        <span class="cp-title">AI Copilot</span>
-        <span class="cp-model">claude-sonnet-4</span>
-        <span class="cp-dot" id="cpDot"></span>
+    <!-- RIGHT DOCK — AI Copilot · Policy · Timeline · Conditions (Phase 2) -->
+    <aside id="rightDock" aria-label="Workspace sidebar">
+      <!-- Header: shared across panes when expanded -->
+      <div class="dock-head">
+        <span class="dock-head-title" id="dockHeadTitle">AI Copilot</span>
+        <span class="dock-head-model" id="dockHeadMeta">claude-sonnet-4</span>
+        <span class="dock-head-dot" id="cpDot" aria-hidden="true"></span>
+        <span class="dock-head-spacer"></span>
+        <button class="dock-collapse-btn" onclick="toggleRightDock()" aria-label="Collapse sidebar" title="Collapse sidebar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+        </button>
       </div>
-      <div class="cp-insights" id="cpInsights"></div>
-      <div class="cp-actions">
-        <button onclick="generateSubmissionPack()" title="Generate submission pack" aria-label="Generate submission pack">Pack</button>
-        <button onclick="goTab('aipilot')" title="AI Pilot" aria-label="AI Pilot">Pilot</button>
-        <button onclick="showLenderCompare()" title="Compare lenders" aria-label="Compare lenders">Compare</button>
-        <button onclick="scanAllDocs(state.activeDeal)" title="Run integrity scan on all documents" aria-label="Run integrity scan">Scan</button>
+
+      <!-- Tab strip -->
+      <div class="dock-tabs" role="tablist" aria-label="Sidebar sections">
+        <button class="dock-tab active" id="dockTabAI" role="tab" aria-selected="true" aria-controls="dockAI" onclick="setRightDockTab('ai')">AI</button>
+        <button class="dock-tab" id="dockTabPolicy" role="tab" aria-selected="false" aria-controls="dockPolicy" onclick="setRightDockTab('policy')">Policy</button>
+        <button class="dock-tab" id="dockTabTimeline" role="tab" aria-selected="false" aria-controls="dockTimeline" onclick="setRightDockTab('timeline')">Timeline</button>
+        <button class="dock-tab" id="dockTabConditions" role="tab" aria-selected="false" aria-controls="dockConditions" onclick="setRightDockTab('conditions')">Conditions <span id="dockCondCount" class="dock-tab-count" style="display:none">0</span></button>
       </div>
-      <div class="cp-chat">
-        <div class="cp-chat-log" id="cpChatLog"></div>
-        <div class="cp-chat-input">
-          <input id="cpQuery" aria-label="Ask AI about this deal"
-            placeholder="Ask AI about this deal…"
-            onkeydown="if(event.key==='Enter')submitCopilotQuery()">
-          <button onclick="submitCopilotQuery()" aria-label="Send">→</button>
+
+      <!-- Tab bodies -->
+      <div class="dock-body">
+        <!-- AI Copilot pane (reuses cpInsights / cpChatLog / cpQuery IDs) -->
+        <div id="dockAI" class="dock-pane active" role="tabpanel" aria-labelledby="dockTabAI">
+          <div class="cp-insights" id="cpInsights"></div>
+          <div class="cp-actions">
+            <button onclick="generateSubmissionPack()" title="Generate submission pack" aria-label="Generate submission pack">Pack</button>
+            <button onclick="goTab('aipilot')" title="AI Pilot" aria-label="AI Pilot">Pilot</button>
+            <button onclick="showLenderCompare()" title="Compare lenders" aria-label="Compare lenders">Compare</button>
+            <button onclick="scanAllDocs(state.activeDeal)" title="Run integrity scan on all documents" aria-label="Run integrity scan">Scan</button>
+          </div>
+          <div class="cp-chat">
+            <div class="cp-chat-log" id="cpChatLog"></div>
+            <div class="cp-chat-input">
+              <input id="cpQuery" aria-label="Ask AI about this deal"
+                placeholder="Ask AI about this deal…"
+                onkeydown="if(event.key==='Enter')submitCopilotQuery()">
+              <button onclick="submitCopilotQuery()" aria-label="Send">→</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Policy & Rates pane (reuses pdBody / pdSub IDs) -->
+        <div id="dockPolicy" class="dock-pane" role="tabpanel" aria-labelledby="dockTabPolicy">
+          <div class="dock-pane-scroll">
+            <div class="pd-sub" id="pdSub" style="margin-bottom:10px;font-size:11.5px;color:var(--text-muted)">—</div>
+            <div id="pdBody"></div>
+          </div>
+        </div>
+
+        <!-- Timeline pane (reuses tlEvents ID) -->
+        <div id="dockTimeline" class="dock-pane" role="tabpanel" aria-labelledby="dockTabTimeline">
+          <div class="dock-pane-scroll" id="tlEvents"></div>
+        </div>
+
+        <!-- Conditions pane (derivedConditions() output) -->
+        <div id="dockConditions" class="dock-pane" role="tabpanel" aria-labelledby="dockTabConditions">
+          <div class="dock-pane-scroll" id="dockCondBody"></div>
         </div>
       </div>
-    </div>
+
+      <!-- Collapsed rail (vertical icons; only visible when #rightDock.collapsed) -->
+      <div class="dock-rail" aria-hidden="false">
+        <button class="dock-rail-btn" onclick="expandRightDock('ai')" aria-label="AI Copilot" title="AI Copilot">AI</button>
+        <button class="dock-rail-btn" onclick="expandRightDock('policy')" aria-label="Policy and rates" title="Policy &amp; Rates">PO</button>
+        <button class="dock-rail-btn" onclick="expandRightDock('timeline')" aria-label="Activity timeline" title="Timeline">TL</button>
+        <button class="dock-rail-btn" onclick="expandRightDock('conditions')" aria-label="Conditions" title="Conditions">CN</button>
+        <div class="dock-rail-divider"></div>
+        <button class="dock-rail-btn" onclick="toggleRightDock()" aria-label="Expand sidebar" title="Expand sidebar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg>
+        </button>
+      </div>
+    </aside>
   </div>
 
-  <!-- LIVE TIMELINE -->
-  <div id="liveTimeline" onclick="toggleTimeline()" role="button" tabindex="0" aria-label="Activity timeline">
-    <span class="tl-label">Timeline</span>
-    <span id="tlEvents"></span>
-  </div>
-
-  <!-- FLOATING REOPEN PILL — visible when a deal is active and the panel is closed -->
+  <!-- FLOATING REOPEN PILL — visible when a deal is active and the deal slide-over is closed -->
   <button id="dealPill" class="deal-pill" style="display:none" onclick="togglePanel()" aria-label="Reopen deal panel"></button>
-
-  <!-- FLOATING POLICY & RATES DRAWER (per-file lender policy + rates) -->
-  <button class="pd-handle" id="pdHandle" onclick="togglePolicyDrawer()" aria-label="Open policy and rates">⚖ Policy &amp; Rates</button>
-  <div id="policyDrawer" aria-label="Lender policy and rates for this file">
-    <div class="pd-head">
-      <div>
-        <div class="pd-title">Policy &amp; Rates</div>
-        <div class="pd-sub" id="pdSub">—</div>
-      </div>
-      <div class="pd-btns">
-        <button class="pd-icon" id="pdWideBtn" onclick="togglePolicyWide()" title="Expand / contract width" aria-label="Toggle width">⤢</button>
-        <button class="pd-icon" onclick="togglePolicyDrawer()" title="Collapse" aria-label="Collapse">×</button>
-      </div>
-    </div>
-    <div class="pd-body" id="pdBody"></div>
-  </div>
 
   <!-- SETTINGS OVERLAY -->
   <div id="settingsOverlay" class="settings-overlay" onclick="if(event.target===this)closeSettings()">
@@ -1901,6 +1968,11 @@ const state = {
     assets:1000000, liabilitiesMonthly:475, existingDebtBalance:0,
     loanAmount:785000, rate:6.24, term:30, bufferPct:3, dependants:0
   },
+  // Right dock (Phase 2) — tabbed surface state.
+  // Persisted under DOCK_LS_KEY by save/loadDockState — not bundled with broker
+  // preferences because dock state is ephemeral session UI, not a settings choice.
+  rightDockOpen:true,
+  rightDockTab:'ai',
   // Per-broker preferences — hydrated from localStorage on boot (loadSettings()).
   // Backend untouched: lives entirely in the browser.
   settings:{
@@ -5376,12 +5448,17 @@ function setActiveDeal(dealId){
   }
   updateDealStrip();
   updateCopilot();
+  // Refresh the dock — conditions count + active pane content for this deal.
+  updateDockConditionsCount();
+  if(typeof renderRightDockPane==='function') renderRightDockPane(state.rightDockTab||'ai');
   goTab('client');
 }
 function clearActiveDeal(){
   state.activeDeal = null;
   const strip = document.getElementById('dealStrip');
   if(strip) strip.style.display = 'none';
+  updateDockConditionsCount();
+  if(typeof renderRightDockPane==='function') renderRightDockPane(state.rightDockTab||'ai');
   goTab('pipeline');
 }
 function updateDealStrip(){
@@ -5737,22 +5814,112 @@ function panelConditions(el, d){
     </div>`).join('')}`;
 }
 
-/* ---------- Floating Policy & Rates drawer (contextual to the file being lodged) ---------- */
-let policyDrawerOpen = false, policyDrawerWide = false;
-function togglePolicyDrawer(){
-  policyDrawerOpen = !policyDrawerOpen;
-  const d = document.getElementById('policyDrawer'), h = document.getElementById('pdHandle');
-  if(d) d.classList.toggle('open', policyDrawerOpen);
-  if(h) h.classList.toggle('hidden', policyDrawerOpen);
-  if(policyDrawerOpen) renderPolicyDrawer();
+/* ============================================================
+   RIGHT DOCK (Phase 2) — tabbed surface replacing the former
+   copilot panel + floating policy drawer + bottom timeline strip.
+   ============================================================ */
+const DOCK_LS_KEY = 'debtiq.dock.v1';
+const DOCK_TABS = ['ai','policy','timeline','conditions'];
+function loadDockState(){
+  try{
+    const raw = localStorage.getItem(DOCK_LS_KEY);
+    if(!raw) return;
+    const obj = JSON.parse(raw);
+    if(obj && typeof obj === 'object'){
+      if(typeof obj.open === 'boolean') state.rightDockOpen = obj.open;
+      if(DOCK_TABS.includes(obj.tab)) state.rightDockTab = obj.tab;
+    }
+  }catch(e){}
 }
-function togglePolicyWide(){
-  policyDrawerWide = !policyDrawerWide;
-  const d = document.getElementById('policyDrawer');
-  if(d) d.classList.toggle('wide', policyDrawerWide);
+function saveDockState(){
+  try{
+    localStorage.setItem(DOCK_LS_KEY, JSON.stringify({
+      open: state.rightDockOpen !== false,
+      tab:  state.rightDockTab || 'ai'
+    }));
+  }catch(e){}
 }
+function applyDockState(){
+  const dock = document.getElementById('rightDock');
+  if(!dock) return;
+  const open = state.rightDockOpen !== false;
+  dock.classList.toggle('collapsed', !open);
+  // Active tab styling + pane visibility.
+  const tab = state.rightDockTab || 'ai';
+  // Explicit map — 'ai' is upper-cased in IDs ("AI"), others use TitleCase.
+  const ID_SUFFIX = { ai:'AI', policy:'Policy', timeline:'Timeline', conditions:'Conditions' };
+  DOCK_TABS.forEach(t=>{
+    const sfx  = ID_SUFFIX[t];
+    const btn  = document.getElementById('dockTab'+sfx);
+    const pane = document.getElementById('dock'+sfx);
+    if(btn){ btn.classList.toggle('active', t===tab); btn.setAttribute('aria-selected', t===tab ? 'true':'false'); }
+    if(pane) pane.classList.toggle('active', t===tab);
+  });
+  const railBtns = document.querySelectorAll('#rightDock .dock-rail .dock-rail-btn');
+  railBtns.forEach((rb,i)=>{ if(DOCK_TABS[i]===tab) rb.classList.add('active'); else rb.classList.remove('active'); });
+  // Header title per tab (single source of truth for the dock title).
+  const titles = { ai:'AI Copilot', policy:'Policy & Rates', timeline:'Activity', conditions:'Conditions' };
+  const metas  = { ai:'claude-sonnet-4', policy:'lender + market', timeline:'most recent first', conditions:'derived live' };
+  const t = document.getElementById('dockHeadTitle'); if(t) t.textContent = titles[tab] || 'Sidebar';
+  const m = document.getElementById('dockHeadMeta');  if(m) m.textContent = metas[tab]  || '';
+}
+function setRightDockTab(tab){
+  if(!DOCK_TABS.includes(tab)) return;
+  state.rightDockTab = tab;
+  // Switching tabs while collapsed expands the dock — calmer than silent no-op.
+  state.rightDockOpen = true;
+  saveDockState();
+  applyDockState();
+  renderRightDockPane(tab);
+}
+function toggleRightDock(){
+  state.rightDockOpen = !(state.rightDockOpen !== false);
+  saveDockState();
+  applyDockState();
+}
+function expandRightDock(tab){
+  state.rightDockOpen = true;
+  if(tab && DOCK_TABS.includes(tab)) state.rightDockTab = tab;
+  saveDockState();
+  applyDockState();
+  renderRightDockPane(state.rightDockTab || 'ai');
+}
+function renderRightDockPane(tab){
+  if(tab==='policy')      renderPolicyDrawer();
+  else if(tab==='timeline')   renderTimeline();
+  else if(tab==='conditions') renderDockConditions();
+  else                        updateCopilot();
+  updateDockConditionsCount();
+}
+function renderDockConditions(){
+  const el = document.getElementById('dockCondBody');
+  if(!el) return;
+  if(!state.activeDeal){
+    el.innerHTML = `<div class="dock-empty">Select a deal in Pipeline to see derived conditions.</div>`;
+    return;
+  }
+  // Defer to the existing renderer used by the deal slide-over panel.
+  panelConditions(el, DEALS.find(x=>x.id===state.activeDeal));
+}
+function updateDockConditionsCount(){
+  const badge = document.getElementById('dockCondCount');
+  const tab   = document.getElementById('dockTabConditions');
+  if(!badge || !tab) return;
+  if(!state.activeDeal){ badge.style.display='none'; tab.classList.remove('has-attention'); return; }
+  const conds = (typeof derivedConditions==='function') ? derivedConditions() : [];
+  const outstanding = conds.filter(c=>!c.satisfied).length;
+  if(!conds.length){ badge.style.display='none'; tab.classList.remove('has-attention'); return; }
+  badge.textContent = outstanding;
+  badge.style.display = '';
+  tab.classList.toggle('has-attention', outstanding>0);
+}
+
+/* ---------- Back-compat shims — old toggles route through the dock ---------- */
+function togglePolicyDrawer(){ expandRightDock('policy'); }
+function togglePolicyWide(){ /* dock is single-width; legacy no-op */ }
+function toggleTimeline(){ expandRightDock('timeline'); }
+
 function renderPolicyDrawer(){
-  if(!policyDrawerOpen) return;
   const body = document.getElementById('pdBody'); if(!body) return;
   const deal = DEALS.find(x=>x.id===state.activeDeal);
   const sub = document.getElementById('pdSub');
@@ -5791,8 +5958,7 @@ function renderPolicyDrawer(){
     </div>`:'<p style="color:var(--t3);font-size:12px;margin-top:12px">Per-lender policy detail is available for Australian lenders.</p>'}`;
 }
 
-/* ---------- Live timeline ---------- */
-let timelineExpanded = false;
+/* ---------- Activity timeline (renders into the right-dock Timeline pane) ---------- */
 function formatRelativeTime(date){
   const diff = Math.floor((new Date() - date)/1000);
   if(diff<60) return 'Just now';
@@ -5810,14 +5976,11 @@ function logEvent(text, actor){
 function renderTimeline(){
   const el = document.getElementById('tlEvents');
   if(!el) return;
-  const events = state.eventLog.slice(0, timelineExpanded?12:4);
-  el.innerHTML = events.map(e=>`<span class="tl-event"><span class="tl-dot ${escHtml(e.actor||'system')}"></span><span class="tl-time">${formatRelativeTime(e.time)}</span><span class="tl-text">${escHtml(e.text)}</span></span>`).join('');
-}
-function toggleTimeline(){
-  timelineExpanded = !timelineExpanded;
-  const el = document.getElementById('liveTimeline');
-  if(el) el.classList.toggle('expanded', timelineExpanded);
-  renderTimeline();
+  if(!state.eventLog || !state.eventLog.length){
+    el.innerHTML = `<div class="dock-empty">No activity yet. Events will appear here as you work the file.</div>`;
+    return;
+  }
+  el.innerHTML = state.eventLog.map(e=>`<div class="tl-event"><span class="tl-dot ${escHtml(e.actor||'system')}"></span><span class="tl-time">${formatRelativeTime(e.time)}</span><span class="tl-text">${escHtml(e.text)}</span></div>`).join('');
 }
 function seedTimeline(){
   const now = Date.now();
@@ -6960,6 +7123,10 @@ function init(){
   seedDemoIntel();                // multi-entity + multi-security demo templates
   // Escape closes the slide-over panel from anywhere
   if(!window._diqEsc){ window._diqEsc = true; document.addEventListener('keydown', e=>{ if(e.key==='Escape') closePanel(); }); }
+  // Right dock — apply persisted open/tab state + render the active pane.
+  applyDockState();
+  renderRightDockPane(state.rightDockTab || 'ai');
+  updateDockConditionsCount();
   renderWorkspace('dashboard');   // Pipeline tab, no active deal → deal strip hidden
   updateCopilot();
   logEvent('Session started');
@@ -7147,6 +7314,7 @@ function showDesignPreview(){
 (async function boot(){
   loadSettings();             // pull preferences out of localStorage
   applySettings();            // density + reduced-motion classes on <body>
+  loadDockState();            // pull right-dock collapse/tab state from localStorage
   await initBackend();
   renderLoginMode();
   // ?styleguide=1 (or legacy ?preview=1) → render the brand styleguide and skip the rest.
