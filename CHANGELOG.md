@@ -1,5 +1,49 @@
 # DebtIQ v6 — Changelog
 
+## MASTER program — Phase 4: serviceability engine, 2026 rules
+
+Updated the engine to the current APRA framing. Buffer **+3%**, the
+**HEM floor** `max(declared, band)`, and **per-lender income shading**
+were already in place; this phase reworks the **DTI** treatment from a
+generic 6×/9× "restricted threshold" into a **per-lender appetite
+FLAG**, never a hard block.
+
+> **LEGAL-REVIEW:** all DTI thresholds, the ~20% high-DTI bucket, and the
+> exemption set reflect the publicly-known APRA framework and are
+> **indicative pending the compliance map (§5)**. They are surfaced as
+> lender-appetite intelligence; the code never asserts compliance.
+
+- **`dtiPolicy(lender)`** — derives the high-DTI threshold (default 6×),
+  very-high band (9×), and the high-DTI **bucket %** per lender: ADIs
+  (`apra_regulated`) → 6× / ~20% of new lending; non-ADIs → flagged for
+  appetite with **no APRA bucket** (specialist book). Honours optional
+  `dti_high` / `dti_bucket_pct` overrides on a lender policy.
+- **`dealSegment(purpose)`** — owner-occupier vs investment separation.
+- **`dtiExempt(purpose)`** — **owner-occupier bridging** and
+  **new-build/construction** are exempt from the high-DTI bucket.
+- **`dtiAssessment(value, lender, purpose)`** — the canonical structured
+  result (`value, threshold, segment, adi, bucketPct, exempt, high,
+  veryHigh, flagged, countsToBucket`), ridden along on every
+  `computeServiceability()` result as `r.dtiAssess`.
+- **DTI never changes the verdict.** `verdict` is still driven by NDI +
+  DSR only — a high DTI flags appetite, it does not fail serviceability
+  (verified in the smoke suite).
+- **`dtiFlagText()`** — one appetite-framed sentence shared by the
+  worksheet, verdict insights, conditions, gap-finder and the submission
+  pack. No "exceeds restricted threshold" / "fail" language for the 6×
+  band; ≥9× recommends specialist/non-ADI with documented rationale.
+- **Serviceability worksheet** — the DTI row is now a **flag, not a
+  ceiling** (never renders `fail` on its own), shows the bucket/segment
+  working inline, and a footnote explains the appetite-flag treatment +
+  exemptions + the `LEGAL-REVIEW` caveat.
+- Re-framed every downstream surface: assessor decline-reasons (now a
+  medium appetite flag), deal conditions (`DTI01` — "High DTI — appetite
+  flag", with the exemption-aware text), deal-spine insights (shows
+  bucket consumption), the gap-finder, and the submission-pack policy
+  flags (now shown whenever flagged, independent of verdict).
+- Smoke: +8 Phase 4 checks (**348/348 passing**).
+
+
 ## MASTER program — Phase 1-finish (brand foundation cleanup)
 
 Low-risk, no-backend interleave done while the authority files are

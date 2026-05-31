@@ -3083,6 +3083,86 @@ function activePolicy(id){
 }
 function activeBuffer(id){ const p=activePolicy(id); return p ? p.buffer : m().buffer; }
 function activeDsrMax(id){ const p=activePolicy(id); return p ? p.dsr_max : m().dsrMax; }
+
+/* ============================================================
+   DTI policy — APRA 2026 high-DTI treatment (MASTER Phase 4)
+   ------------------------------------------------------------
+   LEGAL-REVIEW: the thresholds below reflect the publicly-known
+   APRA framework (high-DTI = DTI ≥ 6×, monitored as a share of new
+   lending) and are INDICATIVE pending the compliance map (§5). They
+   are surfaced as LENDER-APPETITE INTELLIGENCE, never as a hard
+   decline: a high DTI FLAGS that the loan consumes the lender's
+   high-DTI portfolio bucket, it does not fail serviceability.
+
+   Per-lender override: a lender policy may set `dti_high` and
+   `dti_bucket_pct`; otherwise we derive from `apra_regulated`:
+     • ADI      → high ≥ 6×, ~20% of new lending bucket (APRA).
+     • non-ADI  → high ≥ 6× flagged for appetite, no APRA bucket
+                  (specialist lenders price/assess to their own book).
+   Exemptions (APRA): owner-occupier bridging and new-build /
+   construction lending are excluded from the high-DTI bucket.
+   ============================================================ */
+function dtiPolicy(id){
+  const p = activePolicy(id);
+  const adi = !!(p && p.apra_regulated);
+  return {
+    high: (p && typeof p.dti_high==='number') ? p.dti_high : 6.0,
+    veryHigh: 9.0,
+    bucketPct: (p && typeof p.dti_bucket_pct==='number') ? p.dti_bucket_pct : (adi ? 20 : null),
+    adi
+  };
+}
+/* Owner-occupier vs investment segment, from the deal purpose. */
+function dealSegment(purpose){
+  const pp = purpose || (state.calc && state.calc.purpose) || 'purchase';
+  return pp==='investment' ? 'investment' : 'owner_occupier';
+}
+/* APRA high-DTI bucket exemptions: OO bridging + new-build/construction. */
+function dtiExempt(purpose){
+  const pp = purpose || (state.calc && state.calc.purpose) || '';
+  return pp==='construction' || pp==='bridging';
+}
+/* Appetite-framed DTI sentence — shared by insights, conditions, pack.
+   Never says "fail" or "decline" for the 6× band; that's an appetite flag. */
+function dtiFlagText(da){
+  const segLabel = da.segment==='investment' ? 'investment' : 'owner-occupier';
+  const v = da.value.toFixed(1)+'×';
+  if(da.exempt && da.high){
+    return `DTI ${v} is high but this ${da.segment==='investment'?'investment':segLabel} ${ (state.calc&&state.calc.purpose)==='construction'?'construction/new-build':'bridging' } purpose is exempt from the APRA high-DTI bucket.`;
+  }
+  if(da.veryHigh){
+    return `DTI ${v} — very high (≥9×). Most lenders decline at this level; consider a specialist / non-ADI and document the rationale.`;
+  }
+  if(da.flagged){
+    return da.adi
+      ? `DTI ${v} ≥ ${da.threshold}× — counts toward ${ (activePolicy()&&activePolicy().label)||'the lender' }'s high-DTI bucket (APRA monitors ~${da.bucketPct}% of new ${segLabel} lending). Lender-appetite flag, not an automatic decline.`
+      : `DTI ${v} ≥ ${da.threshold}× — high. As a non-ADI, ${ (activePolicy()&&activePolicy().label)||'this lender' } assesses high-DTI to its own appetite rather than the APRA bucket.`;
+  }
+  return `DTI ${v} — within standard appetite (< ${da.threshold}×).`;
+}
+/* Structured DTI assessment — the canonical interpretation used by the
+   worksheet, verdict insights, conditions and the submission pack. */
+function dtiAssessment(dtiValue, id, purpose){
+  const pol = dtiPolicy(id);
+  const seg = dealSegment(purpose);
+  const exempt = dtiExempt(purpose);
+  const high = dtiValue >= pol.high;
+  const veryHigh = dtiValue >= pol.veryHigh;
+  return {
+    value: dtiValue,
+    threshold: pol.high,
+    veryHighThreshold: pol.veryHigh,
+    segment: seg,                       // 'owner_occupier' | 'investment'
+    adi: pol.adi,
+    bucketPct: pol.bucketPct,           // null for non-ADI
+    exempt,
+    high,                               // ≥ threshold
+    veryHigh,                           // ≥ 9×
+    // FLAG = consumes the lender's high-DTI bucket. Exempt purposes don't.
+    flagged: high && !exempt,
+    countsToBucket: high && !exempt && pol.adi
+  };
+}
 // Lender-aware, conditional income shading. Accepts the income object so it can
 // read evidence_years / emergency-services / healthcare flags.
 function getShadedIncome(inc, id){
@@ -3318,10 +3398,15 @@ function computeServiceability(){
   else if(ndi > -250 && dsr < dsrMax+5) verdict='BORDERLINE';
   else verdict='FAIL';
 
+  // DTI assessment (Phase 4) — APRA 2026 high-DTI treatment as a per-lender
+  // appetite FLAG, with OO/investor segment + bridging/construction exemption.
+  // Deliberately does NOT feed `verdict` — high DTI flags, it never fails.
+  const dtiAssess = dtiAssessment(dti, state.lender, (state.calc||{}).purpose);
+
   // assessedRate reflects the *primary* facility's contract rate + the active buffer — the figure brokers
   // recognise on the assessment console headline; per-facility rates show in the facility breakdown.
   const primaryRate = parseFloat((state.calc.newLoan||{}).rate)||0;
-  return {income, shadedAnnual, existingDebt, newLoanMo, totalDebt, HEM, ndi, dsr, lvr, dti, totalLiab, verdict, breakdown, propValue, lvrAvailable: propValue>0, assessedRate: primaryRate + buffer*100, totalNewAmt, facilities: facsAll};
+  return {income, shadedAnnual, existingDebt, newLoanMo, totalDebt, HEM, ndi, dsr, lvr, dti, dtiAssess, totalLiab, verdict, breakdown, propValue, lvrAvailable: propValue>0, assessedRate: primaryRate + buffer*100, totalNewAmt, facilities: facsAll};
 }
 
 /* ============================================================
@@ -6861,7 +6946,7 @@ function serviceabilityInsights(r){
   const gaps = [];
   if(r.ndi <= 0) gaps.push(`NDI is ${fmtMoney(r.ndi)}/mo — you're ${fmtMoney(-r.ndi)} short`);
   if(r.dsr >= dsrMax) gaps.push(`DSR ${r.dsr.toFixed(1)}% over the ${dsrMax}% ${ceilingName} ceiling`);
-  if(r.dti > 6) gaps.push(`DTI ${r.dti.toFixed(1)}x ${r.dti>9?'(outside major-bank policy)':'(>6x restricted)'}`);
+  if((r.dtiAssess||{}).flagged) gaps.push(`DTI ${r.dti.toFixed(1)}x ${r.dti>9?'(very high — specialist)':'(high-DTI appetite flag)'}`);
   out.push({tone:'red', head:true, t: gaps.length ? ('Binding constraint: '+gaps.join('; ')+'.') : 'Marginal — review the assumptions carefully.'});
   // Ranked levers, smallest change first, each Applyable.
   const maxLoan = maxServiceableLoan();
@@ -7369,7 +7454,7 @@ ${((state.calc.securities||[]).length||totalSec>0) ? `<section class="section">
       <tr class="total"><td>Total monthly debt service</td><td class="num">${fmtMoney(r.totalDebt)}/mo</td><td>Net disposable income</td><td class="num" style="color:${r.ndi>=0?'var(--green)':'var(--red)'}">${fmtMoney(r.ndi)}/mo</td></tr>
     </tbody>
   </table>
-  ${r.verdict!=='PASS'?`<div class="warning"><strong>Policy flags.</strong>${r.ndi<0?` NDI negative by ${fmtMoney(-r.ndi)}/mo.`:''}${r.dsr>=(pol?pol.dsr_max:45)?` DSR ${r.dsr.toFixed(1)}% exceeds ${pol?pol.dsr_max:45}% ceiling.`:''}${r.dti>6?` DTI ${r.dti.toFixed(1)}× exceeds the APRA 6× restricted threshold.`:''}</div>`:''}
+  ${(r.verdict!=='PASS' || (r.dtiAssess||{}).flagged)?`<div class="warning"><strong>Policy flags.</strong>${r.ndi<0?` NDI negative by ${fmtMoney(-r.ndi)}/mo.`:''}${r.dsr>=(pol?pol.dsr_max:45)?` DSR ${r.dsr.toFixed(1)}% exceeds ${pol?pol.dsr_max:45}% ceiling.`:''}${(r.dtiAssess||{}).flagged?` ${esc(dtiFlagText(r.dtiAssess))}`:''}</div>`:''}
 </section>
 
 <section class="section">
@@ -7486,8 +7571,7 @@ function validateBIDBeforeGenerate(r){
   if(r.verdict === 'FAIL'){
     return { blocked:true, reason:'Loan does not service — DSR '+r.dsr.toFixed(1)+'% or NDI '+fmtMoney(r.ndi)+'/mo. Fix serviceability before generating compliance documents.' };
   }
-  if(r.dti > 9) warnings.push('DTI '+r.dti.toFixed(1)+'x exceeds 9x — outside major bank policy. Document why non-bank / specialist lending is appropriate.');
-  else if(r.dti > 6) warnings.push('DTI '+r.dti.toFixed(1)+'x exceeds APRA 6x restricted threshold — must document justification.');
+  if((r.dtiAssess||{}).high || r.dti>9){ warnings.push(dtiFlagText(r.dtiAssess || dtiAssessment(r.dti, state.lender, (state.calc||{}).purpose))); }
   if(r.lvr > 90) warnings.push('LVR '+r.lvr.toFixed(1)+'% — LMI applies. Must explain LMI to client and document their acknowledgement.');
   if(r.ndi < 500 && r.ndi >= 0) warnings.push('NDI only '+fmtMoney(r.ndi)+'/mo — very thin surplus. Document any income not captured or expenses that will reduce.');
   if(state.calc.dependants > 0 && r.income>0 && r.HEM > r.income * 0.4) warnings.push('HEM floor is '+((r.HEM/r.income)*100).toFixed(0)+'% of income with '+state.calc.dependants+' dependant(s). Verify living expenses evidence.');
@@ -7631,7 +7715,7 @@ function generateCopilotInsights(){
     const best = cheapestServiceableLender();
     if(best && best.l!==state.lender) insights.push({ type:'suggestion', icon:'ℹ', text:`${best.label} recommended — services this deal`, action:{ label:'Switch', fn:`useLender('${best.l}')` } });
   }
-  if(r.dti>6) insights.push({ type:'warning', icon:'⚠', text:`DTI ${r.dti.toFixed(1)}x — APRA restricted (>6x)` });
+  if((r.dtiAssess||{}).flagged) insights.push({ type:'warning', icon:'⚠', text:`DTI ${r.dti.toFixed(1)}x — high-DTI appetite flag${r.dtiAssess.countsToBucket?` (counts to ${r.dtiAssess.bucketPct}% bucket)`:''}` });
   const deal = DEALS.find(d=>d.id===state.activeDeal);
   const dealDocs = DOCS.filter(d=>d.deal===state.activeDeal);
   if(deal && dealDocs.length===0) insights.push({ type:'error', icon:'⚠', text:'No documents uploaded', action:{ label:'Upload', fn:`goTab('documents')` } });
@@ -7818,7 +7902,7 @@ function decideAssessment(r){
   const reviewDocs = DOCS.filter(d=>d.deal===state.activeDeal && d.forensic && /REVIEW/i.test(d.forensic.status||'')).length;
   const lowConfDocs = DOCS.filter(d=>d.deal===state.activeDeal && d.extracted && Object.values(d.extracted.fields||{}).some(v=>(v.confidence||0)<80)).length;
   if(r.lvrAvailable && r.lvr>80) reasons.push({code:'LMI01', sev:'med', text:'LVR > 80% — LMI required'});
-  if(r.dti>6) reasons.push({code:'DTI01', sev:'high', text:`DTI ${r.dti.toFixed(1)}× exceeds APRA 6× restricted threshold`});
+  if((r.dtiAssess||{}).flagged) reasons.push({code:'DTI01', sev:'med', text:`DTI ${r.dti.toFixed(1)}× — high-DTI appetite flag (${(r.dtiAssess.segment==='investment'?'investment':'owner-occupier')})`});
   if(reviewDocs) reasons.push({code:'IQA07', sev:'high', text:`${reviewDocs} document(s) flagged for integrity review`});
   if(conflicts) reasons.push({code:'CON01', sev:'med', text:`${conflicts} unresolved document conflict(s)`});
   if(lowConfDocs) reasons.push({code:'M033', sev:'med', text:'Full Verification Required — low-confidence extractions present'});
@@ -7914,9 +7998,12 @@ function derivedConditions(){
   if(r.lvrAvailable && r.lvr>80){
     out.push({code:'LMI01', category:'LMI', title:'LMI applicable', detail:'LVR > 80% — explain LMI to client and document acknowledgement before issuing the offer.', resolveAt:'Pre-settlement', satisfied:false});
   }
-  // DTI policy condition
-  if(r.dti>6){
-    out.push({code:'DTI01', category:'Servicing', title:'High DTI', detail:`DTI ${r.dti.toFixed(1)}× exceeds the APRA 6× restricted threshold — document the assessor's justification.`, resolveAt:'Credit assessment', satisfied:false});
+  // DTI policy condition (Phase 4) — appetite flag, with bridging/construction exemption.
+  const _da = r.dtiAssess || dtiAssessment(r.dti, state.lender, (state.calc||{}).purpose);
+  if(_da.flagged){
+    out.push({code:'DTI01', category:'Servicing', title:'High DTI — appetite flag',
+      detail: dtiFlagText(_da) + ' Document the justification for the credit assessor.',
+      resolveAt:'Credit assessment', satisfied:false});
   }
   // Forensic review docs → IQA conditions
   const fz = DOCS.filter(d=>d.deal===state.activeDeal && d.forensic && /REVIEW/i.test(d.forensic.status||''));
@@ -9196,6 +9283,7 @@ function renderWsStep5(d){
 
 function renderWsStep6(d){
   const r = d.r;
+  const da = r.dtiAssess || dtiAssessment(r.dti, d.lender, (state.calc||{}).purpose);
   const rows = [
     {
       name:'DSR', formula:'(existing debt + stressed new loan) ÷ assessed income',
@@ -9212,11 +9300,14 @@ function renderWsStep6(d){
       kind: !r.lvrAvailable ? 'borderline' : r.lvr < d.lvrCeil*0.85 ? 'pass' : r.lvr <= d.lvrCeil ? 'borderline' : 'fail'
     },
     {
+      // DTI is a FLAG, not a ceiling (Phase 4). It never renders 'fail' on its
+      // own — high DTI flags the lender's high-DTI bucket / appetite.
       name:'DTI', formula:'(existing balances + loan amount) ÷ gross assessed annual income',
       resultText: r.dti.toFixed(2)+'×',
-      ceilText: d.dtiCeil.toFixed(1)+'×',
-      headroom: d.dtiCeil - r.dti, headFmt:(h)=> (h>=0?'+':'')+h.toFixed(2)+'×',
-      kind: r.dti < d.dtiCeil*0.85 ? 'pass' : r.dti <= d.dtiCeil ? 'borderline' : 'fail'
+      ceilText: (da.high?'flag ':'')+da.threshold.toFixed(1)+'×',
+      headroom: da.threshold - r.dti, headFmt:(h)=> (h>=0?'+':'')+h.toFixed(2)+'×',
+      kind: da.exempt ? 'pass' : !da.high ? 'pass' : 'borderline',   // never 'fail' from DTI alone
+      flagNote: dtiFlagText(da)
     }
   ];
   const policyLabel = d.policy?d.policy.label:lenderLabel(d.lender);
@@ -9232,13 +9323,16 @@ function renderWsStep6(d){
       <tbody>
         ${rows.map(rw=>`<tr class="${rw.kind}">
           <td class="ws-r-name">${esc(rw.name)}</td>
-          <td class="ws-r-formula">${esc(rw.formula)}</td>
+          <td class="ws-r-formula">${esc(rw.formula)}${rw.flagNote?`<span class="ws-rule ${da.flagged?'amber':''}" style="display:block;font-family:var(--serif);font-style:italic;font-size:11px;color:var(--t3-cool);margin-top:4px;line-height:1.4">${esc(rw.flagNote)}</span>`:''}</td>
           <td class="num result">${rw.resultText}</td>
           <td class="num">${provReveal(rw.ceilText, ceilProv(rw.name, rw.ceilText))}</td>
           <td class="num"><span class="ws-r-head ${rw.kind==='fail'?'red':rw.kind==='borderline'?'amber':''}">${rw.headroom==null?'—':rw.headFmt(rw.headroom)}</span></td>
         </tr>`).join('')}
       </tbody>
     </table>
+    <p style="font-size:11px;color:var(--t3-cool);font-family:var(--serif);font-style:italic;margin:10px 12px 0;line-height:1.5">
+      DTI is shown as a <b>lender-appetite flag</b>, not a serviceability ceiling — a high DTI consumes the lender's high-DTI bucket but does not, on its own, decline the loan. Segment: <b>${da.segment==='investment'?'investment':'owner-occupier'}</b>${da.exempt?` · <b>exempt</b> (${(state.calc&&state.calc.purpose)==='construction'?'new-build/construction':'bridging'})`:''}. <span class="mono">LEGAL-REVIEW</span>: thresholds indicative pending the compliance map (§5).
+    </p>
   </section>`;
 }
 
