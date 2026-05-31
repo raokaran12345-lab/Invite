@@ -1,5 +1,37 @@
 # DebtIQ v6 — Changelog
 
+## MASTER program — Phase 1-finish (brand foundation cleanup)
+
+Low-risk, no-backend interleave done while the authority files are
+pending. Confirmed most of Phase 1 was already shipped (tokens, fonts,
+ink-monogram logo at every site, violet colour fully retired,
+mono+tabular numbers global) and closed the genuine remnants:
+
+- **Violet remnants removed (honesty).** The colour was already gone
+  (`--brand-grad:var(--ink)`, no violet hex, no `--logo-grad`); the only
+  leftovers were the `.violet` **class names**. Renamed the functional
+  class and all references to `.neutral` (pill style, `STATUS_META`
+  AI-Processing/Submitted, the Processing status maps, the lender-policy
+  buffer pill, the AI-recommended pill, the intel tag map, and the
+  serviceability-commentary card tone). The lone surviving mention of
+  "violet" is a comment documenting that the palette has *none*.
+- **Token architecture made explicit.** Annotated the `:root` header to
+  name the three layers — PRIMITIVE (raw values, this block only) →
+  SEMANTIC (purpose aliases components reference) → COMPONENT (per-widget
+  vars) — so the "no raw hex in components" rule has a documented home.
+- **In-app styleguide entry.** The brand styleguide was reachable only
+  via `?styleguide=1`; added an **Open brand styleguide ↗** button in
+  Settings → Account (`openStyleguide()`, opens in a new tab so the
+  working session is kept) and updated the styleguide footer note.
+- **Verified** the ink monogram is identical across favicon, login,
+  broker cmd-bar, assessor cmd-bar, and the submission-pack masthead.
+- Smoke: +4 Phase 1-finish checks (**340/340 passing**).
+
+> Deferred to Phase 9 (UX-QA sweep): converting inline status **emoji**
+> (✓/✕/➜/⚠/🔍) to SVG — that's a UX-QA item, not part of Phase 1's
+> stated scope, and is best done against the brand guide once committed.
+
+
 ## MASTER program — Phase 0 (audit) + Phase 5 (access control / RBAC)
 
 First two gates of the full-integration program. **Phase 0** was a

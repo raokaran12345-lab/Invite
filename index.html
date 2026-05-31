@@ -16,6 +16,15 @@
   /* ============================================================
      DebtIQ Brand System v1.0 — single source of truth
      Editorial credit-memo + clinical precision.
+     ------------------------------------------------------------
+     TOKEN ARCHITECTURE (three layers):
+       1. PRIMITIVE  — raw values, defined in this block only.
+       2. SEMANTIC   — purpose aliases (--surface-*, --text-*,
+                       --status-*, scales) further down; components
+                       SHOULD reference these, never raw hex.
+       3. COMPONENT  — per-component vars introduced where a widget
+                       needs its own knob (e.g. --copilot-w).
+     Raw hex/rgba live ONLY in the primitive layer.
      ============================================================ */
   /* Surfaces */
   --page:#EEEAE1;
@@ -904,7 +913,7 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .pill.green{background:rgba(5,150,105,.12);color:var(--green)}
 .pill.amber{background:rgba(217,119,6,.12);color:var(--amber)}
 .pill.red{background:rgba(220,38,38,.12);color:var(--red)}
-.pill.violet{background:rgba(30,42,68,.08);color:var(--ink)}
+.pill.neutral{background:rgba(30,42,68,.08);color:var(--ink)}
 .pill.gray{background:var(--line2);color:var(--t3)}
 .progress{height:7px;border-radius:6px;background:var(--line2);overflow:hidden}
 .progress>span{display:block;height:100%;background:var(--brand-grad);border-radius:6px;transition:width .7s cubic-bezier(.22,1,.36,1)}
@@ -2242,8 +2251,8 @@ const DEMO_CROSSCHECK = {
 const STATUS_META = {
   BROKER_REVIEW:{label:'Broker Review', cls:'amber'},
   DOCS_PENDING:{label:'Docs Pending', cls:'gray'},
-  AI_PROCESSING:{label:'AI Processing', cls:'violet'},
-  SUBMITTED:{label:'Submitted', cls:'violet'},
+  AI_PROCESSING:{label:'AI Processing', cls:'neutral'},
+  SUBMITTED:{label:'Submitted', cls:'neutral'},
   APPROVED:{label:'Approved', cls:'green'},
   MORE_INFO:{label:'More Info', cls:'red'}
 };
@@ -4147,7 +4156,7 @@ function loadDealIntoCalc(id){
 }
 function panelDocs(el, d){
   const docs = DOCS.filter(x=>x.deal===d.id);
-  const statusCls = {Verified:'green', Processing:'violet', Review:'amber'};
+  const statusCls = {Verified:'green', Processing:'neutral', Review:'amber'};
   const ocrNote = `<p style="font-size:11px;color:var(--t3);text-align:center;margin-top:8px">${aiLive()?'AI reads PNG/JPEG/PDF uploads and fills the calculator automatically.':'Demo mode — uploads use a filename-based mock. Sign in (with the backend deployed) for real AI extraction.'}</p>`;
   el.innerHTML = docs.length ? `
     <div style="display:flex;flex-direction:column;gap:8px">
@@ -4699,7 +4708,7 @@ function renderServiceability(el){
          <select id="svcLender" onchange="state.lender=this.value;renderServiceability(document.getElementById('page-serviceability'))" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:12px;font-weight:600">
            ${Object.keys(lenderDB()).filter(id=> state.accreditedLenders.length===0 || state.accreditedLenders.includes(id)).map(id=>`<option value="${id}" ${state.lender===id?'selected':''}>${lenderDB()[id].label||id} — ${lenderDB()[id].apra_regulated?'ADI':'Non-bank'} ${(lenderDB()[id].buffer*100).toFixed(0)}% buffer</option>`).join('')}
          </select>
-         ${activePolicy()?`<span class="pill ${activePolicy().apra_regulated?'gray':'amber'}">${activePolicy().apra_regulated?'ADI':'Non-bank'}</span><span class="pill violet">${(activeBuffer()*100).toFixed(0)}% buffer</span><span class="pill gray">DSR &lt; ${activeDsrMax()}%</span><span class="pill gray">Max LVR ${activePolicy().max_lvr_owner_occ_pi||'—'}%</span>`:''}
+         ${activePolicy()?`<span class="pill ${activePolicy().apra_regulated?'gray':'amber'}">${activePolicy().apra_regulated?'ADI':'Non-bank'}</span><span class="pill neutral">${(activeBuffer()*100).toFixed(0)}% buffer</span><span class="pill gray">DSR &lt; ${activeDsrMax()}%</span><span class="pill gray">Max LVR ${activePolicy().max_lvr_owner_occ_pi||'—'}%</span>`:''}
        </div>` : '';
   const tabs = `<div class="tabs" style="margin-bottom:16px">
       <div class="tab ${state.svcTab==='detailed'?'active':''}" onclick="state.svcTab='detailed';renderServiceability(document.getElementById('page-serviceability'))">Detailed (verified)</div>
@@ -5470,7 +5479,7 @@ function renderDocuments(el){
   renderPipelinePanel();
 }
 function renderDocBody(){
-  const statusCls = {Verified:'green', Processing:'violet', Review:'amber'};
+  const statusCls = {Verified:'green', Processing:'neutral', Review:'amber'};
   const body = document.getElementById('docBody'); if(!body) return;
   body.innerHTML = DOCS.map((d,i)=>`
     <tr>
@@ -6197,7 +6206,7 @@ function renderCompare(el){
     : '';
   el.innerHTML = `
     <div class="page-head"><h1>Lender Comparison</h1><p>${m().flag} ${m().label} — ${rows.length} lenders, will-they-approve THIS deal for ${fmtMoney(loan)} over ${term} years</p></div>
-    ${recommended?`<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--brand)"><span class="pill violet">AI recommended</span> <b style="margin-left:8px">${recommended.label}</b> <span class="pill ${recommended.isAdi?'gray':'amber'}" style="margin-left:6px">${recommended.isAdi?'ADI':'Non-bank'} · ${(recommended.buffer*100).toFixed(0)}% buffer</span> — capacity <span class="mono">${fmtMoney(recommended.capacity||0)}</span>, NDI <span class="mono">${fmtMoney(recommended.ndi)}/mo</span>.</div>`:`<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--red)">No lender services this loan as structured — see the Calculator for the levers to fix it.</div>`}
+    ${recommended?`<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--brand)"><span class="pill neutral">AI recommended</span> <b style="margin-left:8px">${recommended.label}</b> <span class="pill ${recommended.isAdi?'gray':'amber'}" style="margin-left:6px">${recommended.isAdi?'ADI':'Non-bank'} · ${(recommended.buffer*100).toFixed(0)}% buffer</span> — capacity <span class="mono">${fmtMoney(recommended.capacity||0)}</span>, NDI <span class="mono">${fmtMoney(recommended.ndi)}/mo</span>.</div>`:`<div class="card" style="padding:16px;margin-bottom:16px;border-left:4px solid var(--red)">No lender services this loan as structured — see the Calculator for the levers to fix it.</div>`}
     ${auNote}
     <div class="table-card">
       <table><thead><tr><th>Lender</th><th>Type</th><th>Buffer</th><th>Capacity</th><th>Verdict</th><th>Policy edge for this deal</th><th></th></tr></thead>
@@ -6231,7 +6240,7 @@ let aiSuggestions = null;   // optional AI-generated extras (over the curated ba
 function renderIntel(el){
   const intel = intelDB()[state.market];
   if(!intel){ el.innerHTML = `<div class="page-head"><h1>Market Intelligence</h1><p>No intelligence on file for this market yet.</p></div>`; return; }
-  const tagCls = t=>({LVR:'violet',SMSF:'green',HECS:'amber',DTI:'red',Buffer:'violet',Stress:'amber',LTI:'violet',LTV:'green'}[t]||'gray');
+  const tagCls = t=>({LVR:'neutral',SMSF:'green',HECS:'amber',DTI:'red',Buffer:'neutral',Stress:'amber',LTI:'neutral',LTV:'green'}[t]||'gray');
   // Rate board: AU shows every lender from the policy DB; other markets show a note.
   const auRates = state.market==='AU' && Object.keys(lenderDB()).length
     ? Object.keys(lenderDB()).map(id=>{ const p=lenderDB()[id]; return {id, label:p.label||id, type:p.apra_regulated?'ADI':'Non-bank', rate:p.base_rate, buffer:p.buffer, color:p.lender_color}; }).sort((a,b)=>a.rate-b.rate)
@@ -6619,6 +6628,10 @@ function settingsPane(){
       <div class="inp"><label for="setAgg">Aggregator</label><input id="setAgg" value="Finsure"></div>
     </div>
     <button class="btn primary" style="margin-top:18px" onclick="saveAccount()">Save</button>
+    <hr style="border:none;border-top:1px solid var(--border);margin:20px 0">
+    <p style="font-size:13px;font-weight:700;margin-bottom:8px">Brand</p>
+    <button class="btn" onclick="openStyleguide()">Open brand styleguide ↗</button>
+    <p style="font-size:11.5px;color:var(--t3);margin-top:6px">The DebtIQ design system — tokens, type, status colours, the ink monogram. Opens in a new tab.</p>
     <hr style="border:none;border-top:1px solid var(--border);margin:20px 0">
     <p style="font-size:13px;font-weight:700;margin-bottom:8px">Persistence &amp; auth</p>
     ${state.backend
@@ -7503,7 +7516,7 @@ async function genServiceability(){
   const r = computeServiceability(); const pol = activePolicy();
   showLoader('Generating serviceability commentary…');
   const txt = await callClaude(buildServicingPrompt(r, pol));
-  hideLoader(); renderComplianceCard('Serviceability Commentary', txt, 'serv', 'violet');
+  hideLoader(); renderComplianceCard('Serviceability Commentary', txt, 'serv', 'neutral');
   if(COMMENTARY[2]) COMMENTARY[2].text = txt;
 }
 function renderComplianceCard(title, text, key, tone){
@@ -9326,6 +9339,15 @@ function integrityChipNew(status){
 /* ============================================================
    ?preview=1 — design-system gallery
    ============================================================ */
+/* In-app entry to the brand styleguide (Phase 1 — reachable without editing
+   the URL). Opens ?styleguide=1 in a new tab so the working session is kept. */
+function openStyleguide(){
+  try{
+    const url = (location.pathname||'/') + '?styleguide=1';
+    if(typeof window.open === 'function'){ window.open(url, '_blank'); return; }
+  }catch(e){}
+  showDesignPreview();
+}
 function showDesignPreview(){
   const login=document.getElementById('login'); if(login) login.style.display='none';
   const app=document.getElementById('app'); if(app) app.style.display='flex';
@@ -9430,7 +9452,7 @@ function showDesignPreview(){
       <div class="num" style="font-size:14px;color:var(--t1);margin-top:6px">DM Mono — 1,234,567 · 78.5% · $785,000 · 4.2x</div>
     </div>
 
-    <p class="serif-italic" style="margin-top:28px;color:var(--t3-warm)">Brand styleguide · reach via <span class="num" style="font-family:var(--mono);color:var(--ink)">?styleguide=1</span>.</p>
+    <p class="serif-italic" style="margin-top:28px;color:var(--t3-warm)">Brand styleguide · reachable in-app from <span class="num" style="font-family:var(--mono);color:var(--ink)">Settings → Account</span> or via <span class="num" style="font-family:var(--mono);color:var(--ink)">?styleguide=1</span>.</p>
   </div>`;
 }
 
