@@ -1,5 +1,63 @@
 # DebtIQ v6 — Changelog
 
+## Broker overhaul — Phase 1: shell · home routing · account · settings
+
+First phase of the broker-side architecture + UX pass driven by user
+critique. Frontend only — no `functions/`, no `supabase/`, no
+`lenders.js`, no `/api/*` contract changes. Demo and live modes both
+work identically afterwards.
+
+- **Three-layer token architecture.** Added a semantic layer
+  (`--surface-editorial`, `--surface-clinical`, `--text-primary`,
+  `--text-secondary`, `--accent-interactive`, `--status-pass`/-`caution`/
+  -`fail`, `--hairline`, `--focus-ring`) and a numeric spacing
+  (`--space-1`…`--space-9`) + type (`--fs-xs`…`--fs-5xl`) scale on top
+  of the existing brand primitives. Primitives unchanged; existing
+  compatibility aliases unchanged; new code references semantics.
+- **Density + reduced-motion classes** (`body.density-compact`,
+  `body.reduced-motion`) driven by Settings → Preferences. Compact
+  shrinks chrome heights and tightens card padding; reduced-motion
+  collapses transitions/animations across the board.
+- **Logo is a real home button** in both shells. Broker logo →
+  `goTab('pipeline')`; assessor logo → assessment queue (via
+  `setAssessView('queue')` if present, otherwise `initAssessorShell`).
+  Focusable, keyboard-operable, visible focus ring.
+- **Role toggle switches workspaces** (was: cosmetic class flip
+  that only hid the Assessment tab). `setRole('assessor')` now hides
+  `#app`, shows `#assessorApp`, and runs `initAssessorShell()`;
+  `setRole('broker')` does the reverse via `init()`. Idempotent —
+  no-op when already on the requested role.
+- **Avatar becomes the account menu trigger** in both shells. Click
+  opens **Account · Settings · Sign out**; Account opens Settings on
+  the Account tab; Settings opens Settings on the Preferences tab;
+  Sign out runs the existing `doSignOut()` (clears Supabase session +
+  reloads back to the branching login). Click-away and ESC dismiss.
+  ESC also closes the settings overlay (previously needed an X-click).
+- **Settings → Preferences** — new tab with five toggles, persisted
+  to `localStorage` under `debtiq.settings.v1` and re-hydrated on
+  every boot before the first render:
+  - **Density** (comfortable | compact)
+  - **Number format** (1,234,567 grouped | 1234567 plain) — read by
+    `fmtMoney` so it applies everywhere money is rendered
+  - **Reduce motion** — toggles `body.reduced-motion`
+  - **Default lender** — seeds `state.lender` on each new deal
+  - **Default assessment buffer** — seeds `state.manual.bufferPct`
+    on each new deal (existing deals keep what they were set up with;
+    consistent with the "seeds new deals only" note in the UI copy)
+- **Settings persistence helpers**: `loadSettings()` /
+  `saveSettings()` / `applySettings()` / `setSetting(key,value)`.
+  Boot calls `loadSettings()` + `applySettings()` before
+  `initBackend()` so density/reduced-motion are visible from frame 1.
+- **Lingering "Netlify" copy** in the AI settings pane updated to
+  "Cloudflare Pages" (post-migration cleanup).
+- **Smoke harness** extended with 21 Phase 1 checks (semantic
+  tokens, spacing/type scale, home button DOM, account menu DOM +
+  open/close + aria-expanded, Preferences pane fields, density and
+  reduced-motion class application, localStorage round-trip,
+  `fmtMoney` numberFormat both modes, `startNewDeal` seeding from
+  preferences, `setRole` workspace switch, `goHome` route, sign-out
+  wiring). **216/216 passing.**
+
 ## Round (platform migration) — Netlify → Cloudflare Pages + Pages Functions
 
 Moved every backend handler off Netlify Functions to Cloudflare Pages

@@ -80,6 +80,56 @@
   --cmdbar-h:52px;
   --dealstrip-h:40px;
   --tabstrip-h:40px;
+  /* ============================================================
+     SEMANTIC LAYER (Phase 1 — token architecture)
+     Purpose aliases that components SHOULD reference instead of
+     primitive hex values. Existing components continue to work via
+     the compatibility aliases above; new code uses these.
+     ============================================================ */
+  --surface-editorial:var(--page);     /* warm paper — pipeline, deal canvas */
+  --surface-clinical:var(--white);     /* white — forms, dialogs */
+  --surface-paper:var(--paper);        /* off-white — cards, panels */
+  --surface-institutional:var(--ink);  /* dark navy — lender chrome */
+  --text-primary:var(--t1);
+  --text-secondary:var(--t2);
+  --text-muted:var(--t3-cool);
+  --text-label:var(--t3-warm);
+  --accent-interactive:var(--steel);
+  --accent-editorial:var(--ink);
+  --accent-warm:var(--brass);
+  --status-pass:var(--green);
+  --status-caution:var(--amber);
+  --status-fail:var(--red);
+  --status-pass-bg:var(--green-bg);
+  --status-caution-bg:var(--amber-bg);
+  --status-fail-bg:var(--red-bg);
+  --hairline:var(--line);
+  --hairline-cool:var(--line2);
+  --focus-ring:0 0 0 3px rgba(59,111,181,.30);
+  /* Spacing scale (4·8·12·16·24·32·48·64·96) */
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px;
+  --space-5:24px; --space-6:32px; --space-7:48px; --space-8:64px; --space-9:96px;
+  /* Type scale (12·14·16·18·20·24·30·36·48) */
+  --fs-xs:12px; --fs-sm:14px; --fs-md:16px; --fs-lg:18px;
+  --fs-xl:20px; --fs-2xl:24px; --fs-3xl:30px; --fs-4xl:36px; --fs-5xl:48px;
+}
+/* ============================================================
+   DENSITY + MOTION TOGGLES (driven by Settings → Preferences)
+   ============================================================ */
+body.density-compact{
+  --cmdbar-h:46px;
+  --dealstrip-h:34px;
+  --tabstrip-h:34px;
+  --timeline-h:64px;
+}
+body.density-compact .card{ padding:10px 12px; }
+body.density-compact #cmdBar{ padding:0 12px; gap:10px; }
+body.density-compact .ac-cmd-bar{ padding:6px 14px; height:46px; }
+body.reduced-motion *{
+  animation-duration:0.001ms !important;
+  animation-iteration-count:1 !important;
+  transition-duration:0.001ms !important;
+  scroll-behavior:auto !important;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
@@ -234,11 +284,21 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
 /* Command Bar */
 #cmdBar{
   height:var(--cmdbar-h);flex-shrink:0;background:var(--surface);
-  border-bottom:1px solid var(--border);display:flex;align-items:center;
+  border-bottom:1px solid var(--hairline);display:flex;align-items:center;
   padding:0 18px;gap:14px;z-index:100;
 }
 .cmd-left{display:flex;align-items:center;gap:9px;flex-shrink:0}
 .cmd-centre{flex:1;max-width:480px;margin:0 auto;position:relative}
+/* Logo home button — focusable, role-aware home target. Same hit area in both shells. */
+.cmd-home-btn{
+  display:flex;align-items:center;gap:9px;background:none;border:none;padding:6px 4px;
+  cursor:pointer;color:var(--ink);border-radius:6px;line-height:1;
+}
+.cmd-home-btn:hover{background:var(--ink-bg)}
+.cmd-home-btn:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.ac-cmd-bar .cmd-home-btn{color:#fff}
+.ac-cmd-bar .cmd-home-btn:hover{background:rgba(255,255,255,.06)}
+.ac-cmd-bar .cmd-home-btn:focus-visible{box-shadow:0 0 0 3px rgba(167,194,232,.30)}
 #globalSearch{
   width:100%;padding:8px 14px;border:1.5px solid var(--border);
   border-radius:var(--r-pill);font-size:13.5px;background:var(--bg);outline:none;transition:.15s;
@@ -251,6 +311,32 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
   background:var(--bg);border:1px solid var(--border);cursor:pointer;color:var(--t3);transition:.13s;
 }
 .cmd-icon-btn:hover{background:var(--brand-bg);color:var(--brand)}
+.cmd-icon-btn:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+/* Avatar as account-menu trigger */
+button.avatar{cursor:pointer;border:none}
+button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.ac-cmd-bar button.avatar:focus-visible{box-shadow:0 0 0 3px rgba(167,194,232,.30)}
+/* Account dropdown menu */
+.account-menu-wrap{position:relative;display:inline-flex}
+.account-menu{
+  position:absolute;top:calc(100% + 8px);right:0;min-width:200px;
+  background:#fff;border:1px solid var(--hairline);border-radius:10px;
+  box-shadow:0 8px 24px rgba(60,50,30,.12);
+  padding:6px;z-index:300;display:none;
+}
+.account-menu.open{display:block;animation:fadeUp .14s ease}
+.account-menu-item{
+  display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;
+  background:none;border:none;border-radius:6px;text-align:left;cursor:pointer;
+  font-size:13px;color:var(--text-primary);font-weight:500;
+}
+.account-menu-item:hover{background:var(--ink-bg)}
+.account-menu-item:focus-visible{outline:none;background:var(--ink-bg);box-shadow:var(--focus-ring)}
+.account-menu-item.danger{color:var(--red)}
+.account-menu-item.danger:hover{background:var(--red-bg)}
+.account-menu-divider{height:1px;background:var(--hairline);margin:4px 0}
+.account-menu-head{padding:8px 10px 4px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3-warm);font-family:var(--mono)}
+.account-menu-email{padding:0 10px 8px;font-size:12.5px;color:var(--t2);font-weight:600;word-break:break-all}
 
 /* Search results */
 .search-results{
@@ -1440,13 +1526,15 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
   <!-- COMMAND BAR -->
   <div id="cmdBar">
     <div class="cmd-left">
-      <div class="logo-mark" aria-label="DebtIQ"><svg viewBox="0 0 32 32" width="20" height="20" fill="none" stroke="currentColor" aria-hidden="true">
-          <line x1="4" y1="29" x2="28" y2="29" stroke-width="0.6" opacity=".45"/>
-          <path d="M9 5 L9 27 L17 27 C22.5 27 26 22.5 26 16 C26 9.5 22.5 5 17 5 Z" stroke-width="1.6" stroke-linejoin="miter" fill="none"/>
-          <line x1="5.5" y1="5" x2="12.5" y2="5" stroke-width="0.8"/>
-          <line x1="5.5" y1="27" x2="12.5" y2="27" stroke-width="0.8"/>
-        </svg></div>
-      <span class="wordmark">DebtIQ</span>
+      <button type="button" class="cmd-home-btn" onclick="goHome()" aria-label="DebtIQ — go to pipeline">
+        <span class="logo-mark"><svg viewBox="0 0 32 32" width="20" height="20" fill="none" stroke="currentColor" aria-hidden="true">
+            <line x1="4" y1="29" x2="28" y2="29" stroke-width="0.6" opacity=".45"/>
+            <path d="M9 5 L9 27 L17 27 C22.5 27 26 22.5 26 16 C26 9.5 22.5 5 17 5 Z" stroke-width="1.6" stroke-linejoin="miter" fill="none"/>
+            <line x1="5.5" y1="5" x2="12.5" y2="5" stroke-width="0.8"/>
+            <line x1="5.5" y1="27" x2="12.5" y2="27" stroke-width="0.8"/>
+          </svg></span>
+        <span class="wordmark">DebtIQ</span>
+      </button>
     </div>
     <div class="cmd-centre">
       <input id="globalSearch" aria-label="Global search"
@@ -1466,7 +1554,21 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
       <span id="cmdUserName" style="font-size:12.5px;font-weight:600;color:var(--t2);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
-      <div class="avatar" id="cmdAvatar">JB</div>
+      <div class="account-menu-wrap">
+        <button type="button" class="avatar" id="cmdAvatar"
+          onclick="toggleAccountMenu('broker', event)"
+          aria-haspopup="menu" aria-expanded="false" aria-controls="brokerAccountMenu"
+          aria-label="Account menu">JB</button>
+        <div id="brokerAccountMenu" class="account-menu" role="menu" aria-label="Account">
+          <div class="account-menu-head">Signed in</div>
+          <div class="account-menu-email" id="brokerAccountEmail">broker@debtiq.com</div>
+          <div class="account-menu-divider"></div>
+          <button class="account-menu-item" role="menuitem" onclick="openAccountFromMenu('broker')">Account</button>
+          <button class="account-menu-item" role="menuitem" onclick="openSettingsFromMenu('broker')">Settings</button>
+          <div class="account-menu-divider"></div>
+          <button class="account-menu-item danger" role="menuitem" onclick="signOutFromMenu()">Sign out</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1569,13 +1671,15 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
 <div id="assessorApp" style="display:none">
   <div id="acCmdBar" class="ac-cmd-bar">
     <div class="ac-cmd-left">
-      <div class="logo-mark" aria-label="DebtIQ"><svg viewBox="0 0 32 32" width="20" height="20" fill="none" stroke="currentColor" aria-hidden="true">
-          <line x1="4" y1="29" x2="28" y2="29" stroke-width="0.6" opacity=".45"/>
-          <path d="M9 5 L9 27 L17 27 C22.5 27 26 22.5 26 16 C26 9.5 22.5 5 17 5 Z" stroke-width="1.6" stroke-linejoin="miter" fill="none"/>
-          <line x1="5.5" y1="5" x2="12.5" y2="5" stroke-width="0.8"/>
-          <line x1="5.5" y1="27" x2="12.5" y2="27" stroke-width="0.8"/>
-        </svg></div>
-      <span class="wordmark">DebtIQ</span>
+      <button type="button" class="cmd-home-btn" onclick="goHome()" aria-label="DebtIQ — go to assessment queue">
+        <span class="logo-mark"><svg viewBox="0 0 32 32" width="20" height="20" fill="none" stroke="currentColor" aria-hidden="true">
+            <line x1="4" y1="29" x2="28" y2="29" stroke-width="0.6" opacity=".45"/>
+            <path d="M9 5 L9 27 L17 27 C22.5 27 26 22.5 26 16 C26 9.5 22.5 5 17 5 Z" stroke-width="1.6" stroke-linejoin="miter" fill="none"/>
+            <line x1="5.5" y1="5" x2="12.5" y2="5" stroke-width="0.8"/>
+            <line x1="5.5" y1="27" x2="12.5" y2="27" stroke-width="0.8"/>
+          </svg></span>
+        <span class="wordmark">DebtIQ</span>
+      </button>
       <span class="ac-cmd-sep">·</span>
       <span class="ac-cmd-org" id="acOrgName">Lending institution</span>
       <span class="ac-cmd-swatch" id="acOrgSwatch" aria-hidden="true"></span>
@@ -1585,8 +1689,21 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
     </div>
     <div class="ac-cmd-right">
       <span id="acUserName" class="ac-cmd-user"></span>
-      <div class="avatar" id="acAvatar">AS</div>
-      <button class="btn-sm" onclick="doSignOut()" aria-label="Sign out">Sign out</button>
+      <div class="account-menu-wrap">
+        <button type="button" class="avatar" id="acAvatar"
+          onclick="toggleAccountMenu('assessor', event)"
+          aria-haspopup="menu" aria-expanded="false" aria-controls="assessorAccountMenu"
+          aria-label="Account menu">AS</button>
+        <div id="assessorAccountMenu" class="account-menu" role="menu" aria-label="Account">
+          <div class="account-menu-head">Signed in</div>
+          <div class="account-menu-email" id="assessorAccountEmail">assessor@institution</div>
+          <div class="account-menu-divider"></div>
+          <button class="account-menu-item" role="menuitem" onclick="openAccountFromMenu('assessor')">Account</button>
+          <button class="account-menu-item" role="menuitem" onclick="openSettingsFromMenu('assessor')">Settings</button>
+          <div class="account-menu-divider"></div>
+          <button class="account-menu-item danger" role="menuitem" onclick="signOutFromMenu()">Sign out</button>
+        </div>
+      </div>
     </div>
   </div>
   <div id="acBody" class="ac-body"></div>
@@ -1783,9 +1900,54 @@ const state = {
     expensesMonthly:2200, useHEM:true,
     assets:1000000, liabilitiesMonthly:475, existingDebtBalance:0,
     loanAmount:785000, rate:6.24, term:30, bufferPct:3, dependants:0
+  },
+  // Per-broker preferences — hydrated from localStorage on boot (loadSettings()).
+  // Backend untouched: lives entirely in the browser.
+  settings:{
+    density:'comfortable',     // 'comfortable' | 'compact'
+    defaultLender:'',          // '' = leave the market default alone
+    defaultBuffer:0.03,        // assessment buffer as a decimal (3% = 0.03)
+    numberFormat:'au',         // 'au' (1,234,567) | 'plain' (1234567)
+    reducedMotion:false
   }
 };
-const fmtMoney = (n)=> MARKETS[state.market].sym + Math.round(+n||0).toLocaleString();
+
+/* ---------- Settings persistence (localStorage; no backend) ---------- */
+const LS_SETTINGS_KEY = 'debtiq.settings.v1';
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(LS_SETTINGS_KEY);
+    if(!raw) return;
+    const obj = JSON.parse(raw);
+    if(obj && typeof obj === 'object'){
+      // Only adopt known keys so a stale entry can't poison state.
+      ['density','defaultLender','defaultBuffer','numberFormat','reducedMotion'].forEach(k=>{
+        if(k in obj) state.settings[k] = obj[k];
+      });
+    }
+  }catch(e){}
+}
+function saveSettings(){
+  try{ localStorage.setItem(LS_SETTINGS_KEY, JSON.stringify(state.settings)); }catch(e){}
+}
+function applySettings(){
+  const b = document.body;
+  if(!b) return;
+  b.classList.toggle('density-compact', state.settings.density==='compact');
+  b.classList.toggle('reduced-motion', !!state.settings.reducedMotion);
+  // numberFormat is read live by fmtMoney; defaultLender/defaultBuffer are read at deal-creation time.
+}
+function setSetting(key, value){
+  state.settings[key] = value;
+  saveSettings();
+  applySettings();
+}
+
+const fmtMoney = (n)=>{
+  const sym = MARKETS[state.market].sym;
+  const v = Math.round(+n||0);
+  return sym + (state.settings.numberFormat==='plain' ? String(v) : v.toLocaleString());
+};
 const m = ()=> MARKETS[state.market];
 
 /* ============================================================
@@ -4258,9 +4420,9 @@ function renderBilling(el){
 let settingsTab = 'account';
 function renderSettings(el){
   el.innerHTML = `
-    <div class="page-head"><h1>Settings</h1><p>Account, market, AI and commission defaults</p></div>
+    <div class="page-head"><h1>Settings</h1><p>Account, preferences, market, AI and commission defaults</p></div>
     <div class="tabs">
-      ${[['account','Account'],['market','Market'],['ai','AI'],['commission','Commission'],['lenders','Lenders']].map(([k,l])=>
+      ${[['account','Account'],['preferences','Preferences'],['market','Market'],['ai','AI'],['commission','Commission'],['lenders','Lenders']].map(([k,l])=>
         `<div class="tab ${settingsTab===k?'active':''}" role="button" tabindex="0" onclick="settingsTab='${k}';renderSettings(document.getElementById('page-settings'))">${l}</div>`).join('')}
     </div>
     <div class="card" style="padding:24px;max-width:720px">${settingsPane()}</div>`;
@@ -4280,7 +4442,54 @@ function settingsPane(){
       ? (state.user
           ? `<div class="card" style="padding:12px 14px;border-left:4px solid var(--green)">Signed in as <b>${state.user.email||'broker'}</b> — deals are saved to your account (Supabase, row-level security).</div><button class="btn" style="margin-top:10px" onclick="doSignOut()">Sign out</button>`
           : `<div class="card" style="padding:12px 14px;border-left:4px solid var(--amber)">Backend connected but not signed in. Reload and sign in to enable persistence.</div>`)
-      : `<div class="card" style="padding:12px 14px;border-left:4px solid var(--amber)">Static demo mode — no data is saved. Deploy with Netlify + Supabase (see <b>BACKEND.md</b>) and set the env vars to enable accounts, persistence and live AI.</div>`}`;
+      : `<div class="card" style="padding:12px 14px;border-left:4px solid var(--amber)">Static demo mode — no data is saved. Deploy with Cloudflare Pages + Supabase (see <b>BACKEND.md</b>) and set the env vars to enable accounts, persistence and live AI.</div>`}`;
+  if(settingsTab==='preferences'){
+    const s = state.settings;
+    const lenderOpts = ['<option value="">— Use market default —</option>']
+      .concat(Object.keys(lenderDB()).map(id=>{
+        const p = lenderDB()[id];
+        return `<option value="${id}" ${s.defaultLender===id?'selected':''}>${(p.label||id)}</option>`;
+      })).join('');
+    return `
+      <p style="font-size:13px;color:var(--t2);margin-bottom:14px">Personal preferences. Saved to this browser; cleared on sign-out is not required.</p>
+      <p style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3-warm);font-weight:700;margin:14px 0 8px">Display</p>
+      <div class="form-grid">
+        <div class="inp">
+          <label for="setDensity">Density</label>
+          <select id="setDensity" onchange="setSetting('density', this.value); renderSettingsOverlay();">
+            <option value="comfortable" ${s.density==='comfortable'?'selected':''}>Comfortable</option>
+            <option value="compact" ${s.density==='compact'?'selected':''}>Compact</option>
+          </select>
+        </div>
+        <div class="inp">
+          <label for="setNumFmt">Number format</label>
+          <select id="setNumFmt" onchange="setSetting('numberFormat', this.value); renderSettingsOverlay();">
+            <option value="au" ${s.numberFormat==='au'?'selected':''}>1,234,567 (grouped)</option>
+            <option value="plain" ${s.numberFormat==='plain'?'selected':''}>1234567 (plain)</option>
+          </select>
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;margin:14px 0;font-size:13px;cursor:pointer">
+        <input type="checkbox" ${s.reducedMotion?'checked':''} onchange="setSetting('reducedMotion', this.checked); renderSettingsOverlay();">
+        <span>Reduce motion — fade animations off</span>
+      </label>
+      <p style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3-warm);font-weight:700;margin:18px 0 8px">Calculator defaults</p>
+      <div class="form-grid">
+        <div class="inp">
+          <label for="setDefLender">Default lender</label>
+          <select id="setDefLender" onchange="setSetting('defaultLender', this.value); renderSettingsOverlay();">
+            ${lenderOpts}
+          </select>
+        </div>
+        <div class="inp">
+          <label for="setDefBuf">Default assessment buffer (%)</label>
+          <input id="setDefBuf" type="number" step="0.25" min="0" max="10"
+            value="${(s.defaultBuffer*100).toFixed(2)}"
+            onchange="setSetting('defaultBuffer', Math.max(0, (+this.value||0)/100)); renderSettingsOverlay();">
+        </div>
+      </div>
+      <p style="font-size:11.5px;color:var(--t3);margin-top:14px">Defaults seed new deals only — existing deals keep the lender and buffer they were set up with.</p>`;
+  }
   if(settingsTab==='market') return `
     <p style="font-size:13px;font-weight:700;margin-bottom:12px">Active market</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -4294,9 +4503,9 @@ function settingsPane(){
         ? 'Connected — AI runs through the secure server proxy (<span class="mono">/api/claude</span>). Your Anthropic key stays on the server and is never sent to the browser.'
         : (state.backend
             ? 'Backend connected but not signed in — sign in to use live AI.'
-            : 'Not connected — running on local mock text. Deploy on Netlify and set <span class="mono">ANTHROPIC_API_KEY</span> (server-side) per <b>BACKEND.md</b>.')}
+            : 'Not connected — running on local mock text. Deploy on Cloudflare Pages and set <span class="mono">ANTHROPIC_API_KEY</span> (server-side) per <b>BACKEND.md</b>.')}
     </div>
-    <p style="font-size:11px;color:var(--t3);margin-top:10px">Model: claude-sonnet-4-20250514. The key is configured as a Netlify environment variable, not here — a browser-embedded key would be visible to anyone with DevTools.</p>`;
+    <p style="font-size:11px;color:var(--t3);margin-top:10px">Model: claude-sonnet-4-20250514. The key is configured as a Cloudflare Pages environment variable, not here — a browser-embedded key would be visible to anyone with DevTools.</p>`;
   if(settingsTab==='commission') return `
     <p style="font-size:13px;color:var(--t2);margin-bottom:12px">Defaults used to seed new deals.</p>
     <div class="form-grid">
@@ -5287,19 +5496,114 @@ async function submitCopilotQuery(){
 function showLenderCompare(){ renderWorkspace('compare'); }
 
 /* ============================================================
-   PHASE 2 SHELL — role toggle · Assessment screen · Conditions
+   PHASE 1 SHELL — role workspace switch · home routing · account menu
    ============================================================ */
 function setRole(role){
-  state.role = role==='assessor' ? 'assessor' : 'broker';
-  document.body.classList.toggle('role-assessor', state.role==='assessor');
+  const target = role==='assessor' ? 'assessor' : 'broker';
+  if(state.role === target){
+    // Idempotent: keep the visual indicators in sync but skip re-init.
+    syncRoleToggleUI();
+    return;
+  }
+  state.role = target;
+  document.body.classList.toggle('role-assessor', target==='assessor');
+  syncRoleToggleUI();
+  logEvent('Role switched to '+target, target);
+  closeAccountMenus();
+  const appEl = document.getElementById('app');
+  const acEl  = document.getElementById('assessorApp');
+  if(target==='assessor'){
+    if(appEl) appEl.style.display = 'none';
+    if(acEl)  acEl.style.display  = 'flex';
+    initAssessorShell();
+  } else {
+    if(acEl)  acEl.style.display  = 'none';
+    if(appEl) appEl.style.display = 'flex';
+    init();
+  }
+}
+function syncRoleToggleUI(){
   const a = document.getElementById('roleBroker'), b = document.getElementById('roleAssessor');
   if(a){ a.classList.toggle('active', state.role==='broker'); a.setAttribute('aria-pressed', state.role==='broker'); }
   if(b){ b.classList.toggle('active', state.role==='assessor'); b.setAttribute('aria-pressed', state.role==='assessor'); }
-  logEvent('Role switched to '+state.role, state.role);
-  // If we're on the Assessment tab and switching to broker, return to pipeline.
-  if(state.role==='broker' && state.page==='assessment'){ goTab('pipeline'); return; }
-  // Otherwise stay on the current page (the tab strip will reveal/hide the Assessment tab via CSS).
-  if(state.page==='assessment') renderWorkspace('assessment');
+}
+
+/* ---------- Home routing — role-aware ---------- */
+function goHome(){
+  closeAccountMenus();
+  if(state.role==='assessor'){
+    // Assessor home: the queue (rendered by the assessment console).
+    if(typeof setAssessView === 'function'){
+      try{ setAssessView('queue'); return; }catch(e){}
+    }
+    if(typeof initAssessorShell === 'function'){ initAssessorShell(); return; }
+  }
+  // Broker home: the Pipeline.
+  clearActiveDeal && clearActiveDeal();
+  if(typeof goTab === 'function') goTab('pipeline');
+}
+
+/* ---------- Account menu (broker + assessor share the same primitive) ---------- */
+function toggleAccountMenu(which, ev){
+  if(ev){ ev.stopPropagation(); }
+  const id = which==='assessor' ? 'assessorAccountMenu' : 'brokerAccountMenu';
+  const trigger = document.getElementById(which==='assessor' ? 'acAvatar' : 'cmdAvatar');
+  const menu = document.getElementById(id);
+  if(!menu) return;
+  const wasOpen = menu.classList.contains('open');
+  closeAccountMenus();
+  if(!wasOpen){
+    // Refresh the email line every time we open.
+    const emailEl = document.getElementById(which==='assessor' ? 'assessorAccountEmail' : 'brokerAccountEmail');
+    if(emailEl){
+      const e = (state.user && state.user.email) || (which==='assessor' ? 'assessor@institution' : 'broker@debtiq.com');
+      emailEl.textContent = e;
+    }
+    menu.classList.add('open');
+    if(trigger) trigger.setAttribute('aria-expanded', 'true');
+    // Focus the first menu item for keyboard users.
+    const first = menu.querySelector('.account-menu-item');
+    if(first) setTimeout(()=>first.focus(), 0);
+  }
+}
+function closeAccountMenus(){
+  ['brokerAccountMenu','assessorAccountMenu'].forEach(id=>{
+    const m = document.getElementById(id);
+    if(m && m.classList.contains('open')) m.classList.remove('open');
+  });
+  ['cmdAvatar','acAvatar'].forEach(id=>{
+    const t = document.getElementById(id);
+    if(t) t.setAttribute('aria-expanded', 'false');
+  });
+}
+function openAccountFromMenu(which){
+  closeAccountMenus();
+  settingsTab = 'account';
+  openSettings();
+}
+function openSettingsFromMenu(which){
+  closeAccountMenus();
+  settingsTab = 'preferences';
+  openSettings();
+}
+function signOutFromMenu(){
+  closeAccountMenus();
+  doSignOut();
+}
+// Global click-away + ESC dismiss for menus AND the settings overlay (escape-routes UX rule).
+if(typeof window !== 'undefined' && !window._diqAccountMenuWired){
+  window._diqAccountMenuWired = true;
+  document.addEventListener('click', (e)=>{
+    const inMenu = e.target && (e.target.closest && e.target.closest('.account-menu-wrap'));
+    if(!inMenu) closeAccountMenus();
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key!=='Escape') return;
+    const anyMenuOpen = document.querySelector('.account-menu.open');
+    if(anyMenuOpen){ closeAccountMenus(); return; }
+    const settingsOpen = document.getElementById('settingsOverlay');
+    if(settingsOpen && settingsOpen.classList.contains('open')){ closeSettings(); return; }
+  });
 }
 
 function decideAssessment(r){
@@ -5547,7 +5851,15 @@ function showSearchResults(){ const inp=document.getElementById('globalSearch');
 function hideSearchResults(){ const box=document.getElementById('searchResults'); if(box) box.style.display='none'; }
 
 /* ---------- New deal (wizard modal) ---------- */
-function startNewDeal(){ state.wizStep = 1; openWizardModal(); }
+function startNewDeal(){
+  // Seed new-deal defaults from broker preferences (Phase 1 Settings).
+  // Existing deals are untouched — this only runs at the start of a new deal.
+  const def = state.settings || {};
+  if(def.defaultLender && lenderDB()[def.defaultLender]) state.lender = def.defaultLender;
+  if(typeof def.defaultBuffer === 'number') state.manual.bufferPct = +(def.defaultBuffer*100).toFixed(2);
+  state.wizStep = 1;
+  openWizardModal();
+}
 function openWizardModal(){
   closeWizardModal();
   const overlay = document.createElement('div');
@@ -5571,7 +5883,7 @@ function renderSettingsOverlay(){
   if(!body) return;
   body.innerHTML = `
     <div class="tabs" style="margin-bottom:20px">
-      ${[['account','Account'],['market','Market'],['ai','AI'],['commission','Commission'],['lenders','Lenders'],['billing','Billing']].map(([k,l])=>
+      ${[['account','Account'],['preferences','Preferences'],['market','Market'],['ai','AI'],['commission','Commission'],['lenders','Lenders'],['billing','Billing']].map(([k,l])=>
         `<div class="tab ${settingsTab===k?'active':''}" role="button" tabindex="0" onclick="settingsTab='${k}';renderSettingsOverlay()">${l}</div>`).join('')}
     </div>
     ${settingsTab==='billing' ? `<div id="settingsBilling"></div>` : settingsPane()}`;
@@ -6833,6 +7145,8 @@ function showDesignPreview(){
 
 /* ---------- Boot ---------- */
 (async function boot(){
+  loadSettings();             // pull preferences out of localStorage
+  applySettings();            // density + reduced-motion classes on <body>
   await initBackend();
   renderLoginMode();
   // ?styleguide=1 (or legacy ?preview=1) → render the brand styleguide and skip the rest.
