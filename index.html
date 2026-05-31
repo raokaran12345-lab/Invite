@@ -717,6 +717,55 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .gdc-fac-move:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .recut-hint{font-family:var(--serif);font-style:italic;font-size:11.5px;color:var(--text-muted);margin:6px 0 2px;line-height:1.4}
 
+/* ============================================================
+   TEAM & ACCESS pane (Phase 5)
+   ============================================================ */
+.acc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}
+.acc-h3{font-family:var(--serif);font-weight:500;font-size:20px;letter-spacing:-.005em;color:var(--t1);margin:0}
+.acc-sub{font-size:13px;color:var(--t2);margin:2px 0 0}
+.acc-muted{color:var(--t3-cool);font-size:12px}
+.acc-section{font-family:var(--ui);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3-warm);margin:24px 0 10px;padding-top:16px;border-top:1px solid var(--line)}
+.acc-fineprint{font-family:var(--serif);font-style:italic;font-size:12px;color:var(--t3-cool);line-height:1.5;margin:10px 0 0}
+.acc-note{padding:11px 14px;border-radius:8px;font-size:12.5px;line-height:1.5;margin:12px 0;border:1px solid var(--line)}
+.acc-note.steel{background:var(--steel-bg);border-left:3px solid var(--steel)}
+.acc-note.amber{background:var(--amber-bg);border-left:3px solid var(--amber)}
+.acc-note b{font-weight:700;color:var(--t1)}
+.acc-viewas{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0;padding:10px 14px;background:var(--ink-bg);border-radius:8px}
+.acc-viewas label{font-size:12.5px;font-weight:600;color:var(--t2)}
+.acc-viewas select{font-family:var(--mono);font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--white)}
+.acc-sim-flag{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--brass);background:var(--amber-bg);padding:3px 9px;border-radius:var(--r-pill);text-transform:uppercase;letter-spacing:.04em}
+.acc-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:4px}
+.acc-table th{text-align:left;font-family:var(--ui);font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--t3-warm);padding:8px 10px;border-bottom:1px solid var(--line)}
+.acc-table td{padding:9px 10px;border-bottom:1px solid var(--line2);vertical-align:middle}
+.acc-table .acc-r{text-align:right}
+.acc-table .acc-c{text-align:center}
+.acc-m-name{font-weight:600;color:var(--t1);font-size:13px}
+.acc-m-email{font-size:11.5px;color:var(--t3-cool);margin-top:1px}
+.role-chip{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.03em;padding:3px 9px;border-radius:var(--r-pill);text-transform:uppercase}
+.role-owner{background:var(--ink);color:#fff}
+.role-admin{background:var(--steel-bg);color:var(--steel)}
+.role-broker{background:var(--green-bg);color:var(--green)}
+.role-processor{background:var(--amber-bg);color:var(--amber)}
+.role-readonly{background:var(--ink-bg);color:var(--t3-cool)}
+.acc-role-select{font-family:var(--mono);font-size:11.5px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--white);color:var(--t1)}
+.acc-status{font-family:var(--mono);font-size:10.5px;font-weight:600;text-transform:capitalize}
+.acc-status-active{color:var(--green)}
+.acc-status-invited{color:var(--amber)}
+.acc-status-suspended{color:var(--red)}
+.acc-mini{font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;border:1px solid var(--line);background:var(--white);color:var(--ink);cursor:pointer;margin-left:6px}
+.acc-mini:hover{background:var(--ink-bg)}
+.acc-mini.danger{color:var(--red)}
+.acc-mini.danger:hover{background:#fef2f2}
+.acc-mini:focus-visible,.acc-role-select:focus-visible,.acc-viewas select:focus-visible{outline:none;box-shadow:var(--focus-ring,0 0 0 3px var(--steel-bg))}
+.acc-invite .form-grid{margin-top:4px}
+.acc-grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:6px 0}
+.acc-kv{display:flex;flex-direction:column;gap:3px;padding:10px 12px;background:var(--paper);border:1px solid var(--line);border-radius:8px}
+.acc-kl{font-family:var(--ui);font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--t3-warm)}
+.acc-matrix-wrap{overflow-x:auto}
+.acc-matrix td.mono{font-size:11px}
+.acc-yes{color:var(--green);font-weight:700}
+.acc-no{color:var(--line);font-weight:700}
+
 /* Purpose tiles (Step 1) */
 .purpose-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
 .purpose-tile{
@@ -2263,6 +2312,30 @@ const state = {
   lendingGroups:[],         // [{ id, name, kind, proposal_status, deal_ids:[], created_at, data }]
   activeGroup:null,         // group id when viewing a group's detail screen
   pipelineView:'deals',     // 'deals' | 'groups' — Pipeline tab toggle
+  // Access control / RBAC (MASTER program Phase 5 — owner-held).
+  // DEMO-FIRST: this is an in-memory org+membership model persisted to
+  // localStorage (ACCESS_LS_KEY), mirroring the DRAFT migration
+  // supabase/migrations/0002_access_control.sql (NOT applied). It changes
+  // no /api/* contract and no live auth. In live mode, until the membership
+  // tables are wired (ARCH-REVIEW), can() defaults to today's behaviour so
+  // the signed-in user keeps full access to their own RLS-scoped deals.
+  // The agent never creates real accounts, passwords, or secrets (guardrail 8).
+  access:{
+    orgId:'org_demo',
+    orgName:'DebtIQ demo brokerage',
+    currentUserId:'u_owner',     // who "I" am in the demo org
+    simulateRole:null,           // demo-only "view as role" override for can() checks
+    members:[
+      { id:'u_owner',     name:'Jordan Blake',  email:'owner@debtiq.com',     role:'owner',     status:'active',  joinedAt:'2026-01-04T02:00:00Z' },
+      { id:'u_admin',     name:'Priya Nair',    email:'admin@debtiq.com',     role:'admin',     status:'active',  joinedAt:'2026-02-11T02:00:00Z' },
+      { id:'u_broker',    name:'Tom Whitfield', email:'broker@debtiq.com',    role:'broker',    status:'active',  joinedAt:'2026-03-02T02:00:00Z' },
+      { id:'u_processor', name:'Mei Lin',       email:'processor@debtiq.com', role:'processor', status:'active',  joinedAt:'2026-03-20T02:00:00Z' },
+      { id:'u_readonly',  name:'Sam Auditor',   email:'assessor@debtiq.com',  role:'readonly',  status:'active',  joinedAt:'2026-04-01T02:00:00Z' }
+    ],
+    invitations:[],              // [{ id, email, role, token, issuedBy, issuedAt, status, expiresAt }]
+    authLog:[],                  // append-only auth/privilege events (immutable-style)
+    session:{ startedAt:null, lastActivityAt:null, timeoutMins:30, lastReauthAt:null }
+  },
   // Per-broker preferences — hydrated from localStorage on boot (loadSettings()).
   // Backend untouched: lives entirely in the browser.
   settings:{
@@ -2638,6 +2711,316 @@ function computeGroupRollup(group){
     dealCount: deals.length, serviceableDeals: serviceable,
     groupLvr: lvr
   };
+}
+
+/* ============================================================
+   ACCESS CONTROL / RBAC  (MASTER program — Phase 5, owner-held)
+   ------------------------------------------------------------
+   Roles, highest → lowest privilege:
+     owner      super-admin; only role that can grant/revoke OWNER,
+                invite is allowed, can do everything. ≥1 must exist.
+     admin      manage members (except owners), settings, all deals.
+     broker     create/edit/delete/submit deals, groups, packs, view PII.
+     processor  edit deal data + packs + view PII; no create/delete,
+                no member management, no PII export.
+     readonly   view only (also the assessor read view); PII masked.
+
+   DENY-BY-DEFAULT: can(cap) is false unless the effective role's
+   capability list explicitly grants it (guardrail 6).
+
+   DEMO vs LIVE:
+   - Demo (no backend): enforce the simulated/own member role so the
+     model is demonstrable. A "view as role" preview drives can().
+   - Live (signed in) but membership tables NOT yet wired: can()
+     returns true — preserves today's single-user/RLS behaviour so
+     nothing breaks. Wiring live enforcement = ARCH-REVIEW + the 0002
+     migration. The agent provisions no real accounts/secrets.
+   ============================================================ */
+const ACCESS_LS_KEY = 'debtiq.access.v1';
+const ROLE_RANK = { owner:5, admin:4, broker:3, processor:2, readonly:1 };
+const ROLE_LABELS = { owner:'Owner', admin:'Admin', broker:'Broker', processor:'Processor', readonly:'Read-only' };
+const ROLE_BLURB = {
+  owner:'Super-admin. Grants/revokes every role, invites members, full control.',
+  admin:'Manages members (not owners) and settings; full deal access.',
+  broker:'Creates, edits, submits deals & groups; generates packs; views PII.',
+  processor:'Edits deal data and generates packs; views PII. No create/delete or member admin.',
+  readonly:'View-only access. PII is masked; no edits.'
+};
+// Capability → roles that hold it. Deny-by-default for anything unlisted.
+const CAPABILITIES = {
+  'deal.create'      : ['owner','admin','broker'],
+  'deal.edit'        : ['owner','admin','broker','processor'],
+  'deal.delete'      : ['owner','admin','broker'],
+  'deal.submit'      : ['owner','admin','broker'],
+  'group.manage'     : ['owner','admin','broker'],
+  'pack.generate'    : ['owner','admin','broker','processor'],
+  'settlement.action': ['owner','admin','broker'],          // Phase 7 forward-compat
+  'settings.edit'    : ['owner','admin'],
+  'member.invite'    : ['owner','admin'],
+  'member.role.change':['owner','admin'],
+  'member.remove'    : ['owner','admin'],
+  'pii.view'         : ['owner','admin','broker','processor'],
+  'pii.export'       : ['owner','admin'],
+  'audit.view'       : ['owner','admin']
+};
+const SENSITIVE_CAPS = new Set(['member.role.change','member.remove','pii.export','settlement.action']);
+
+function accessLive(){ return !!(state.backend && state.user); }
+function currentMember(){
+  const a = state.access || {};
+  return (a.members||[]).find(m => m.id === a.currentUserId) || null;
+}
+/* Effective role used for all can() checks. */
+function effectiveRole(){
+  const a = state.access || {};
+  // Live + membership unwired → null (can() then preserves legacy full access).
+  if(accessLive() && !a._membershipWired) return null;
+  if(a.simulateRole && ROLE_RANK[a.simulateRole]) return a.simulateRole;
+  const m = currentMember();
+  return m ? m.role : 'readonly';
+}
+function can(cap){
+  // Live but RBAC not yet wired to Supabase → today's behaviour (full access).
+  if(accessLive() && !(state.access && state.access._membershipWired)) return true;
+  const role = effectiveRole();
+  if(!role) return true;
+  const holders = CAPABILITIES[cap];
+  if(!holders) return false;               // unknown capability → deny
+  return holders.includes(role);
+}
+function isOwner(){ return effectiveRole() === 'owner'; }
+function ownerCount(){ return (state.access.members||[]).filter(m => m.role==='owner' && m.status==='active').length; }
+
+/* Gate an action. Returns true if allowed; otherwise toasts + logs a denied attempt. */
+function requirePermission(cap, actionLabel){
+  if(can(cap)) return true;
+  const role = effectiveRole();
+  authAudit('PERMISSION_DENIED', `${ROLE_LABELS[role]||role} attempted: ${actionLabel||cap}`, null);
+  toast(`Your role (${ROLE_LABELS[role]||role}) can't ${actionLabel||('use '+cap)}.`, 'err');
+  return false;
+}
+
+/* ---------- Immutable-style auth / privilege audit log ----------
+   Append-only in the browser; mirrors auth_audit_log in migration 0002.
+   No edit/delete path is exposed (the table has no update/delete policy). */
+function authAudit(event, detail, targetId){
+  const a = state.access; if(!a) return;
+  const me = currentMember();
+  a.authLog = a.authLog || [];
+  a.authLog.unshift({
+    at: new Date().toISOString(),
+    event,
+    actorId: a.currentUserId,
+    actorEmail: me ? me.email : (state.user && state.user.email) || 'system',
+    targetId: targetId || null,
+    detail: detail || '',
+    ip: null            // server-captured in live; never spoofed client-side
+  });
+  if(a.authLog.length > 500) a.authLog.pop();
+  saveAccessState();
+}
+
+/* ---------- Persistence (localStorage; mirrors the 0002 tables) ---------- */
+function loadAccessState(){
+  try{
+    const raw = localStorage.getItem(ACCESS_LS_KEY);
+    if(!raw) return;
+    const obj = JSON.parse(raw);
+    if(obj && Array.isArray(obj.members) && obj.members.length){
+      state.access.members = obj.members;
+      state.access.invitations = Array.isArray(obj.invitations) ? obj.invitations : [];
+      state.access.authLog = Array.isArray(obj.authLog) ? obj.authLog : [];
+      if(obj.session) state.access.session = Object.assign(state.access.session, obj.session);
+      if(typeof obj.currentUserId === 'string') state.access.currentUserId = obj.currentUserId;
+    }
+  }catch(e){}
+}
+function saveAccessState(){
+  try{
+    const a = state.access;
+    localStorage.setItem(ACCESS_LS_KEY, JSON.stringify({
+      members:a.members, invitations:a.invitations, authLog:a.authLog,
+      session:a.session, currentUserId:a.currentUserId
+    }));
+  }catch(e){}
+}
+
+/* ---------- Member management (owner-held, with owner primacy) ---------- */
+function genUserId(){ return 'u_'+Math.random().toString(36).slice(2,9); }
+function genInviteToken(){
+  // Opaque, non-secret demo token. Real invites mint a server-side token
+  // and email it; the agent never stores credentials (guardrail 8).
+  return 'inv_'+Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6);
+}
+function inviteMember(email, role){
+  if(!requirePermission('member.invite','invite members')) return null;
+  email = (email||'').trim().toLowerCase();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ toast('Enter a valid email address.', 'err'); return null; }
+  if(!ROLE_RANK[role] || role==='owner'){
+    // Only an owner may grant OWNER, and never via a plain invite.
+    if(role==='owner' && !isOwner()){ toast('Only an Owner can grant the Owner role.', 'err'); return null; }
+    if(role==='owner'){ toast('Owner cannot be granted by invitation — transfer it explicitly.', 'err'); return null; }
+    toast('Pick a valid role.', 'err'); return null;
+  }
+  if((state.access.members||[]).some(m => m.email===email)){ toast('That email is already a member.', 'err'); return null; }
+  const inv = {
+    id:'i_'+Math.random().toString(36).slice(2,9),
+    email, role,
+    token: genInviteToken(),
+    issuedBy: state.access.currentUserId,
+    issuedAt: new Date().toISOString(),
+    status:'pending',
+    expiresAt: new Date(Date.now()+7*864e5).toISOString()
+  };
+  state.access.invitations.unshift(inv);
+  authAudit('INVITE_ISSUED', `${email} as ${ROLE_LABELS[role]}`, null);
+  saveAccessState();
+  toast(`Invite issued to ${email} (${ROLE_LABELS[role]}).`, 'ok');
+  return inv;
+}
+function revokeInvite(inviteId){
+  if(!requirePermission('member.invite','revoke invitations')) return;
+  const inv = (state.access.invitations||[]).find(i => i.id===inviteId);
+  if(!inv) return;
+  inv.status='revoked';
+  authAudit('INVITE_REVOKED', `${inv.email}`, null);
+  saveAccessState();
+  toast(`Invite to ${inv.email} revoked.`, 'ok');
+}
+/* Demo-only: simulate the invitee completing their own credential setup via the
+   existing auth path. The agent never sets a password or creates a real account. */
+function acceptInviteDemo(inviteId){
+  const inv = (state.access.invitations||[]).find(i => i.id===inviteId);
+  if(!inv || inv.status!=='pending') return;
+  inv.status='accepted';
+  state.access.members.push({
+    id: genUserId(), name: inv.email.split('@')[0], email: inv.email,
+    role: inv.role, status:'active', joinedAt:new Date().toISOString()
+  });
+  authAudit('INVITE_ACCEPTED', `${inv.email} joined as ${ROLE_LABELS[inv.role]}`, null);
+  saveAccessState();
+}
+function changeMemberRole(memberId, newRole){
+  if(!requirePermission('member.role.change','change member roles')) return;
+  if(!ROLE_RANK[newRole]){ toast('Unknown role.', 'err'); return; }
+  const m = (state.access.members||[]).find(x => x.id===memberId);
+  if(!m) return;
+  // Owner primacy rules:
+  if(m.role==='owner' && newRole!=='owner'){
+    if(ownerCount() <= 1){ toast('At least one Owner must remain.', 'err'); return; }
+    if(!isOwner()){ toast('Only an Owner can change an Owner.', 'err'); return; }
+  }
+  if(newRole==='owner' && !isOwner()){ toast('Only an Owner can grant the Owner role.', 'err'); return; }
+  if(m.role==='owner' && !isOwner()){ toast('Admins cannot modify an Owner.', 'err'); return; }
+  // Sensitive action → require re-auth.
+  requireReauth('change a member role', ()=>{
+    const prev = m.role; m.role = newRole;
+    authAudit('ROLE_CHANGED', `${m.email}: ${ROLE_LABELS[prev]} → ${ROLE_LABELS[newRole]}`, m.id);
+    saveAccessState();
+    toast(`${m.name} is now ${ROLE_LABELS[newRole]}.`, 'ok');
+    if(document.getElementById('page-settings')) renderSettings(document.getElementById('page-settings'));
+  });
+}
+function removeMember(memberId){
+  if(!requirePermission('member.remove','remove members')) return;
+  const m = (state.access.members||[]).find(x => x.id===memberId);
+  if(!m) return;
+  if(m.role==='owner'){ toast('An Owner cannot be removed — transfer ownership first.', 'err'); return; }
+  if(m.id===state.access.currentUserId){ toast('You cannot remove yourself.', 'err'); return; }
+  requireReauth('remove a member', ()=>{
+    state.access.members = state.access.members.filter(x => x.id!==memberId);
+    authAudit('MEMBER_REMOVED', `${m.email} (${ROLE_LABELS[m.role]})`, m.id);
+    saveAccessState();
+    toast(`${m.name} removed.`, 'ok');
+    if(document.getElementById('page-settings')) renderSettings(document.getElementById('page-settings'));
+  });
+}
+
+/* ---------- Sessions: timeout + re-auth for sensitive actions ---------- */
+function startSession(){
+  const now = new Date().toISOString();
+  state.access.session.startedAt = now;
+  state.access.session.lastActivityAt = now;
+  state.access.session.lastReauthAt = now;   // login counts as a fresh re-auth
+  saveAccessState();
+}
+function touchSession(){
+  if(!state.access || !state.access.session) return;
+  state.access.session.lastActivityAt = new Date().toISOString();
+}
+function sessionIdleMins(){
+  const la = state.access.session.lastActivityAt;
+  if(!la) return 0;
+  return (Date.now() - new Date(la).getTime())/60000;
+}
+function checkSessionTimeout(){
+  const s = state.access.session;
+  if(!s.startedAt) return false;
+  if(sessionIdleMins() >= (s.timeoutMins||30)){
+    authAudit('SESSION_TIMEOUT', `Idle ≥ ${s.timeoutMins}m`, null);
+    return true;
+  }
+  return false;
+}
+/* Re-auth gate. In demo we re-confirm identity with a prompt; in live this
+   would re-validate the Supabase session (ARCH-REVIEW). Re-auth is cached for
+   5 minutes so a burst of sensitive actions doesn't nag. */
+function reauthFresh(){
+  const r = state.access.session.lastReauthAt;
+  return r && (Date.now() - new Date(r).getTime()) < 5*60000;
+}
+function requireReauth(actionLabel, cb){
+  if(reauthFresh()){ cb(); return; }
+  const ok = (typeof window.confirm==='function')
+    ? window.confirm(`Sensitive action — please confirm your identity to ${actionLabel}.\n\n(In production this re-validates your sign-in.)`)
+    : true;
+  if(!ok){ authAudit('REAUTH_DECLINED', actionLabel, null); return; }
+  state.access.session.lastReauthAt = new Date().toISOString();
+  authAudit('REAUTH_OK', actionLabel, null);
+  saveAccessState();
+  cb();
+}
+
+/* ---------- PII scoping + privileged export ---------- */
+function canViewPII(){ return can('pii.view'); }
+function maskPII(value, kind){
+  if(canViewPII()) return value;
+  const v = String(value==null?'':value);
+  if(!v) return v;
+  if(kind==='email'){ const [u,d]=v.split('@'); return d ? (u.slice(0,1)+'•••@'+d) : '•••'; }
+  if(kind==='phone'){ return v.replace(/\d(?=\d{2})/g,'•'); }
+  return v.length<=2 ? '••' : v.slice(0,1)+'•••';
+}
+function exportPII(){
+  if(!requirePermission('pii.export','export PII')) return;
+  requireReauth('export client PII', ()=>{
+    const rows = (typeof DEALS!=='undefined'?DEALS:[]).map(d => ({
+      id:d.id, name:d.name, email:d.primary_email||'', phone:d.primary_phone||'', lender:d.lender, amount:d.amount
+    }));
+    const payload = {
+      exported_at:new Date().toISOString(),
+      exported_by:(currentMember()||{}).email||'owner',
+      org:state.access.orgName, record_count:rows.length, records:rows
+    };
+    authAudit('PII_EXPORTED', `${rows.length} client record(s)`, null);
+    try{
+      const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href=url; a.download=`debtiq-pii-export-${Date.now()}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    }catch(e){}
+    toast(`PII export generated (${rows.length} records) — logged to the audit trail.`, 'ok');
+  });
+}
+
+/* ---------- Demo "view as role" preview ---------- */
+function setSimulatedRole(role){
+  state.access.simulateRole = (role && ROLE_RANK[role]) ? role : null;
+  authAudit('VIEW_AS_ROLE', role ? ROLE_LABELS[role] : 'cleared', null);
+  if(document.getElementById('page-settings')) renderSettings(document.getElementById('page-settings'));
+  if(typeof updateAccessBanner==='function') updateAccessBanner();
 }
 
 /* ---------- Settings persistence (localStorage; no backend) ---------- */
@@ -3388,6 +3771,7 @@ function openFacilityMoveMenu(dealId, facId, groupId, anchorEl){
    Lightweight inline prompts using window.prompt() to keep the surface small;
    Phase 3 replaces these with a proper dialog as part of the re-cut UI. */
 function openCreateGroupPrompt(){
+  if(!requirePermission('group.manage','create a lending group')) return;   // Phase 5 RBAC gate
   const name = (typeof window.prompt === 'function') ? window.prompt('Name this lending group (e.g. "Mitchell Family — Q2 2026")', 'New lending group') : 'New lending group';
   if(name===null) return;
   const g = createGroup({ name: name.trim() || 'New lending group', proposal_status:'proposed' });
@@ -3461,6 +3845,7 @@ function confirmDeleteGroup(groupId){
    Format: cover + per-deal one-pager + cross-deal summary table.
    Opens in a new tab via openPackWindow() (same as per-deal packs). */
 function generateGroupPack(groupId){
+  if(!requirePermission('pack.generate','generate a group pack')) return;   // Phase 5 RBAC gate
   const g = (state.lendingGroups||[]).find(x => x.id === groupId);
   if(!g){ toast('Group not found.', 'err'); return; }
   const deals = dealsInGroup(groupId);
@@ -4161,6 +4546,7 @@ function wizExtract(name, entityIdx=0){
   if(state.page==='serviceability') updateStatusStrip();
 }
 function submitDeal(){
+  if(!requirePermission('deal.submit','submit a deal')) return;   // Phase 5 RBAC gate
   showLoader('Submitting deal to lender…');
   setTimeout(()=>{
     hideLoader();
@@ -6055,15 +6441,174 @@ function renderBilling(el){
 /* ============================================================
    PAGE: SETTINGS
    ============================================================ */
+/* ============================================================
+   TEAM & ACCESS settings pane (Phase 5 — owner-held)
+   ============================================================ */
+function roleChip(role){
+  return `<span class="role-chip role-${role}">${ROLE_LABELS[role]||role}</span>`;
+}
+function accessPane(){
+  const a = state.access;
+  const role = effectiveRole();
+  const liveUnwired = accessLive() && !a._membershipWired;
+  const manage = can('member.role.change');
+  const idleM = sessionIdleMins();
+
+  // Banner: live-unwired note OR demo "view as role" preview.
+  const modeBanner = liveUnwired
+    ? `<div class="acc-note amber"><b>Live mode.</b> You're signed in, but role enforcement isn't wired to Supabase yet — access currently follows the existing per-user row-level security. Enabling enforcement needs the <span class="mono">0002_access_control</span> migration + membership wiring (<span class="mono">ARCH-REVIEW</span>). The model below is fully interactive in demo mode.</div>`
+    : `<div class="acc-note steel"><b>Demo org.</b> This in-memory model mirrors the draft <span class="mono">0002_access_control</span> migration; nothing is sent to a backend and no real accounts or secrets are created.</div>`;
+
+  // "View as role" — demo only (lets you see deny-by-default in action).
+  const viewAs = !accessLive() ? `
+    <div class="acc-viewas">
+      <label for="accViewAs">View as role <span class="acc-muted">(demo preview of permissions)</span></label>
+      <select id="accViewAs" onchange="setSimulatedRole(this.value)">
+        ${['','owner','admin','broker','processor','readonly'].map(r=>
+          `<option value="${r}" ${ (a.simulateRole||'')===r ? 'selected':''}>${r?ROLE_LABELS[r]:'— My role ('+ROLE_LABELS[(currentMember()||{}).role]+') —'}</option>`).join('')}
+      </select>
+      ${a.simulateRole?`<span class="acc-sim-flag">Previewing as ${ROLE_LABELS[a.simulateRole]}</span>`:''}
+    </div>` : '';
+
+  // Members table.
+  const memberRows = (a.members||[]).map(m=>{
+    const isSelf = m.id===a.currentUserId;
+    const protectedOwner = m.role==='owner';
+    const roleCell = (manage && !(protectedOwner && !isOwner()))
+      ? `<select class="acc-role-select" aria-label="Role for ${escHtml(m.name)}" onchange="changeMemberRole('${escArg(m.id)}', this.value)">
+           ${Object.keys(ROLE_RANK).reverse().map(r=>{
+             // Only an owner can assign owner; protect last owner downgrade in the handler.
+             const disabled = (r==='owner' && !isOwner());
+             return `<option value="${r}" ${m.role===r?'selected':''} ${disabled?'disabled':''}>${ROLE_LABELS[r]}</option>`;
+           }).join('')}
+         </select>`
+      : roleChip(m.role);
+    const removable = manage && !protectedOwner && !isSelf;
+    return `<tr>
+      <td><div class="acc-m-name">${escHtml(m.name)}${isSelf?' <span class="acc-muted">(you)</span>':''}</div>
+          <div class="acc-m-email mono">${escHtml(maskPII(m.email,'email'))}</div></td>
+      <td>${roleCell}</td>
+      <td><span class="acc-status acc-status-${m.status}">${m.status}</span></td>
+      <td class="acc-r">${removable?`<button class="acc-mini danger" onclick="removeMember('${escArg(m.id)}')">Remove</button>`:`<span class="acc-muted">—</span>`}</td>
+    </tr>`;
+  }).join('');
+
+  // Invitations.
+  const pending = (a.invitations||[]).filter(i=>i.status==='pending');
+  const inviteBlock = can('member.invite') ? `
+    <div class="acc-invite">
+      <div class="form-grid">
+        <div class="inp"><label for="accInvEmail">Invite email</label><input id="accInvEmail" type="email" placeholder="name@firm.com"></div>
+        <div class="inp"><label for="accInvRole">Role</label>
+          <select id="accInvRole">
+            ${['broker','processor','admin','readonly'].map(r=>`<option value="${r}">${ROLE_LABELS[r]}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <button class="btn primary" style="margin-top:10px" onclick="(function(){ inviteMember(document.getElementById('accInvEmail').value, document.getElementById('accInvRole').value); renderSettings(document.getElementById('page-settings')); })()">Send invite</button>
+      <p class="acc-fineprint">An invite issues a scoped, time-limited token. The invitee completes their own credential setup through the normal sign-in path — DebtIQ never sets a password or creates the account for them. Owner cannot be granted by invite.</p>
+    </div>` : `<p class="acc-muted">Only an Owner or Admin can invite members.</p>`;
+
+  const pendingList = pending.length ? `
+    <table class="acc-table" style="margin-top:10px">
+      <thead><tr><th>Pending invite</th><th>Role</th><th>Token</th><th></th></tr></thead>
+      <tbody>${pending.map(i=>`<tr>
+        <td class="mono">${escHtml(i.email)}</td>
+        <td>${roleChip(i.role)}</td>
+        <td class="mono acc-muted" title="Demo token — non-secret">${escHtml(i.token)}</td>
+        <td class="acc-r">
+          ${!accessLive()?`<button class="acc-mini" onclick="acceptInviteDemo('${escArg(i.id)}');renderSettings(document.getElementById('page-settings'))">Simulate accept</button>`:''}
+          <button class="acc-mini danger" onclick="revokeInvite('${escArg(i.id)}');renderSettings(document.getElementById('page-settings'))">Revoke</button>
+        </td>
+      </tr>`).join('')}</tbody>
+    </table>` : `<p class="acc-muted" style="margin-top:8px">No pending invitations.</p>`;
+
+  // Permission matrix reference.
+  const caps = Object.keys(CAPABILITIES);
+  const matrix = `
+    <div class="acc-matrix-wrap">
+      <table class="acc-table acc-matrix">
+        <thead><tr><th>Capability</th>${['owner','admin','broker','processor','readonly'].map(r=>`<th class="acc-c">${ROLE_LABELS[r]}</th>`).join('')}</tr></thead>
+        <tbody>${caps.map(c=>`<tr>
+          <td class="mono">${c}</td>
+          ${['owner','admin','broker','processor','readonly'].map(r=>`<td class="acc-c">${CAPABILITIES[c].includes(r)?'<span class="acc-yes">✓</span>':'<span class="acc-no">·</span>'}</td>`).join('')}
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+
+  // Auth / privilege audit log.
+  const logRows = (a.authLog||[]).slice(0,30).map(e=>`<tr>
+    <td class="mono acc-muted">${new Date(e.at).toLocaleString('en-AU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</td>
+    <td class="mono">${escHtml(e.event)}</td>
+    <td>${escHtml(e.actorEmail||'')}</td>
+    <td class="acc-muted">${escHtml(e.detail||'')}</td>
+  </tr>`).join('');
+  const auditBlock = can('audit.view') ? `
+    <table class="acc-table">
+      <thead><tr><th>When</th><th>Event</th><th>Actor</th><th>Detail</th></tr></thead>
+      <tbody>${logRows || `<tr><td colspan="4" class="acc-muted">No events yet.</td></tr>`}</tbody>
+    </table>
+    <p class="acc-fineprint">Append-only. In production this lives in <span class="mono">auth_audit_log</span> (no update/delete policy) and captures the server-side IP. <span class="mono">ARCH-REVIEW</span>: wiring to Supabase.</p>` : `<p class="acc-muted">Your role can't view the audit log.</p>`;
+
+  return `
+    <div class="acc-head">
+      <div>
+        <h3 class="acc-h3">Team &amp; access</h3>
+        <p class="acc-sub">${escHtml(a.orgName)} · your effective role: ${roleChip(role||'owner')}</p>
+      </div>
+    </div>
+    ${modeBanner}
+    ${viewAs}
+
+    <h4 class="acc-section">Members</h4>
+    <table class="acc-table">
+      <thead><tr><th>Member</th><th>Role</th><th>Status</th><th class="acc-r">Action</th></tr></thead>
+      <tbody>${memberRows}</tbody>
+    </table>
+    <p class="acc-fineprint">Owner primacy: only an Owner can grant or revoke the Owner role, and at least one Owner must always exist. Admins manage everyone except Owners. Role changes and removals require re-authentication and are logged.</p>
+
+    <h4 class="acc-section">Invite a member</h4>
+    ${inviteBlock}
+    ${pendingList}
+
+    <h4 class="acc-section">Sessions</h4>
+    <div class="acc-grid2">
+      <div class="acc-kv"><span class="acc-kl">This session started</span><span class="mono">${a.session.startedAt?new Date(a.session.startedAt).toLocaleString('en-AU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'—'}</span></div>
+      <div class="acc-kv"><span class="acc-kl">Idle</span><span class="mono">${idleM.toFixed(1)} min</span></div>
+      <div class="acc-kv"><span class="acc-kl">Idle timeout</span>
+        <select class="acc-role-select" onchange="state.access.session.timeoutMins=+this.value;saveAccessState();authAudit('SESSION_TIMEOUT_SET', this.value+'m', null)">
+          ${[15,30,60,120].map(n=>`<option value="${n}" ${a.session.timeoutMins===n?'selected':''}>${n} min</option>`).join('')}
+        </select>
+      </div>
+      <div class="acc-kv"><span class="acc-kl">Re-auth for sensitive actions</span><span class="mono">${reauthFresh()?'fresh (≤5m)':'will prompt'}</span></div>
+    </div>
+    <p class="acc-fineprint">Role changes, member removal, PII export and settlement actions re-prompt for identity. <span class="mono">ARCH-REVIEW</span>: live re-auth re-validates the Supabase session; active-session revocation needs server support.</p>
+
+    <h4 class="acc-section">Data access &amp; PII</h4>
+    <p class="acc-sub" style="margin-bottom:10px">PII is masked for roles without <span class="mono">pii.view</span>. Export is a privileged, logged action.</p>
+    <button class="btn ${can('pii.export')?'primary':''}" ${can('pii.export')?'':'disabled style="opacity:.5;cursor:not-allowed"'} onclick="exportPII()">Export client PII (logged)</button>
+
+    <h4 class="acc-section">Permission matrix</h4>
+    ${matrix}
+
+    <h4 class="acc-section">Audit &amp; privilege log</h4>
+    ${auditBlock}
+
+    <h4 class="acc-section">Secrets &amp; security posture</h4>
+    <div class="acc-note steel">
+      All keys and secrets live in a secrets manager the owner controls (Cloudflare Pages env vars today; see <b>SECURITY.md</b>). The codebase reads from env/secret references only and never hard-codes or generates secrets. Owner-account provisioning and real secret-store wiring are <span class="mono">ARCH-REVIEW</span> / owner-actions, never performed by the build agent.
+    </div>`;
+}
+
 let settingsTab = 'account';
 function renderSettings(el){
   el.innerHTML = `
     <div class="page-head"><h1>Settings</h1><p>Account, preferences, market, AI and commission defaults</p></div>
     <div class="tabs">
-      ${[['account','Account'],['preferences','Preferences'],['market','Market'],['ai','AI'],['commission','Commission'],['lenders','Lenders']].map(([k,l])=>
-        `<div class="tab ${settingsTab===k?'active':''}" role="button" tabindex="0" onclick="settingsTab='${k}';renderSettings(document.getElementById('page-settings'))">${l}</div>`).join('')}
+      ${[['account','Account'],['access','Team & Access'],['preferences','Preferences'],['market','Market'],['ai','AI'],['commission','Commission'],['lenders','Lenders']].map(([k,l])=>
+        `<div class="tab ${settingsTab===k?'active':''}" role="button" tabindex="0" onclick="settingsTab='${k}';renderSettings(document.getElementById('page-settings'))" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();settingsTab='${k}';renderSettings(document.getElementById('page-settings'))}">${l}</div>`).join('')}
     </div>
-    <div class="card" style="padding:24px;max-width:720px">${settingsPane()}</div>`;
+    <div class="card" style="padding:24px;max-width:${settingsTab==='access'?'980px':'720px'}">${settingsPane()}</div>`;
 }
 function settingsPane(){
   if(settingsTab==='account') return `
@@ -6081,6 +6626,7 @@ function settingsPane(){
           ? `<div class="card" style="padding:12px 14px;border-left:4px solid var(--green)">Signed in as <b>${state.user.email||'broker'}</b> — deals are saved to your account (Supabase, row-level security).</div><button class="btn" style="margin-top:10px" onclick="doSignOut()">Sign out</button>`
           : `<div class="card" style="padding:12px 14px;border-left:4px solid var(--amber)">Backend connected but not signed in. Reload and sign in to enable persistence.</div>`)
       : `<div class="card" style="padding:12px 14px;border-left:4px solid var(--amber)">Static demo mode — no data is saved. Deploy with Cloudflare Pages + Supabase (see <b>BACKEND.md</b>) and set the env vars to enable accounts, persistence and live AI.</div>`}`;
+  if(settingsTab==='access') return accessPane();
   if(settingsTab==='preferences'){
     const s = state.settings;
     const lenderOpts = ['<option value="">— Use market default —</option>']
@@ -6454,6 +7000,7 @@ function renderPilotResults(){
    AOL-READY SUBMISSION PACK
    ============================================================ */
 async function generateSubmissionPack(){
+  if(!requirePermission('pack.generate','generate a submission pack')) return;   // Phase 5 RBAC gate
   const r = computeServiceability();
   const pol = activePolicy();
   const deal = DEALS[0] || {};
@@ -7584,6 +8131,7 @@ function hideSearchResults(){ const box=document.getElementById('searchResults')
 
 /* ---------- New deal (wizard modal) ---------- */
 function startNewDeal(){
+  if(!requirePermission('deal.create','create a deal')) return;   // Phase 5 RBAC gate
   // Seed new-deal defaults from broker preferences (Phase 1 Settings).
   // Existing deals are untouched — this only runs at the start of a new deal.
   const def = state.settings || {};
@@ -8892,6 +9440,8 @@ function showDesignPreview(){
   applySettings();            // density + reduced-motion classes on <body>
   loadDockState();            // pull right-dock collapse/tab state from localStorage
   loadLendingGroups();        // pull lending-group slice (Phase 2 of the round-2 brief)
+  loadAccessState();          // pull RBAC org/membership slice (Phase 5 — owner-held)
+  startSession();             // begin the session clock (timeout + re-auth tracking)
   await initBackend();
   renderLoginMode();
   // ?styleguide=1 (or legacy ?preview=1) → render the brand styleguide and skip the rest.

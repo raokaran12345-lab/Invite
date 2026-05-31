@@ -1,5 +1,91 @@
 # DebtIQ v6 — Changelog
 
+## MASTER program — Phase 0 (audit) + Phase 5 (access control / RBAC)
+
+First two gates of the full-integration program. **Phase 0** was a
+read-only audit (no code change) delivered in chat: stack/state/
+routing/backend inventory, a dependency-ordered build plan, and a
+`LEGAL-REVIEW:`/`ARCH-REVIEW:` register. Key finding — the six
+authority files (compliance map, brand guide, the mockups) are **not
+in the repo**; phases anchored to them (4, 6, and the visual diffs of
+2/3) wait until they're committed. The live repo is well ahead of the
+prompt's assumed snapshot (brand tokens, fonts, violet-retirement,
+broker overhaul and lending-group model already shipped).
+
+Housekeeping: removed the stray, unrelated `Engagement Invite`
+wedding-invitation HTML from the repo root.
+
+### Phase 5 — Access control / RBAC (owner-held)
+
+Built the access model **structure-first and demo-first**: no real
+accounts, passwords, or secrets are created by the agent; no `/api/*`
+contract, auth flow, or live schema is changed. Both demo and live
+keep working.
+
+- **Roles** (highest→lowest): Owner → Admin → Broker → Processor →
+  Read-only. **Deny-by-default** capability map (`CAPABILITIES`) —
+  `can(cap)` is false unless the effective role explicitly holds it.
+- **State + persistence.** `state.access` (org, members, invitations,
+  append-only `authLog`, session) persisted to `localStorage`
+  (`debtiq.access.v1`), mirroring the new draft migration. Hydrated on
+  boot; session clock started on boot.
+- **Demo vs live.** Demo enforces the simulated/own member role (with a
+  "view as role" preview so deny-by-default is visible). Live mode,
+  until membership tables are wired (`ARCH-REVIEW`), keeps today's
+  per-user RLS behaviour so nothing breaks.
+- **Owner primacy.** Only an Owner can grant/revoke Owner; Owner can't
+  be granted by invite; **at least one active Owner must always exist**
+  (enforced in-app and by the `enforce_last_owner` trigger in the
+  migration). Admins manage everyone except Owners.
+- **Helpers:** `can`, `requirePermission` (toasts + logs denied
+  attempts), `effectiveRole`, `inviteMember`, `revokeInvite`,
+  `acceptInviteDemo`, `changeMemberRole`, `removeMember`, `isOwner`,
+  `ownerCount`, `authAudit`, session helpers (`startSession`,
+  `touchSession`, `checkSessionTimeout`, `requireReauth`,
+  `reauthFresh`), `canViewPII`, `maskPII`, `exportPII`,
+  `setSimulatedRole`.
+- **Invitation flow.** Owner/Admin issues a scoped, time-limited,
+  token-**hashed** invite; the invitee completes their own credential
+  setup via the normal sign-in path — DebtIQ never sets a password or
+  creates the account. Demo "simulate accept" + revoke included.
+- **Sessions.** Configurable idle timeout (default 30 min) + **re-auth
+  for sensitive actions** (role change, member removal, PII export,
+  settlement) cached 5 min; visible session info.
+- **PII controls.** Email/phone **masked** for roles without
+  `pii.view`; **PII export** is privileged (`pii.export`) + re-auth +
+  audit-logged, producing a downloadable JSON.
+- **Audit & privilege log.** Append-only; every auth/privilege event
+  recorded. Mirrors `auth_audit_log` (insert+select, no update/delete).
+- **UI.** New **Team & Access** settings tab — members table (inline
+  role editing where permitted; Owner rows protected), invite form +
+  pending list, sessions panel, PII export, a full **permission
+  matrix** reference, the audit log, and a secrets-posture note.
+  Keyboard + `:focus-visible` rings throughout.
+- **Enforcement wired** (additive, no-op when live-unwired) into
+  `startNewDeal` (deal.create), `submitDeal` (deal.submit),
+  `generateSubmissionPack` / `generateGroupPack` (pack.generate),
+  `openCreateGroupPrompt` (group.manage).
+- **Reviewable migration — NOT applied:**
+  `supabase/migrations/0002_access_control.sql` — `organisations`,
+  `memberships` (role enum), `invitations` (token-hashed),
+  `auth_audit_log` (append-only), `has_org_role()` helper,
+  `enforce_last_owner` trigger, additive nullable `deals.org_id`, RLS
+  on every table. Applying it is an `ARCH-REVIEW`/owner action.
+- **`SECURITY.md`** — secrets posture, the RBAC matrix, audit/session
+  model, PII controls, and a gated security baseline (recommended CSP/
+  `_headers`, CORS tightening, rate limiting) with the full
+  `LEGAL-REVIEW:`/`ARCH-REVIEW:` register.
+- **Smoke harness:** +19 Phase 5 checks (**336/336 passing**) — helper
+  exposure, deny-by-default, owner-all / readonly-none, view-as
+  simulation flips `can()`, PII masking, owner-only invite + no
+  owner-by-invite, last-owner protection, logged role change,
+  append-only log growth, persistence, access-pane render, and
+  readonly being blocked from `startNewDeal`.
+
+**Gate:** stopping here for review before Phase 6. Phases 1-finish, 4,
+6, 7 still pending; 4/6 need the authority files.
+
+
 ## Lending Group brief — Phase 4: polish + voice + re-verify
 
 Final pass on the round-2 lending-group work. Small but deliberate
