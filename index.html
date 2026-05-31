@@ -3257,15 +3257,24 @@ const REG_SOURCES = {
     url:'https://www.austrac.gov.au/',
     encoded:'structured VOI capture; VOI = settlement pre-condition', verified:false, scope:'LEGAL-REVIEW: reporting-entity status' },
   settlement: {
-    instrument:'ARNECC MOR & MPR; ECNL', kind:'law',
+    instrument:'ARNECC MOR & MPR; ECNL (ELNO: Sympli)', kind:'law',
     sections:['subscriber eligibility','mandated-jurisdiction lodgement','trust-money handling'],
     url:'https://www.arnecc.gov.au/',
-    encoded:'coordinate-only; no trust money; ELNO isolated mock adapter', verified:false, scope:'ARCH/LEGAL-REVIEW' },
+    altUrl:'https://www.sympli.com.au/',
+    encoded:'coordinate-only; no trust money; ELNO isolated mock adapter',
+    verified:false, partial:true, verifiedAt:'2026-05-31',
+    clause:'Sympli (an ELNO) describes itself as a "settlement services provider that aims to offer an efficient and user-friendly platform", "Practitioner First", with "Interoperability" and "Available in 5 States" — confirming that e-settlement occurs in an external ELNO used by practitioners.',
+    note:'PARTIAL: the Sympli marketing page confirms settlement happens in an external ELNO (supports DebtIQ\'s coordinate-only + isolated mock-adapter design), but it does NOT contain the operative ARNECC MOR/MPR rules — subscriber eligibility, mandated-jurisdiction lodgement, and trust-money handling. Supply the ARNECC Model Operating Requirements / Model Participation Rules to verify. Real ELNO connectivity stays ARCH/LEGAL-REVIEW.',
+    scope:'ARCH/LEGAL-REVIEW' },
   cdr: {
     instrument:'Consumer Data Right (ACCC/OAIC)', kind:'law',
     sections:['accreditation','privacy safeguards'],
-    url:'https://www.cdr.gov.au/',
-    encoded:'out of scope (document-upload model); direct feeds = gating project', verified:false, scope:'LEGAL/ARCH-REVIEW' }
+    url:'https://www.oaic.gov.au/consumer-data-right',
+    encoded:'out of scope (document-upload model); direct feeds = gating project',
+    verified:false, partial:true, verifiedAt:'2026-05-31',
+    clause:'OAIC: the Consumer Data Right "allows you to ask for your data to be securely transferred to an accredited provider so you can investigate, compare and access services more easily."',
+    note:'PARTIAL: the OAIC overview confirms CDR\'s core premise — data is transferred to an ACCREDITED provider — which supports the determination that DebtIQ (document-upload, not an accredited data recipient) stays out of CDR scope, and that direct bank-feed ingestion would be a gating accreditation project. The operative accreditation rules / privacy safeguards detail are not on this overview page (see CDR.md). LEGAL/ARCH-REVIEW.',
+    scope:'LEGAL/ARCH-REVIEW' }
 };
 function regSource(id){ return REG_SOURCES[id] || null; }
 /* Inline provenance chip for the worksheet rule rows. */
@@ -7938,7 +7947,7 @@ function renderSettlement(el){
     </div>
 
     <div class="ce-note" style="margin-bottom:16px">
-      <b>DebtIQ coordinates; it does not settle and holds no trust money.</b> The ELNO link below is a <b>mock</b> — ${esc(elno.note)} <span class="mono">ARCH-REVIEW</span> / <span class="mono">LEGAL-REVIEW</span>.
+      <b>DebtIQ coordinates; it does not settle and holds no trust money.</b> The ELNO link below is a <b>mock</b> — ${esc(elno.note)} <span class="mono">ARCH-REVIEW</span> / <span class="mono">LEGAL-REVIEW</span>. Source: ${regProvenance('settlement')}.
     </div>
 
     <div class="ce-grid2" style="margin-bottom:16px">

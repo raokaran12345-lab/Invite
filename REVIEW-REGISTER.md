@@ -54,13 +54,13 @@ every engine/compliance rule cites its instrument + sections-to-extract +
 official URL + a `verified` flag, surfaced in the serviceability worksheet's
 **Regulatory provenance** section.
 
-**Source-verification status: 5 / 11 verified + 1 partial.** The owner supplied
+**Source-verification status: 5 / 11 verified + 3 partial.** The owner supplied
 official PDFs/pages (APG 223, RG 273, ASIC INFO 146 disclosure overview, OAIC
-APP/NDB/privacy-legislation pages, AUSTRAC homepage). The agent extracted the
-operative clauses and verified the rules below (clause + citation stored in
-`REG_SOURCES`). The remainder stay `LEGAL-REVIEW`: APS 220 Att. C, RG 209
-operative text, AML/CTF, ARNECC, CDR were not supplied (only nav/overview), and
-the egress block persists.
+APP/NDB/privacy-legislation + CDR pages, AUSTRAC homepage, Sympli ELNO page).
+The agent extracted the operative clauses and verified/partly-verified the rules
+below (clause + citation stored in `REG_SOURCES`). Fully-unverified rules stay
+`LEGAL-REVIEW`: APS 220 Att. C (DTI), RG 209 operative text, and AML/CTF were
+not supplied; the egress block persists.
 
 | Rule | Instrument | Verified? |
 |---|---|---|
@@ -70,11 +70,11 @@ the egress block persists.
 | BID R&O narrative | ASIC RG 273 (ss 158LA/158LB) | ✅ verified (clause quoted) |
 | Disclosure spine field content | ASIC INFO 146 (regs 27A/28/28D/28F/28G/28P/28Q) | ✅ verified (clause quoted) |
 | ADM + APP5 + retention + NDB | Privacy Act + APPs (OAIC) | ◑ partial (coverage + 13 APPs + NDB trigger confirmed; APP5/ADM/timeframe pending) |
+| Settlement coordination | ARNECC MOR/MPR; ECNL (Sympli) | ◑ partial (external ELNO e-settlement + interoperability + practitioner-use confirmed; ARNECC subscriber-eligibility/trust-money pending) |
+| CDR out-of-scope | CDR (ACCC/OAIC) | ◑ partial (accredited-provider premise confirmed → out-of-scope holds; accreditation rules pending) |
 | DTI ≥6× / 20% bucket / exemptions | APRA APS 220 Att. C | ❌ pending (doc not supplied) |
 | Responsible-lending trail | ASIC RG 209 | ❌ pending (only overview page) |
 | VOI capture | AML/CTF Act + 2024 reforms | ❌ pending (AUSTRAC nav only; reporting-entity status LEGAL-REVIEW) |
-| Settlement coordination | ARNECC MOR/MPR; ECNL | ❌ pending |
-| CDR out-of-scope | CDR (ACCC/OAIC) | ❌ pending |
 
 Reconciliation: for all four verified rules the **encoded engine matches the
 operative text** (buffer +3.0% = "at least 3.0 per cent"; HEM max(declared,band)

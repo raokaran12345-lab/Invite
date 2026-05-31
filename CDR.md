@@ -15,6 +15,13 @@ receipt of consumer data via direct bank feeds*. DebtIQ's data model is
 Under this model, DebtIQ is **not** an Accredited Data Recipient and does not
 collect CDR data, so CDR accreditation is not engaged today.
 
+> **Source check (OAIC):** the OAIC confirms CDR "allows you to ask for your
+> data to be securely transferred to an **accredited provider**." Because
+> DebtIQ receives **uploaded documents** rather than CDR data transferred to it
+> as an accredited provider, the out-of-scope position holds. (Premise verified
+> from the OAIC overview; the operative accreditation rules remain
+> `LEGAL-REVIEW`.)
+
 ## If direct bank feeds are ever pursued
 
 Electing direct bank-feed ingestion would change this materially and is a
