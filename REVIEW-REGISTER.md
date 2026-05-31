@@ -54,28 +54,33 @@ every engine/compliance rule cites its instrument + sections-to-extract +
 official URL + a `verified` flag, surfaced in the serviceability worksheet's
 **Regulatory provenance** section.
 
-**Source-verification status: 0 / 11 verified at source.** Outbound fetches to
-`apra.gov.au`, `asic.gov.au`, and `oaic.gov.au` returned **HTTP 403** in the
-build environment, so the agent could not read the operative clauses. Per the
-manifest, **no threshold was treated as authoritative** — all carry
-`verified:false` → `LEGAL-REVIEW`. Action: run the fetch from a network-permitted
-environment (or have a human open the URLs), extract the clauses listed under
-each instrument's "Extract", and set the matching `REG_SOURCES[...].verified`
-to instrument + section + version date.
+**Source-verification status: 4 / 11 verified at source.** The owner supplied
+the official **APG 223** and **RG 273** PDFs; the agent extracted the operative
+clauses and verified those rules (clause + citation stored in `REG_SOURCES`).
+Live fetching of the rest is still blocked (the regulator domains return HTTP
+403 in this environment), and APS 220 Att. C / RG 209 / INFO 146 / Privacy /
+AML / ARNECC / CDR were not supplied — they remain `LEGAL-REVIEW`. Action:
+supply those instruments (or run from a network-permitted env) and set the
+matching `REG_SOURCES[...].verified`.
 
-| Rule | Instrument (manifest) | Verified? |
+| Rule | Instrument | Verified? |
 |---|---|---|
-| Serviceability buffer (+3.00%) | APRA APG 223 | ❌ pending |
-| HEM floor (greater-of) | APRA APG 223 | ❌ pending |
-| Income shading (per-lender) | APRA APG 223 | ❌ pending |
-| DTI ≥6× / 20% bucket / exemptions | APRA APS 220 Att. C | ❌ pending |
-| BID R&O narrative | ASIC RG 273 | ❌ pending |
-| Responsible-lending trail | ASIC RG 209 | ❌ pending |
-| Disclosure field content | ASIC INFO 146 | ❌ pending |
+| Serviceability buffer (≥3.0%) | APRA APG 223 → APS 220 Att. C | ✅ verified (clause quoted) |
+| HEM floor (higher-of) | APRA APG 223 | ✅ verified (clause quoted) |
+| Income shading (≥20% non-salary) | APRA APG 223 | ✅ verified (clause quoted) |
+| BID R&O narrative | ASIC RG 273 (ss 158LA/158LB) | ✅ verified (clause quoted) |
+| DTI ≥6× / 20% bucket / exemptions | APRA APS 220 Att. C | ❌ pending (doc not supplied) |
+| Responsible-lending trail | ASIC RG 209 | ❌ pending (only overview page) |
+| Disclosure field content | ASIC INFO 146 | ❌ pending (doc not supplied) |
 | ADM + APP5 + retention + NDB | Privacy Act + APPs (2024) | ❌ pending |
 | VOI capture | AML/CTF Act + 2024 reforms | ❌ pending |
 | Settlement coordination | ARNECC MOR/MPR; ECNL | ❌ pending |
 | CDR out-of-scope | CDR (ACCC/OAIC) | ❌ pending |
+
+Reconciliation: for all four verified rules the **encoded engine matches the
+operative text** (buffer +3.0% = "at least 3.0 per cent"; HEM max(declared,band)
+= "higher of"; non-salary shading 0.80 = "at least 20 per cent"; BID records
+alternatives + reasons). No threshold mismatch found.
 
 ## Verification snapshot (Phase 9)
 

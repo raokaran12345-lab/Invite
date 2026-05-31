@@ -86,10 +86,29 @@ remote, the Anthropic API) are reachable. The official regulator domains
 (apra.gov.au, asic.gov.au, oaic.gov.au, austrac.gov.au, legislation.gov.au)
 are therefore **not retrievable from here at all** — retrying will not help.
 
-Consequently **no threshold has been verified at source by the agent**. The
-engine carries each rule with a `verified:false` provenance flag (see
-`REG_SOURCES` in `index.html`), surfaced as `LEGAL-REVIEW` in the
-serviceability worksheet.
+**Update — official PDFs supplied by the human.** The owner subsequently
+provided the official **APG 223** (Sep 2022) and **RG 273** (24 Jun 2020)
+PDFs plus the ASIC responsible-lending overview page. The agent extracted the
+operative clauses directly from those documents and **verified 4 of 11 rules**
+(`REG_SOURCES[...].verified = true`, with the quoted clause + citation):
+
+| Rule | Verified from | Operative clause |
+|---|---|---|
+| `buffer` | APG 223 quoting **APS 220 Att. C** | "ADI must apply a buffer over a loan's interest rate of **at least 3.0 per cent**… ignoring any discounted introductory or honeymoon rates"; used with an interest-rate floor. |
+| `hem_floor` | APG 223 | "the **higher of** the borrower's declared living expenses **or** an appropriately scaled version of the HEM… a margin linked to the borrower's income". |
+| `income_shading` | APG 223 | "discounts of **at least 20 per cent** on most types of non-salary income" (bonuses, overtime, rental, variable commissions). |
+| `bid` | RG 273 | s158LA duty; s158LB conflict priority; RG 273.20 "present… **more than one option**"; RG 273.172 record alternatives + reasons. |
+
+The encoded engine matches the verified text in each case (no threshold
+mismatch found). The remaining **7 rules stay `verified:false` →
+`LEGAL-REVIEW`** because their instruments were **not** supplied: APS 220
+Attachment C (the DTI mechanics — APG 223 only quotes its buffer clause),
+ASIC RG 209 and INFO 146 (operative detail; only the overview page was given),
+and the Privacy Act/APPs, AML/CTF, ARNECC/ECNL and CDR instruments.
+
+The engine carries each rule with its `verified` provenance flag (see
+`REG_SOURCES` in `index.html`); unverified rules are surfaced as
+`LEGAL-REVIEW` in the serviceability worksheet.
 
 To verify, one of:
 1. **Re-run this session in an environment whose network policy permits

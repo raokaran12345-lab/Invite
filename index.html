@@ -829,6 +829,10 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .reg-cite.unverified .mono{color:var(--amber)}
 .reg-cite.ok .mono{color:var(--green)}
 .ws-ratio tr.unverified td{background:rgba(154,90,0,.04)}
+.reg-clause{margin-top:6px;font-size:11px;line-height:1.5;color:var(--t2);font-family:var(--serif);font-style:italic;border-left:2px solid var(--green);padding-left:9px}
+.reg-clause.unverified{border-left-color:var(--amber);color:var(--t3-cool)}
+.reg-match{margin-top:4px;font-style:normal;font-family:var(--ui);font-size:10.5px;color:var(--steel)}
+.reg-ver{margin-top:4px;font-style:normal;font-family:var(--mono);font-size:10px;color:var(--green);letter-spacing:.02em}
 
 /* ============================================================
    SETTLEMENT tracker (Phase 7)
@@ -3178,38 +3182,56 @@ function activeDsrMax(id){ const p=activePolicy(id); return p ? p.dsr_max : m().
    ============================================================ */
 const REG_SOURCES = {
   buffer: {
-    instrument:'APRA APG 223', kind:'guide',
+    instrument:'APRA APG 223 (Sep 2022), quoting APS 220 Attachment C', kind:'guide+standard',
     sections:['Serviceability buffer (interest-rate add-on)'],
     url:'https://www.apra.gov.au/sites/default/files/2022-06/Final%20Prudential%20Practice%20Guide%20APG%20223%20Residential%20Mortgage%20Lending.pdf',
     encoded:'+3.00% over the actual rate (per lender; non-ADI may differ)',
-    verified:false, scope:'ADI' },
+    verified:true, verifiedAt:'2026-05-31', version:'APG 223, Sep 2022',
+    clause:'"Under Attachment C of Prudential Standard APS 220 Credit Risk Management, [an] ADI must apply a buffer over a loan’s interest rate of at least 3.0 per cent, unless determined otherwise by APRA. The buffer would be applied to the interest rate on the loan to be paid by the borrower, ignoring any discounted introductory or honeymoon rates." Used "in conjunction with an interest rate floor."',
+    match:'Encoded +3.0% matches the "at least 3.0 per cent" minimum (lenders.js buffer:0.03).',
+    scope:'ADI' },
   hem_floor: {
-    instrument:'APRA APG 223', kind:'guide',
+    instrument:'APRA APG 223 (Sep 2022)', kind:'guide',
     sections:['Living-expense assessment (HEM as a floor / greater-of)'],
     url:'https://www.apra.gov.au/sites/default/files/2022-06/Final%20Prudential%20Practice%20Guide%20APG%20223%20Residential%20Mortgage%20Lending.pdf',
-    encoded:'max(declared, HEM band)', verified:false, scope:'ADI' },
+    encoded:'max(declared, HEM band)',
+    verified:true, verifiedAt:'2026-05-31', version:'APG 223, Sep 2022',
+    clause:'"...the higher of the borrower’s declared living expenses or an appropriately scaled version of the HEM or HPI indices. That is, if the HEM or HPI is used, a prudent ADI would apply a margin linked to the borrower’s income to the relevant index."',
+    match:'Encoded max(declared, HEM) matches "higher of declared vs scaled HEM". Note: APG expects an income-linked margin on the index — our HEM bands approximate this (LEGAL-REVIEW the scaling).',
+    scope:'ADI' },
   income_shading: {
-    instrument:'APRA APG 223', kind:'guide',
+    instrument:'APRA APG 223 (Sep 2022)', kind:'guide',
     sections:['Income treatment / shading expectations'],
-    url:'https://www.apra.gov.au/prudential-practice-guide-apg-223-residential-mortgage-lending',
-    encoded:'per-lender income shading (lenders.js income_shading)', verified:false, scope:'per-lender' },
+    url:'https://www.apra.gov.au/sites/default/files/2022-06/Final%20Prudential%20Practice%20Guide%20APG%20223%20Residential%20Mortgage%20Lending.pdf',
+    encoded:'per-lender income shading (lenders.js income_shading)',
+    verified:true, verifiedAt:'2026-05-31', version:'APG 223, Sep 2022',
+    clause:'"Prudent practice is to apply discounts of at least 20 per cent on most types of non-salary income; in some cases, a higher discount would be appropriate." Discounts "are generally applied to reported bonuses, overtime, rental income on investment properties, other types of investment income and variable commissions."',
+    match:'lenders.js shades overtime/bonus/commission/rental at 0.80 (= 20% discount), matching the "at least 20 per cent" baseline.',
+    scope:'per-lender' },
   dti_flag: {
     instrument:'APRA APS 220 — Attachment C', kind:'standard',
     sections:['DTI ≥6× threshold','20% portfolio bucket basis','OO vs investor separation','quarterly measurement','exemptions: OO bridging; new-dwelling purchase/construction'],
     url:'https://www.apra.gov.au/credit-risk-management',
     contextUrl:'https://www.apra.gov.au/activation-of-debt-to-income-limits-as-a-macroprudential-policy-tool',
     encoded:'≥6× → 20%-bucket FLAG (not a block); OO/investor split; bridging + new-build exempt',
-    verified:false, scope:'ADI' },
+    verified:false, note:'APS 220 Attachment C was NOT supplied as a document; APG 223 only quotes its buffer clause, not the DTI mechanics. The 6×/20%/exemption detail remains unverified — supply APS 220 Att. C to verify.',
+    scope:'ADI' },
   bid: {
-    instrument:'ASIC RG 273', kind:'guide',
-    sections:['Best-interests obligation (Pt 3-5A NCCPA)','conflict priority rule','alternatives considered','record-keeping'],
+    instrument:'ASIC RG 273 (24 Jun 2020)', kind:'guide',
+    sections:['Best-interests duty (s158LA)','conflict priority rule (s158LB)','present more than one option (RG 273.20)','record-keeping (RG 273.172)'],
     url:'https://download.asic.gov.au/media/5641325/rg273-published-24-june-2020.pdf',
-    encoded:'R&O/BID narrative → attributed audit trail', verified:false, scope:'broker' },
+    encoded:'R&O/BID narrative → attributed audit trail',
+    verified:true, verifiedAt:'2026-05-31', version:'RG 273, published 24 Jun 2020',
+    clause:'s158LA best interests duty; s158LB conflict priority ("you must not prioritise your own interests"). RG 273.20: "In most instances, you should present consumers with more than one option." RG 273.172: record the recommendations presented "including any alternatives that are not selected" and the reasons.',
+    match:'BID generator records why a recommendation suits + alternatives + basis into the immutable audit trail, with conflict-priority framing.',
+    scope:'broker' },
   responsible_lending: {
     instrument:'ASIC RG 209', kind:'guide',
     sections:['reasonable inquiries + verification','"not unsuitable" assessment','living-expense inquiry/verification'],
     url:'https://asic.gov.au/regulatory-resources/credit/responsible-lending/',
-    encoded:'extraction→verification→serviceability trail; living-expense reconciliation', verified:false, scope:'broker' },
+    encoded:'extraction→verification→serviceability trail; living-expense reconciliation',
+    verified:false, note:'ASIC responsible-lending overview page seen (confirms the obligation + references RG 209), but the operative RG 209 clause text was not in the supplied document — supply the RG 209 PDF to verify field detail.',
+    scope:'broker' },
   disclosure: {
     instrument:'ASIC INFO 146', kind:'guide',
     sections:['Credit Guide (s126 NCCP)','Quote (reg 28D)','Credit Proposal Disclosure (regs 28E/28G, s121)','Preliminary Assessment (s116/s132)','pre-contractual (s16 NCC)'],
@@ -9938,9 +9960,12 @@ function renderWsRegSources(){
   const rows = ['buffer','hem_floor','income_shading','dti_flag'].map(id=>{
     const s = REG_SOURCES[id]; if(!s) return '';
     const labels = { buffer:'Serviceability buffer', hem_floor:'HEM floor', income_shading:'Income shading', dti_flag:'DTI flag' };
+    const detail = s.verified
+      ? `<div class="reg-clause">${esc(s.clause||'')}${s.match?`<div class="reg-match">↳ ${esc(s.match)}</div>`:''}<div class="reg-ver">Verified at source ${esc(s.verifiedAt||'')} · ${esc(s.version||s.instrument)}</div></div>`
+      : (s.note ? `<div class="reg-clause unverified">${esc(s.note)}</div>` : '');
     return `<tr class="${s.verified?'':'unverified'}">
       <td class="ws-r-name">${esc(labels[id])}</td>
-      <td><a href="${esc(s.url)}" target="_blank" rel="noopener" class="reg-link">${esc(s.instrument)}</a><div class="reg-sec">${esc(s.sections.join(' · '))}</div></td>
+      <td><a href="${esc(s.url)}" target="_blank" rel="noopener" class="reg-link">${esc(s.instrument)}</a><div class="reg-sec">${esc(s.sections.join(' · '))}</div>${detail}</td>
       <td class="mono" style="font-size:11px">${esc(s.encoded)}</td>
       <td class="num"><span class="reg-badge ${s.verified?'ok':'unverified'}">${s.verified?'verified':'LEGAL-REVIEW'}</span></td>
     </tr>`;
@@ -9951,7 +9976,7 @@ function renderWsRegSources(){
       <span class="ws-step-title">Regulatory provenance</span>
       <span class="ws-step-sub">Each rule's source instrument · <span class="mono">${vc.verified}/${vc.total}</span> verified at source.</span>
     </header>
-    ${vc.verified < vc.total ? `<div class="ce-note" style="margin:0 12px 10px"><b>Source verification pending.</b> Thresholds below are encoded from the regulatory source manifest's orientation, <b>not yet read from the official instruments</b> (fetch returned HTTP 403 in the build environment). Verify at source before relying on them — <span class="mono">LEGAL-REVIEW</span>.</div>`:''}
+    ${vc.verified < vc.total ? `<div class="ce-note" style="margin:0 12px 10px"><b>${vc.verified} of ${vc.total} rules verified at source.</b> Verified rules quote the operative clause from the official instrument (supplied PDFs). The remainder are encoded from the manifest's orientation and <b>not yet read from the official text</b> — <span class="mono">LEGAL-REVIEW</span> (supply APS 220 Att. C, RG 209, INFO 146, Privacy/AML/ARNECC/CDR to verify).</div>`:''}
     <table class="ws-ratio">
       <thead><tr><th>Rule</th><th>Instrument &amp; sections to extract</th><th>Encoded</th><th class="num">Status</th></tr></thead>
       <tbody>${rows}</tbody>
