@@ -77,14 +77,27 @@ For each instrument: fetch the official document, extract the listed clauses fro
 
 ## Fetch status (recorded by the build agent)
 
-On the build run that ingested this manifest, **outbound fetches to the
-official regulator domains returned HTTP 403** in the execution environment
-(apra.gov.au, asic.gov.au, oaic.gov.au). The authoritative clause text could
-**not** be retrieved here, so **no threshold has been verified at source by the
-agent**. The engine therefore carries each rule with a `verified:false`
-provenance flag (see `REG_SOURCES` in `index.html`), surfaced as
-`LEGAL-REVIEW` in the serviceability worksheet and the Compliance page.
+Fetches were attempted **twice** (initial ingest + an explicit retry). Both
+failed. The block is **environment-wide outbound network policy**, not a
+per-site issue: in this execution environment even `https://example.com`
+returns **HTTP 403** through the egress proxy, and `legislation.gov.au` does
+not connect at all (`000`). Only internal allowlisted endpoints (the git
+remote, the Anthropic API) are reachable. The official regulator domains
+(apra.gov.au, asic.gov.au, oaic.gov.au, austrac.gov.au, legislation.gov.au)
+are therefore **not retrievable from here at all** — retrying will not help.
 
-To verify: run the fetch from a network-permitted environment (or have a human
-open the official URLs), extract the operative clauses, then set the matching
-`REG_SOURCES[...].verified` entry to the instrument + section + version date.
+Consequently **no threshold has been verified at source by the agent**. The
+engine carries each rule with a `verified:false` provenance flag (see
+`REG_SOURCES` in `index.html`), surfaced as `LEGAL-REVIEW` in the
+serviceability worksheet.
+
+To verify, one of:
+1. **Re-run this session in an environment whose network policy permits
+   egress** to the regulator domains (configured when the environment is
+   created — see https://code.claude.com/docs/en/claude-code-on-the-web).
+   Then the agent can fetch each instrument, extract the operative clauses,
+   and set each `REG_SOURCES[...].verified` to instrument + section + version.
+2. **Attach the official PDFs to the repo** (e.g. under `docs/sources/`) — the
+   agent reads local files freely and will extract clauses from those.
+3. **A human opens the official URLs**, extracts the clauses, and the flags
+   are flipped.
