@@ -818,6 +818,27 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .ce-kv-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px;color:var(--t1)}
 .ce-kv-row:last-of-type{border-bottom:none}
 
+/* ============================================================
+   SETTLEMENT tracker (Phase 7)
+   ============================================================ */
+.stg-prog{font-family:var(--mono);font-size:12px;color:var(--t2)}
+.stg-prog .mono{color:var(--t1);font-weight:600}
+.stg-track{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.stg-row{display:flex;align-items:flex-start;gap:14px;padding:13px 4px;border-bottom:1px dashed var(--line)}
+.stg-row:last-child{border-bottom:none}
+.stg-marker{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:700;border:1.5px solid var(--line);color:var(--t3-cool);background:var(--white)}
+.stg-row.done .stg-marker{background:var(--green);border-color:var(--green);color:#fff}
+.stg-row.blocked .stg-marker{border-color:var(--amber);color:var(--amber)}
+.stg-row.key .stg-marker{border-style:double;border-width:3px}
+.stg-body{flex:1;min-width:0}
+.stg-title{font-weight:600;font-size:13.5px;color:var(--t1)}
+.stg-key-tag{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--brass);background:var(--amber-bg);padding:2px 7px;border-radius:var(--r-pill);margin-left:8px}
+.stg-note{font-size:12px;color:var(--t2);margin-top:2px;line-height:1.45}
+.stg-block{font-size:11.5px;color:var(--amber);margin-top:5px;font-style:italic;font-family:var(--serif)}
+.stg-at{font-size:11px;color:var(--green);margin-top:4px}
+.stg-action{flex-shrink:0}
+.acc-mini.is-disabled{opacity:.45;cursor:not-allowed}
+
 /* Purpose tiles (Step 1) */
 .purpose-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
 .purpose-tile{
@@ -2008,6 +2029,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
     <button class="os-tab" data-tab="documents" onclick="goTab('documents',this)">Documents</button>
     <button class="os-tab" data-tab="calculate" onclick="goTab('calculate',this)">Calculate</button>
     <button class="os-tab" data-tab="aipilot" onclick="goTab('aipilot',this)">AI Pilot<span class="tab-badge" id="aipilotBadge">DEMO</span></button>
+    <button class="os-tab" data-tab="settlement" onclick="goTab('settlement',this)">Settlement</button>
     <button class="os-tab" data-tab="assessment" onclick="goTab('assessment',this)">Assessment</button>
   </div>
 
@@ -3295,14 +3317,15 @@ function renderNav(){ /* sidebar removed — tab strip is static HTML */ }
 function toggleSidebar(){ /* no sidebar in the OS shell */ }
 
 // Legacy page id ⇄ OS tab id.
-const TAB_OF_PAGE = { dashboard:'pipeline', client:'client', loan:'loan', documents:'documents', serviceability:'calculate', aipilot:'aipilot', assessment:'assessment' };
-const PAGE_OF_TAB = { pipeline:'dashboard', client:'client', loan:'loan', documents:'documents', calculate:'serviceability', aipilot:'aipilot', assessment:'assessment' };
+const TAB_OF_PAGE = { dashboard:'pipeline', client:'client', loan:'loan', documents:'documents', serviceability:'calculate', aipilot:'aipilot', settlement:'settlement', assessment:'assessment' };
+const PAGE_OF_TAB = { pipeline:'dashboard', client:'client', loan:'loan', documents:'documents', calculate:'serviceability', aipilot:'aipilot', settlement:'settlement', assessment:'assessment' };
 // Every workspace-renderable page (top-level tabs + contextual views reached via navigate()).
 const WS_RENDERERS = {
   dashboard:renderDashboard, client:renderClientTab, loan:renderLoanTab, documents:renderDocuments,
   serviceability:renderServiceability, aipilot:renderAIPilot, compliance:renderCompliance,
   commentary:renderCommentary, compare:renderLenders, intel:renderIntel, portal:renderPortal,
-  markets:renderMarkets, billing:renderBilling, review:renderReview, assessment:renderAssessment
+  markets:renderMarkets, billing:renderBilling, review:renderReview, assessment:renderAssessment,
+  settlement:renderSettlement
 };
 
 // Core renderer. Keeps id="page-<legacyId>" so existing re-render call sites keep working.
@@ -7620,6 +7643,183 @@ function rerenderCompliance(){
   const el = document.getElementById('page-compliance');
   if(el) renderCompliance(el);
 }
+
+/* ============================================================
+   SETTLEMENT COORDINATION  (MASTER program — Phase 7)
+   ------------------------------------------------------------
+   DebtIQ COORDINATES the post-approval path to the conveyancing
+   handoff. It does NOT settle and does NOT hold trust money.
+
+   The ELNO (PEXA/Sympli) integration is an ISOLATED ADAPTER with a
+   MOCK by default. Real ELNO connectivity, subscriber eligibility,
+   and any trust-money flow are ARCH-REVIEW / LEGAL-REVIEW and a
+   separate human-enabled step — never wired by the build agent.
+   ============================================================ */
+const SETTLEMENT_LS_KEY = 'debtiq.settlement.v1';
+// Ordered stages. discharge-of-vendor-mortgage is tracked as the key dependency.
+const SETTLEMENT_STAGES = [
+  { id:'formal_approval', label:'Formal approval',        note:'Unconditional approval issued by the lender.' },
+  { id:'loan_docs_issued',label:'Loan docs issued',       note:'Mortgage documents prepared and sent.' },
+  { id:'loan_docs_signed',label:'Loan docs signed',       note:'Borrower-executed documents returned + verified.' },
+  { id:'settlement_booked',label:'Settlement booked',     note:'Date locked in the ELNO workspace.' },
+  { id:'discharge',       label:'Discharge of vendor mortgage', note:'KEY DEPENDENCY — outgoing mortgagee booked to discharge.', key:true },
+  { id:'funds_cleared',   label:'Funds cleared',          note:'Large-deposit / source-of-funds clearance confirmed.' },
+  { id:'settled',         label:'Settled',                note:'Title + funds exchanged. Coordination complete.' }
+];
+
+/* ---- ELNO adapter (isolated; mock by default) ---- */
+const ELNO_ADAPTER = {
+  name: 'PEXA (mock)',
+  mode: 'mock',                       // 'mock' | 'live' — live is ARCH-REVIEW/owner-enabled
+  // Each method returns a simulated result. No network, no credentials.
+  createWorkspace(dealId){
+    return { ok:true, workspaceId:'PEXA-'+(dealId||'X')+'-'+Math.random().toString(36).slice(2,6).toUpperCase(), mode:this.mode };
+  },
+  bookSettlement(dealId, dateISO){
+    return { ok:true, booked:true, date:dateISO, mode:this.mode };
+  },
+  status(){ return { connected:this.mode==='live', mode:this.mode, note:'Mock ELNO — real connectivity is ARCH-REVIEW + a subscriber-eligibility (LEGAL-REVIEW) step.' }; }
+};
+
+function loadSettlement(){
+  try{ const o = JSON.parse(localStorage.getItem(SETTLEMENT_LS_KEY)||'null'); if(o && typeof o==='object') state.settlement = o; }catch(e){}
+}
+function saveSettlement(){ try{ localStorage.setItem(SETTLEMENT_LS_KEY, JSON.stringify(state.settlement||{})); }catch(e){} }
+function settlementFor(dealId){
+  const id = dealId || state.activeDeal || '_unsaved';
+  state.settlement = state.settlement || {};
+  if(!state.settlement[id]){
+    state.settlement[id] = { stages:{}, workspaceId:null, bookedDate:null, largeDeposit:false };
+    SETTLEMENT_STAGES.forEach(s=> state.settlement[id].stages[s.id] = { status:'pending', at:null });
+  }
+  return state.settlement[id];
+}
+function settlementProgress(dealId){
+  const s = settlementFor(dealId);
+  const done = SETTLEMENT_STAGES.filter(st=> s.stages[st.id] && s.stages[st.id].status==='done').length;
+  return { done, total:SETTLEMENT_STAGES.length, pct: Math.round(done/SETTLEMENT_STAGES.length*100) };
+}
+/* Gate a stage on its pre-conditions. Returns {ok, reason}. */
+function settlementStageBlocked(stageId){
+  const s = settlementFor();
+  // VOI completeness gates loan-doc signing (identity must be verified first).
+  if(stageId==='loan_docs_signed' && !voiComplete(state.activeDeal)){
+    return { ok:false, reason:'VOI is not complete — verify identity before loan docs are signed.' };
+  }
+  // Settlement cannot complete until the vendor mortgage discharge is booked.
+  if(stageId==='settled' && s.stages.discharge.status!=='done'){
+    return { ok:false, reason:'Discharge of the vendor mortgage is the key dependency — book it before settlement.' };
+  }
+  // Funds-cleared gates settlement when a large deposit needs source clearance.
+  if(stageId==='settled' && s.largeDeposit && s.stages.funds_cleared.status!=='done'){
+    return { ok:false, reason:'Large-deposit source-of-funds clearance is outstanding.' };
+  }
+  return { ok:true };
+}
+function setSettlementStage(stageId, status){
+  const gate = (status==='done') ? settlementStageBlocked(stageId) : { ok:true };
+  if(!gate.ok){ toast(gate.reason, 'err'); return; }
+  if(!requirePermission('settlement.action','action a settlement step')) return;
+  const s = settlementFor();
+  s.stages[stageId] = { status, at: status==='done' ? new Date().toISOString() : null };
+  saveSettlement();
+  const def = SETTLEMENT_STAGES.find(x=>x.id===stageId);
+  auditLog('SETTLEMENT_STAGE', `${def?def.label:stageId} → ${status}`, 'Broker','broker');
+  rerenderSettlement();
+}
+function toggleLargeDeposit(on){
+  const s = settlementFor();
+  s.largeDeposit = !!on;
+  saveSettlement();
+  if(on) auditLog('SETTLEMENT_RISK','Large deposit flagged — source-of-funds clearance required','Broker','broker');
+  rerenderSettlement();
+}
+function elnoCreateWorkspace(){
+  if(!requirePermission('settlement.action','create an ELNO workspace')) return;
+  const s = settlementFor();
+  const res = ELNO_ADAPTER.createWorkspace(state.activeDeal);
+  if(res.ok){ s.workspaceId = res.workspaceId; saveSettlement(); auditLog('ELNO_WORKSPACE', `${res.workspaceId} (${res.mode})`, 'Broker','broker'); toast(`Mock ELNO workspace ${res.workspaceId} created.`, 'ok'); rerenderSettlement(); }
+}
+function elnoBookSettlement(){
+  if(!requirePermission('settlement.action','book settlement')) return;
+  const s = settlementFor();
+  if(!s.workspaceId){ toast('Create an ELNO workspace first.', 'err'); return; }
+  const date = (typeof window.prompt==='function') ? window.prompt('Settlement date (YYYY-MM-DD):', new Date(Date.now()+14*864e5).toISOString().slice(0,10)) : null;
+  if(date===null) return;
+  const res = ELNO_ADAPTER.bookSettlement(state.activeDeal, date);
+  if(res.ok){ s.bookedDate = res.date; s.stages.settlement_booked = { status:'done', at:new Date().toISOString() }; saveSettlement(); auditLog('ELNO_BOOKED', `${res.date} (${res.mode})`, 'Broker','broker'); toast(`Settlement booked for ${res.date} (mock).`, 'ok'); rerenderSettlement(); }
+}
+function rerenderSettlement(){ const el=document.getElementById('page-settlement'); if(el) renderSettlement(el); }
+
+function renderSettlement(el){
+  if(!state.activeDeal){
+    el.innerHTML = `<div class="page-head"><h1 class="serif" style="font-weight:500;letter-spacing:-.005em">Settlement</h1>
+      <p>Open a deal from the Pipeline to coordinate its settlement.</p></div>
+      <div class="group-empty"><h3>No deal selected</h3><p>Settlement coordination runs per deal — pick one from the Pipeline.</p></div>`;
+    return;
+  }
+  const deal = DEALS.find(d=>d.id===state.activeDeal) || {};
+  const s = settlementFor();
+  const prog = settlementProgress();
+  const elno = ELNO_ADAPTER.status();
+  const voiOk = voiComplete(state.activeDeal);
+
+  const steps = SETTLEMENT_STAGES.map((st,i)=>{
+    const cur = s.stages[st.id] || {status:'pending'};
+    const blocked = settlementStageBlocked(st.id);
+    const done = cur.status==='done';
+    const stateCls = done ? 'done' : (!blocked.ok ? 'blocked' : 'ready');
+    return `<div class="stg-row ${stateCls} ${st.key?'key':''}">
+      <div class="stg-marker">${done?'✓':i+1}</div>
+      <div class="stg-body">
+        <div class="stg-title">${esc(st.label)}${st.key?' <span class="stg-key-tag">key dependency</span>':''}</div>
+        <div class="stg-note">${esc(st.note)}</div>
+        ${!blocked.ok && !done ? `<div class="stg-block">⚠ ${esc(blocked.reason)}</div>`:''}
+        ${done && cur.at ? `<div class="stg-at mono">${new Date(cur.at).toLocaleString('en-AU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>`:''}
+      </div>
+      <div class="stg-action">
+        ${done
+          ? `<button class="acc-mini" onclick="setSettlementStage('${st.id}','pending')">Undo</button>`
+          : `<button class="acc-mini ${blocked.ok?'':'is-disabled'}" ${blocked.ok?'':'disabled'} onclick="setSettlementStage('${st.id}','done')">Mark done</button>`}
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap">
+      <div>
+        <h1 class="serif" style="font-weight:500;letter-spacing:-.005em">Settlement</h1>
+        <p>${esc(deal.id||'')} · ${esc(deal.name||'')} — coordinating to the conveyancing handoff.</p>
+      </div>
+      <div class="stg-prog"><span class="mono">${prog.done}/${prog.total}</span> stages · ${prog.pct}%</div>
+    </div>
+
+    <div class="ce-note" style="margin-bottom:16px">
+      <b>DebtIQ coordinates; it does not settle and holds no trust money.</b> The ELNO link below is a <b>mock</b> — ${esc(elno.note)} <span class="mono">ARCH-REVIEW</span> / <span class="mono">LEGAL-REVIEW</span>.
+    </div>
+
+    <div class="ce-grid2" style="margin-bottom:16px">
+      <div class="ce-section">
+        <h3 class="ce-h3">ELNO workspace <span class="ce-chip ${elno.connected?'ok':'muted'}">${elno.mode}</span></h3>
+        <p class="ce-sub">${ELNO_ADAPTER.name}</p>
+        <div class="ce-kv-row"><span>Workspace</span>${s.workspaceId?`<span class="mono">${esc(s.workspaceId)}</span>`:`<button class="acc-mini" onclick="elnoCreateWorkspace()">Create (mock)</button>`}</div>
+        <div class="ce-kv-row"><span>Settlement date</span>${s.bookedDate?`<span class="mono">${esc(s.bookedDate)}</span>`:`<button class="acc-mini" onclick="elnoBookSettlement()">Book (mock)</button>`}</div>
+      </div>
+      <div class="ce-section">
+        <h3 class="ce-h3">Settlement risk flags</h3>
+        <div class="ce-kv-row"><span>VOI complete</span><span class="ce-chip ${voiOk?'ok':'warn'}">${voiOk?'Yes':'Outstanding'}</span></div>
+        <label class="ce-kv-row" style="cursor:pointer"><span>Large deposit — needs source-of-funds clearance</span>
+          <input type="checkbox" ${s.largeDeposit?'checked':''} onchange="toggleLargeDeposit(this.checked)"></label>
+        <p class="ce-fine">Large-deposit / AML clearance timing is surfaced as a settlement risk. <span class="mono">AML → LEGAL-REVIEW</span> (reporting-entity status). Source-of-funds clearance is a settlement pre-condition when flagged.</p>
+      </div>
+    </div>
+
+    <div class="ce-section">
+      <h3 class="ce-h3">Coordination stages</h3>
+      <p class="ce-sub">Formal approval → loan docs → settlement booked → <b>discharge of vendor mortgage</b> → funds cleared → settled.</p>
+      <div class="stg-track">${steps}</div>
+    </div>`;
+}
 function loadCompliance(){
   try{ const o = JSON.parse(localStorage.getItem(COMPLIANCE_LS_KEY)||'null'); if(o && typeof o==='object') state.compliance = o; }catch(e){}
 }
@@ -9899,6 +10099,7 @@ function showDesignPreview(){
   loadLendingGroups();        // pull lending-group slice (Phase 2 of the round-2 brief)
   loadAccessState();          // pull RBAC org/membership slice (Phase 5 — owner-held)
   loadCompliance();           // pull compliance-evidence slice (Phase 6)
+  loadSettlement();           // pull settlement-coordination slice (Phase 7)
   startSession();             // begin the session clock (timeout + re-auth tracking)
   await initBackend();
   renderLoginMode();

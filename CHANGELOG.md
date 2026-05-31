@@ -1,5 +1,34 @@
 # DebtIQ v6 — Changelog
 
+## MASTER program — Phase 7: settlement coordination layer
+
+DebtIQ now **coordinates** the post-approval path to the conveyancing
+handoff. It **does not settle and holds no trust money** — stated plainly
+in the UI.
+
+- **New Settlement tab** (broker shell), routed through `WS_RENDERERS` +
+  the tab maps, per-deal.
+- **Status tracker** across the required stages: formal approval → loan
+  docs issued → loan docs signed → settlement booked → **discharge of
+  vendor mortgage (key dependency)** → funds cleared → settled. Each
+  stage marks done/undo with a timestamp, gated by `settlement.action`
+  (Phase 5) and logged.
+- **Pre-condition gating:** loan-docs-signed is blocked until **VOI is
+  complete** (Phase 6 link); **settled** is blocked until the **discharge**
+  is booked; when a **large deposit** is flagged, settled is blocked until
+  source-of-funds **clearance** is confirmed.
+- **ELNO adapter — isolated, mock by default** (`ELNO_ADAPTER`, PEXA mock):
+  create-workspace + book-settlement return simulated results with **no
+  network and no credentials**. Real connectivity, subscriber eligibility,
+  and any trust-money flow are flagged `ARCH-REVIEW` / `LEGAL-REVIEW` and
+  left for a human-enabled step.
+- **Settlement risk flags:** VOI status + large-deposit/AML clearance
+  timing surfaced as risks; `AML → LEGAL-REVIEW` (reporting-entity status).
+- **Persistence:** `state.settlement` keyed by deal id, localStorage
+  (`debtiq.settlement.v1`), hydrated on boot. No backend contract change.
+- Smoke: +10 Phase 7 checks (**369/369 passing**).
+
+
 ## MASTER program — Phase 6: compliance-evidence features
 
 Built the FEATURES that **evidence and enable** the compliance-map
