@@ -3291,7 +3291,14 @@ const ICONS = {
   doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
   message:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
   phone:'<rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/>',
-  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  // Phase 9 UX-QA — SVG replacements for standalone affordance emoji.
+  search:'<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+  check:'<polyline points="20 6 9 17 4 12"/>',
+  alert:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  info:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
+  x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'
 };
 const svgIcon = (name, sz=18)=> `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]||''}</svg>`;
 
@@ -3532,11 +3539,11 @@ function renderDashboard(el){
     </div>
     <div class="kpi-grid">
       <div class="kpi" style="border-top-color:var(--red)">
-        <div class="ico" style="background:rgba(220,38,38,.1);color:var(--red)">⚠</div>
+        <div class="ico" style="background:rgba(220,38,38,.1);color:var(--red)">${svgIcon('alert',20)}</div>
         <div class="num" data-count="${needsAction}">0</div><div class="cap">Needs Action</div>${trendHTML(KPI_TREND.needs)}
       </div>
       <div class="kpi" style="border-top-color:var(--brand)">
-        <div class="ico" style="background:rgba(30,42,68,.08);color:var(--ink)">▦</div>
+        <div class="ico" style="background:rgba(30,42,68,.08);color:var(--ink)">${svgIcon('grid',20)}</div>
         <div class="num" data-count="${active}">0</div><div class="cap">Active Deals</div>${trendHTML(KPI_TREND.active)}
       </div>
       <div class="kpi" style="border-top-color:var(--green)">
@@ -3544,13 +3551,13 @@ function renderDashboard(el){
         <div class="num mono" data-count="${Math.round(expUpfront)}" data-money="1">${m().sym}0</div><div class="cap">Expected Upfront</div>${trendHTML(KPI_TREND.upfront)}
       </div>
       <div class="kpi" style="border-top-color:var(--t1)">
-        <div class="ico" style="background:rgba(15,15,26,.08);color:var(--t1)">✓</div>
+        <div class="ico" style="background:rgba(15,15,26,.08);color:var(--t1)">${svgIcon('check',20)}</div>
         <div class="num mono" data-count="${Math.round(settledMTD)}" data-money="1">${m().sym}0</div><div class="cap">Settled MTD</div>${trendHTML(KPI_TREND.settled)}
       </div>
     </div>
     <div class="toolbar">
       <div class="search">
-        <span class="si-ico">🔍</span>
+        <span class="si-ico">${svgIcon('search',16)}</span>
         <input id="dealSearch" aria-label="Search deals" placeholder="Search deals or client…" value="${state.dealSearch}" oninput="state.dealSearch=this.value;debouncedRenderDealGrid()">
       </div>
       <div class="filters">
@@ -5615,7 +5622,7 @@ function renderDocuments(el){
     <div id="pipelinePanel" style="margin-bottom:16px;display:none"></div>
     ${pipelineSummaryHTML(state.activeDeal)}
     <div class="kpi-grid">
-      <div class="kpi" style="border-top-color:var(--green)"><div class="ico" style="background:rgba(5,150,105,.1);color:var(--green)">✓</div><div class="num">${verified}</div><div class="cap">Verified</div></div>
+      <div class="kpi" style="border-top-color:var(--green)"><div class="ico" style="background:rgba(5,150,105,.1);color:var(--green)">${svgIcon('check',20)}</div><div class="num">${verified}</div><div class="cap">Verified</div></div>
       <div class="kpi" style="border-top-color:var(--ink)"><div class="ico" style="background:rgba(59,111,181,.10);color:var(--steel)">⟳</div><div class="num">${processing}</div><div class="cap">Processing</div></div>
       <div class="kpi" style="border-top-color:var(--amber)"><div class="ico" style="background:rgba(217,119,6,.1);color:var(--amber)">👁</div><div class="num">${review}</div><div class="cap">Needs Review</div></div>
       <div class="kpi" style="border-top-color:var(--red)"><div class="ico" style="background:rgba(220,38,38,.1);color:var(--red)">🛡</div><div class="num">${flagged}</div><div class="cap">Integrity flags</div></div>
@@ -7986,7 +7993,7 @@ function renderCompliance(el){
     <div class="card" style="padding:20px;margin-bottom:16px">
       <h3 style="font-size:15px;font-weight:700;margin-bottom:6px">Document extraction tester</h3>
       <p style="font-size:12.5px;color:var(--t3);margin-bottom:12px">Drag a payslip, tax return or statement (PNG/JPEG/PDF) to see the raw JSON the model returns. PDFs are rasterised in your browser first. ${aiLive()?'':'<b>Backend required</b> — connect to run live.'}</p>
-      <div id="ocrDrop" onclick="document.getElementById('ocrTestInput').click()" ondragover="event.preventDefault();this.style.borderColor='var(--brand)'" ondragleave="this.style.borderColor='var(--line2)'" ondrop="event.preventDefault();this.style.borderColor='var(--line2)';testExtract(event.dataTransfer.files)" style="border:2px dashed var(--line2);border-radius:14px;padding:26px;text-align:center;color:var(--t3);cursor:pointer;font-weight:600">⬆ Drag &amp; drop a document, or click to choose</div>
+      <div id="ocrDrop" onclick="document.getElementById('ocrTestInput').click()" ondragover="event.preventDefault();this.style.borderColor='var(--brand)'" ondragleave="this.style.borderColor='var(--line2)'" ondrop="event.preventDefault();this.style.borderColor='var(--line2)';testExtract(event.dataTransfer.files)" style="border:2px dashed var(--line2);border-radius:14px;padding:26px;text-align:center;color:var(--t3);cursor:pointer;font-weight:600"><span style="display:inline-flex;align-items:center;gap:8px;justify-content:center">${svgIcon('upload',18)} Drag &amp; drop a document, or click to choose</span></div>
       <input type="file" id="ocrTestInput" accept="image/*,application/pdf" multiple style="display:none" onchange="testExtract(this.files)">
       <pre id="ocrTestOut" class="mono" style="margin-top:12px;background:var(--ink);color:var(--green-on-ink);padding:14px;border-radius:12px;font-size:11.5px;white-space:pre-wrap;max-height:280px;overflow:auto;display:block">// extracted JSON appears here</pre>
     </div>
@@ -8946,7 +8953,7 @@ function renderLoanTab(el){
 function toast(msg, type='info'){
   const t = document.createElement('div');
   t.className = 'toast '+(type==='ok'?'ok':type==='err'?'err':'info');
-  t.innerHTML = (type==='ok'?'✓':type==='err'?'✕':'ℹ') + ' ' + msg;
+  t.innerHTML = svgIcon(type==='ok'?'check':type==='err'?'x':'info', 15) + ' <span>' + msg + '</span>';
   document.getElementById('toasts').appendChild(t);
   setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(40px)'; t.style.transition='.3s'; setTimeout(()=>t.remove(),300); }, 3200);
 }

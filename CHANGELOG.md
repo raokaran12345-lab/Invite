@@ -1,5 +1,43 @@
 # DebtIQ v6 — Changelog
 
+## MASTER program — Phase 8 (CDR decision) + Phase 9 (finish & verify)
+
+Closing gates of the program.
+
+### Phase 8 — CDR / Open Banking (conditional)
+- **Decision: DebtIQ stays OUT of CDR scope; nothing built live.** The
+  data model is document-upload + OCR, not direct bank-feed ingestion, so
+  CDR accreditation isn't engaged today. `CDR.md` documents the
+  determination and the gating conditions (`LEGAL-REVIEW` accreditation +
+  `ARCH-REVIEW` isolated subsystem) if direct feeds are ever elected.
+
+### Phase 9 — Finish & verify
+- **UX-QA emoji → SVG.** Added `search / upload / check / alert / info /
+  x` to the SVG `ICONS` set and converted the standalone affordance emoji
+  — toast glyphs, the pipeline search icon, the OCR drop-zone, and the
+  dashboard + Verified KPI tiles. (Inline ratio status marks left for a
+  brand-guide-driven pass once the guide is committed.)
+- **Brand re-verify.** Zero functional violet; ink monogram confirmed at
+  every site; tokens documented PRIMITIVE → SEMANTIC → COMPONENT; numbers
+  mono + tabular.
+- **No un-gated changes.** `/api/*`, auth, and `lenders.js` are untouched
+  since the program start; both schema migrations (`0001`, `0002`) remain
+  **DRAFT / not applied**; every new capability is localStorage-only and
+  demo + live both boot.
+- **`REVIEW-REGISTER.md`** — the consolidated `LEGAL-REVIEW` (12 items) /
+  `ARCH-REVIEW` (11 items) register for counsel and the owner, plus the
+  Phase 9 verification snapshot.
+- Smoke: +4 Phase 9 checks (**373/373 passing**).
+
+### Program status
+Phases 0, 1-finish, 4, 5, 6, 7, 8, 9 delivered on this branch; Phases 2 & 3
+were already shipped (pending visual diff against the authority mockups).
+Phases anchored to the authority files (exact DTI thresholds §5, disclosure
+field content, ADM wording) are built against publicly-known frameworks and
+**flagged `LEGAL-REVIEW`** for verification once the compliance map / brand
+guide / mockups are committed.
+
+
 ## MASTER program — Phase 7: settlement coordination layer
 
 DebtIQ now **coordinates** the post-approval path to the conveyancing
