@@ -530,6 +530,125 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .step-frame-body{padding:16px}
 .step-frame.deferred .step-frame-body{padding:14px 16px;color:var(--text-muted);font-family:var(--serif);font-style:italic;font-size:13px;line-height:1.5}
 
+/* ============================================================
+   LENDING GROUPS — Pipeline toggle + group list + group detail
+   (Round 2 brief, Phase 2)
+   ============================================================ */
+/* Pipeline view toggle (Deals | Groups) */
+.pipe-view-toggle{display:inline-flex;border:1px solid var(--hairline);border-radius:var(--r-pill);background:var(--surface-paper);padding:2px;height:30px;align-items:center;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.pipe-view-toggle button{background:none;border:none;cursor:pointer;padding:4px 14px;font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--text-muted);border-radius:var(--r-pill);transition:background .12s,color .12s}
+.pipe-view-toggle button.active{background:var(--ink);color:#fff}
+.pipe-view-toggle button:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+
+/* Group list rows on Pipeline */
+.group-card{
+  border:1px solid var(--hairline);border-radius:8px;background:var(--surface-clinical);
+  margin-bottom:14px;overflow:hidden;
+}
+.group-card-head{
+  display:flex;align-items:center;gap:14px;padding:14px 18px;cursor:pointer;
+  border-bottom:1px solid transparent;transition:background .12s,border-color .12s;
+}
+.group-card-head:hover{background:var(--ink-bg)}
+.group-card-head:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.group-card.open .group-card-head{border-bottom-color:var(--hairline)}
+.group-card-id{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--text-muted);min-width:54px}
+.group-card-name{font-family:var(--serif);font-weight:500;font-size:16px;color:var(--text-primary);letter-spacing:-.005em;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.group-card-meta{font-family:var(--mono);font-size:11px;color:var(--text-muted);display:inline-flex;gap:10px;align-items:center;flex-shrink:0}
+.group-card-meta b{color:var(--text-primary)}
+.group-card-body{padding:6px 18px 14px;display:none}
+.group-card.open .group-card-body{display:block;animation:fadeUp .2s ease}
+.group-card-body .deal-row{
+  display:grid;grid-template-columns:60px 1fr 100px 90px 100px;gap:10px;align-items:center;
+  padding:8px 0;border-bottom:1px solid var(--hairline);
+}
+.group-card-body .deal-row:last-child{border-bottom:none}
+.group-card-body .deal-row .dr-id{font-family:var(--mono);font-size:11px;color:var(--text-muted)}
+.group-card-body .deal-row .dr-name{font-weight:600;font-size:13px;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.group-card-body .deal-row .dr-amt{font-family:var(--mono);font-size:12px;color:var(--text-primary);text-align:right}
+.group-card-body .deal-row .dr-lend{font-size:11px;color:var(--text-secondary)}
+.group-card-body .deal-row .dr-cta{font-size:11px;font-weight:700;color:var(--accent-interactive);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:4px;text-align:right}
+.group-card-body .deal-row .dr-cta:hover{background:var(--steel-bg)}
+
+/* Stability indicator */
+.stab-pill{
+  display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:var(--r-pill);
+  font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+}
+.stab-pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.stab-pill.stable{color:var(--green);background:var(--green-bg)}
+.stab-pill.unstable{color:var(--amber);background:var(--amber-bg)}
+.stab-pill.empty{color:var(--text-muted);background:var(--ink-bg)}
+
+/* Proposal banner — "DebtIQ split this into N deals — Confirm / Re-cut" */
+.proposal-banner{
+  display:flex;align-items:flex-start;gap:14px;padding:14px 18px;
+  border:1px solid var(--hairline);border-left:3px solid var(--accent-interactive);
+  border-radius:8px;background:var(--steel-bg);margin-bottom:18px;
+}
+.proposal-banner .pb-icon{
+  font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--accent-interactive);
+  background:#fff;padding:4px 8px;border-radius:var(--r-pill);text-transform:uppercase;flex-shrink:0;
+}
+.proposal-banner .pb-body{flex:1;font-family:var(--serif);font-style:italic;color:var(--text-secondary);font-size:13px;line-height:1.5}
+.proposal-banner .pb-body b{font-family:var(--ui);font-style:normal;font-weight:700;color:var(--text-primary)}
+.proposal-banner .pb-cta{display:flex;gap:8px;flex-shrink:0}
+.proposal-banner .pb-cta button{font-size:12px;font-weight:700;padding:8px 14px;border-radius:var(--r-btn);cursor:pointer}
+.proposal-banner .pb-cta .pb-confirm{background:var(--ink);color:#fff;border:none}
+.proposal-banner .pb-cta .pb-recut{background:var(--surface);color:var(--ink);border:1px solid var(--hairline)}
+.proposal-banner .pb-cta button:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.proposal-banner.confirmed{border-left-color:var(--green);background:var(--green-bg)}
+.proposal-banner.recut{border-left-color:var(--brass);background:var(--amber-bg)}
+
+/* Group detail header + rollup */
+.group-head{display:flex;align-items:flex-start;gap:18px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--hairline)}
+.group-head-left{flex:1;min-width:0}
+.group-head h1{font-family:var(--serif);font-weight:500;font-size:30px;letter-spacing:-.005em;color:var(--text-primary);margin-bottom:4px}
+.group-head .gh-id{font-family:var(--mono);font-size:11px;color:var(--text-muted);letter-spacing:.04em}
+.group-head .gh-meta{margin-top:8px;display:inline-flex;gap:10px;align-items:center;flex-wrap:wrap}
+.group-head-right{display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex-shrink:0}
+
+.group-rollup{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;
+  padding:14px 18px;background:var(--surface-paper);border:1px solid var(--hairline);border-radius:8px;margin-bottom:18px;
+}
+.group-rollup .gr-cell{display:flex;flex-direction:column;gap:3px}
+.group-rollup .gr-label{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--text-muted);text-transform:uppercase}
+.group-rollup .gr-value{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:20px;font-weight:700;color:var(--text-primary)}
+.group-rollup .gr-value.serif{font-family:var(--serif);font-style:italic;font-size:16px;font-weight:500}
+
+/* Deal cards inside group detail */
+.group-deal-card{
+  border:1px solid var(--hairline);border-radius:8px;background:var(--surface-clinical);margin-bottom:14px;overflow:hidden;
+}
+.group-deal-card-head{
+  display:flex;align-items:flex-start;gap:14px;padding:14px 18px;cursor:pointer;
+  border-bottom:1px solid transparent;transition:background .12s,border-color .12s;
+}
+.group-deal-card-head:hover{background:var(--ink-bg)}
+.group-deal-card-head:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.group-deal-card.open .group-deal-card-head{border-bottom-color:var(--hairline)}
+.group-deal-card .gdc-id{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text-muted);min-width:54px}
+.group-deal-card .gdc-title{flex:1;min-width:0}
+.group-deal-card .gdc-name{font-family:var(--serif);font-weight:500;font-size:17px;letter-spacing:-.005em;color:var(--text-primary)}
+.group-deal-card .gdc-sub{font-size:12px;color:var(--text-secondary);margin-top:2px}
+.group-deal-card .gdc-right{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13px;color:var(--text-primary);text-align:right;flex-shrink:0}
+.group-deal-card-body{display:none;padding:14px 18px;border-top:1px solid var(--hairline);background:var(--surface-paper);font-size:13px;color:var(--text-secondary);line-height:1.55}
+.group-deal-card.open .group-deal-card-body{display:block;animation:fadeUp .2s ease}
+.group-deal-card-body .gdc-section{margin-bottom:10px}
+.group-deal-card-body .gdc-section b{color:var(--text-primary);font-weight:700}
+.group-deal-card-body .gdc-open{margin-top:10px;font-size:12px;font-weight:700;color:var(--ink);background:var(--surface);border:1px solid var(--hairline);padding:8px 14px;border-radius:var(--r-btn);cursor:pointer}
+.group-deal-card-body .gdc-open:hover{background:var(--ink-bg)}
+
+/* Empty state for the Groups view */
+.group-empty{
+  text-align:center;padding:60px 20px;color:var(--text-muted);
+  border:1.5px dashed var(--hairline);border-radius:8px;
+}
+.group-empty h3{font-family:var(--serif);font-weight:500;font-size:20px;color:var(--text-primary);margin-bottom:8px;letter-spacing:-.005em}
+.group-empty p{font-family:var(--serif);font-style:italic;font-size:13px;line-height:1.5;max-width:480px;margin:0 auto 18px}
+.group-empty button{font-size:13px;font-weight:700;padding:10px 18px;border-radius:var(--r-btn);background:var(--ink);color:#fff;border:none;cursor:pointer}
+
 /* Purpose tiles (Step 1) */
 .purpose-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
 .purpose-tile{
@@ -2062,6 +2181,13 @@ const state = {
   // preferences because dock state is ephemeral session UI, not a settings choice.
   rightDockOpen:true,
   rightDockTab:'ai',
+  // Lending Group model (round 2 brief, Phase 2). Persisted under
+  // LG_LS_KEY by save/loadLendingGroups. Existing deals start UNGROUPED
+  // (groupId null) and groups form only when the broker creates one;
+  // entities can be moved between groups freely.
+  lendingGroups:[],         // [{ id, name, kind, proposal_status, deal_ids:[], created_at, data }]
+  activeGroup:null,         // group id when viewing a group's detail screen
+  pipelineView:'deals',     // 'deals' | 'groups' — Pipeline tab toggle
   // Per-broker preferences — hydrated from localStorage on boot (loadSettings()).
   // Backend untouched: lives entirely in the browser.
   settings:{
@@ -2072,6 +2198,205 @@ const state = {
     reducedMotion:false
   }
 };
+
+/* ============================================================
+   LENDING GROUPS — model + persistence (round 2 brief, Phase 2)
+   ------------------------------------------------------------
+   Groups live in `state.lendingGroups`. Each entry is a thin
+   index over deals (the deals themselves stay where they already
+   are — DEALS[]). A deal "belongs" to a group when its id appears
+   in some group.deal_ids; otherwise it's ungrouped.
+
+   Persistence: localStorage today (the Supabase migration in
+   supabase/migrations/0001_lending_groups.sql is DRAFT and not
+   applied). When a broker re-cuts, splits, or merges, we write
+   the lendingGroups slice + bump each affected deal via saveDeal
+   so the group_id field on deals.data round-trips too.
+   ============================================================ */
+const LG_LS_KEY = 'debtiq.lendingGroups.v1';
+
+function loadLendingGroups(){
+  try{
+    const raw = localStorage.getItem(LG_LS_KEY);
+    if(!raw) return;
+    const obj = JSON.parse(raw);
+    if(Array.isArray(obj && obj.groups)) state.lendingGroups = obj.groups;
+    if(obj && obj.pipelineView === 'groups') state.pipelineView = 'groups';
+  }catch(e){}
+}
+function saveLendingGroups(){
+  try{
+    localStorage.setItem(LG_LS_KEY, JSON.stringify({
+      groups: state.lendingGroups || [],
+      pipelineView: state.pipelineView || 'deals'
+    }));
+  }catch(e){}
+}
+
+function newGroupId(){
+  const max = (state.lendingGroups||[]).reduce((mx,g)=>{
+    const n = parseInt((g.id||'').replace(/\D/g,''),10); return isNaN(n)?mx:Math.max(mx,n);
+  }, 0);
+  return 'G-'+(max+1);
+}
+
+function groupOfDeal(dealId){
+  return (state.lendingGroups||[]).find(g => (g.deal_ids||[]).includes(dealId)) || null;
+}
+
+function dealsInGroup(groupId){
+  const g = (state.lendingGroups||[]).find(x => x.id === groupId);
+  if(!g) return [];
+  return (g.deal_ids||[]).map(id => DEALS.find(d => d.id === id)).filter(Boolean);
+}
+
+function ungroupedDeals(){
+  return DEALS.filter(d => !groupOfDeal(d.id));
+}
+
+function createGroup({ name, kind, deal_ids, proposal_status }){
+  const g = {
+    id: newGroupId(),
+    name: name || 'New lending group',
+    kind: kind || 'standard',
+    proposal_status: proposal_status || 'proposed',
+    deal_ids: Array.isArray(deal_ids) ? [...deal_ids] : [],
+    created_at: new Date().toISOString(),
+    data: {}
+  };
+  state.lendingGroups = state.lendingGroups || [];
+  state.lendingGroups.unshift(g);
+  saveLendingGroups();
+  logEvent(`Group ${g.id} created (${g.deal_ids.length} ${g.deal_ids.length===1?'deal':'deals'})`);
+  return g;
+}
+function deleteGroup(groupId){
+  state.lendingGroups = (state.lendingGroups||[]).filter(g => g.id !== groupId);
+  if(state.activeGroup === groupId) state.activeGroup = null;
+  saveLendingGroups();
+}
+function renameGroup(groupId, name){
+  const g = (state.lendingGroups||[]).find(x => x.id === groupId);
+  if(!g) return;
+  g.name = name || g.name;
+  saveLendingGroups();
+}
+function setGroupProposalStatus(groupId, status){
+  const g = (state.lendingGroups||[]).find(x => x.id === groupId);
+  if(!g) return;
+  if(['proposed','confirmed','recut'].includes(status)) g.proposal_status = status;
+  saveLendingGroups();
+}
+function addDealToGroup(dealId, groupId){
+  // Pull the deal out of any other group first — a deal lives in one group at a time.
+  removeDealFromGroup(dealId, /*skipSave*/true);
+  const g = (state.lendingGroups||[]).find(x => x.id === groupId);
+  if(!g) return;
+  g.deal_ids = g.deal_ids || [];
+  if(!g.deal_ids.includes(dealId)) g.deal_ids.push(dealId);
+  // Mirror onto the deal blob too — saveDeal will round-trip it.
+  const d = DEALS.find(x => x.id === dealId);
+  if(d){ d.groupId = groupId; if(typeof saveDeal==='function') saveDeal(d); }
+  saveLendingGroups();
+}
+function removeDealFromGroup(dealId, skipSave){
+  let touched = false;
+  (state.lendingGroups||[]).forEach(g => {
+    if(!Array.isArray(g.deal_ids)) return;
+    const before = g.deal_ids.length;
+    g.deal_ids = g.deal_ids.filter(id => id !== dealId);
+    if(g.deal_ids.length !== before) touched = true;
+  });
+  const d = DEALS.find(x => x.id === dealId);
+  if(d && d.groupId){ d.groupId = null; if(typeof saveDeal==='function') saveDeal(d); }
+  if(touched && !skipSave) saveLendingGroups();
+}
+
+/* ---------- Facilities helper (Phase 2: derived from existing calc.newLoan)
+   Phase 3 will let the broker edit facilities per deal directly. Today every
+   deal has ONE implicit facility built from its calc.newLoan + all of its
+   securities. dealFacilities() is the canonical accessor so Phase 3 can replace
+   the derivation without touching every caller. */
+function dealFacilities(deal){
+  if(!deal) return [];
+  if(Array.isArray(deal.facilities) && deal.facilities.length) return deal.facilities;
+  const calc = deal.calc || (state.activeDeal===deal.id ? state.calc : null);
+  if(!calc) return [];
+  const nl = calc.newLoan || {};
+  const secs = calc.securities || [];
+  return [{
+    id: `f_${deal.id}_1`,
+    label: 'Primary facility',
+    lender: deal.lender || null,
+    product: 'pi',
+    amount: parseFloat(nl.amount)||0,
+    rate: parseFloat(nl.rate)||0,
+    term_years: parseInt(nl.term)||30,
+    repayment: 'monthly',
+    io_years: null,
+    // Cross-collateralisation is first-class — implicit facility covers every security on the deal.
+    security_ids: secs.map(s => s.id).filter(Boolean)
+  }];
+}
+
+/* ---------- Stability + rollup ---------- */
+function computeDealStability(deal){
+  if(!deal) return { ready:false, blockers:['Deal not found'] };
+  const blockers = [];
+  const calc = deal.calc || (state.activeDeal===deal.id ? state.calc : null) || {};
+  // Purpose
+  if(!calc.purpose) blockers.push('Purpose not set');
+  // At least one included entity with at least one positive income
+  const ents = Array.isArray(calc.entities) ? calc.entities : [];
+  const hasIncome = ents.some(e =>
+    e.included !== false &&
+    Array.isArray(e.incomes) &&
+    e.incomes.some(i => (parseFloat(i.amount_y1) || parseFloat(i.amount) || 0) > 0)
+  );
+  if(!hasIncome) blockers.push('No applicant with positive income');
+  // At least one security with value > 0
+  const secs = Array.isArray(calc.securities) ? calc.securities : [];
+  if(!secs.some(s => (parseFloat(s.value)||0) > 0)) blockers.push('No security with a value');
+  // At least one facility with amount > 0
+  const facs = dealFacilities(deal);
+  if(!facs.some(f => (parseFloat(f.amount)||0) > 0)) blockers.push('No facility with an amount');
+  // Document conflicts unresolved
+  const conflicts = ((state.conflicts && state.conflicts[deal.id])||[]).filter(c => !c.resolved).length;
+  if(conflicts) blockers.push(`${conflicts} unresolved document conflict${conflicts===1?'':'s'}`);
+  return { ready: blockers.length === 0, blockers };
+}
+function computeGroupStability(group){
+  const deals = dealsInGroup(group.id);
+  if(!deals.length) return { stable:false, blockers:[{ deal_id:null, reason:'Group has no deals yet' }] };
+  const out = { stable:true, blockers:[], deals:[] };
+  deals.forEach(d => {
+    const ds = computeDealStability(d);
+    out.deals.push({ deal_id: d.id, ready: ds.ready, blockers: ds.blockers });
+    if(!ds.ready){
+      out.stable = false;
+      ds.blockers.forEach(b => out.blockers.push({ deal_id: d.id, reason: b }));
+    }
+  });
+  return out;
+}
+function computeGroupRollup(group){
+  const deals = dealsInGroup(group.id);
+  let totalLending = 0, totalSecurity = 0, serviceable = 0, secCount = 0;
+  deals.forEach(d => {
+    const calc = d.calc || {};
+    const facs = dealFacilities(d);
+    facs.forEach(f => totalLending += parseFloat(f.amount)||0);
+    (calc.securities||[]).forEach(s => { totalSecurity += parseFloat(s.value)||0; secCount += 1; });
+    // Serviceability count — uses cached d.verdict if present (set by saveDeal path).
+    if((d.verdict||'').toUpperCase() === 'PASS') serviceable += 1;
+  });
+  const lvr = totalSecurity > 0 ? (totalLending / totalSecurity * 100) : 0;
+  return {
+    totalLending, totalSecurity, secCount,
+    dealCount: deals.length, serviceableDeals: serviceable,
+    groupLvr: lvr
+  };
+}
 
 /* ---------- Settings persistence (localStorage; no backend) ---------- */
 const LS_SETTINGS_KEY = 'debtiq.settings.v1';
@@ -2378,6 +2703,17 @@ function trendHTML(t){
   return `<div style="font-size:11px;font-weight:700;color:${col};margin-top:3px">${arr} ${t.d} vs last month</div>`;
 }
 function renderDashboard(el){
+  // Round-2 brief — Pipeline now has a Deals | Groups toggle. When a group
+  // is open (state.activeGroup), the detail screen for that group replaces
+  // the list view. Both routes share the same el.
+  if(state.activeGroup){
+    renderGroupDetail(el, state.activeGroup);
+    return;
+  }
+  if(state.pipelineView === 'groups'){
+    renderPipelineGroups(el);
+    return;
+  }
   const needsAction = DEALS.filter(d=>['BROKER_REVIEW','MORE_INFO','DOCS_PENDING'].includes(d.status)).length;
   const active = DEALS.filter(d=>!['APPROVED'].includes(d.status)).length;
   const expUpfront = DEALS.filter(d=>d.status!=='MORE_INFO').reduce((s,d)=>s+d.amount*d.upfront_commission_rate,0);
@@ -2396,7 +2732,13 @@ function renderDashboard(el){
     return;
   }
   el.innerHTML = `
-    <div class="page-head"><h1>Pipeline</h1><p>${DEALS.length} active applications in your pipeline</p></div>
+    <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap">
+      <div>
+        <h1>Pipeline</h1>
+        <p>${DEALS.length} active applications · ${(state.lendingGroups||[]).length} ${(state.lendingGroups||[]).length===1?'group':'groups'}</p>
+      </div>
+      ${pipelineViewToggleHTML('deals')}
+    </div>
     <div class="kpi-grid">
       <div class="kpi" style="border-top-color:var(--red)">
         <div class="ico" style="background:rgba(220,38,38,.1);color:var(--red)">⚠</div>
@@ -2431,6 +2773,334 @@ function renderDashboard(el){
   renderDealGrid();
   playCounts(el);
 }
+/* ============================================================
+   LENDING GROUPS — Pipeline rendering (Phase 2)
+   ============================================================ */
+function pipelineViewToggleHTML(active){
+  const a = active==='groups' ? 'groups' : 'deals';
+  return `<div class="pipe-view-toggle" role="tablist" aria-label="Pipeline view">
+    <button type="button" class="${a==='deals'?'active':''}" role="tab" aria-selected="${a==='deals'}"
+      onclick="setPipelineView('deals')">Deals</button>
+    <button type="button" class="${a==='groups'?'active':''}" role="tab" aria-selected="${a==='groups'}"
+      onclick="setPipelineView('groups')">Groups</button>
+  </div>`;
+}
+function setPipelineView(view){
+  state.pipelineView = view==='groups' ? 'groups' : 'deals';
+  state.activeGroup = null;
+  saveLendingGroups();
+  const el = document.getElementById('page-dashboard');
+  if(el) renderDashboard(el);   // no-op if Pipeline isn't the current workspace
+}
+function openGroup(groupId){
+  state.activeGroup = groupId;
+  state.pipelineView = 'groups';
+  const el = document.getElementById('page-dashboard');
+  if(el) renderDashboard(el);
+  else if(typeof goTab==='function') goTab('pipeline');
+}
+function closeGroup(){
+  state.activeGroup = null;
+  const el = document.getElementById('page-dashboard');
+  if(el) renderDashboard(el);
+}
+function toggleGroupCardOpen(groupId){
+  // Inline expand on the Pipeline list (cheaper than full re-render).
+  const card = document.querySelector(`.group-card[data-group="${escArg(groupId)}"]`);
+  if(card) card.classList.toggle('open');
+}
+function toggleGroupDealCardOpen(dealId){
+  const card = document.querySelector(`.group-deal-card[data-deal="${escArg(dealId)}"]`);
+  if(card) card.classList.toggle('open');
+}
+
+function stabilityPill(group){
+  if(!group) return '';
+  if(!(group.deal_ids||[]).length) return `<span class="stab-pill empty">No deals yet</span>`;
+  const s = computeGroupStability(group);
+  if(s.stable) return `<span class="stab-pill stable">Stable</span>`;
+  const n = (s.blockers||[]).length;
+  return `<span class="stab-pill unstable" title="${escHtml((s.blockers||[]).map(b=>(b.deal_id?b.deal_id+': ':'')+b.reason).join(' · '))}">Pending — ${n} ${n===1?'item':'items'}</span>`;
+}
+
+function renderPipelineGroups(el){
+  const groups = state.lendingGroups || [];
+  const ungrouped = ungroupedDeals();
+  const head = `
+    <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap">
+      <div>
+        <h1>Pipeline</h1>
+        <p>${groups.length} ${groups.length===1?'group':'groups'} · ${ungrouped.length} ungrouped ${ungrouped.length===1?'deal':'deals'}</p>
+      </div>
+      ${pipelineViewToggleHTML('groups')}
+    </div>`;
+
+  if(!groups.length){
+    el.innerHTML = head + `
+      <div class="group-empty">
+        <h3>No lending groups yet</h3>
+        <p>A <b>lending group</b> coordinates several deals submitted together — a family buying with a co-borrower and a guarantor, a business across multiple entities, a refinance bundled with a new purchase. Pick deals from your pipeline and group them.</p>
+        <button type="button" onclick="openCreateGroupPrompt()">Create a group</button>
+      </div>
+      ${renderUngroupedDealsSection(ungrouped)}`;
+    return;
+  }
+
+  el.innerHTML = head +
+    groups.map(g => renderGroupCard(g)).join('') +
+    renderUngroupedDealsSection(ungrouped);
+}
+
+function renderGroupCard(group){
+  const deals = dealsInGroup(group.id);
+  const totals = computeGroupRollup(group);
+  return `<div class="group-card" data-group="${escHtml(group.id)}">
+    <div class="group-card-head" role="button" tabindex="0"
+      onclick="toggleGroupCardOpen('${escArg(group.id)}')"
+      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleGroupCardOpen('${escArg(group.id)}')}">
+      <span class="group-card-id">${escHtml(group.id)}</span>
+      <span class="group-card-name">${escHtml(group.name)}</span>
+      <span class="group-card-meta">
+        <span><b>${deals.length}</b> ${deals.length===1?'deal':'deals'}</span>
+        <span>·</span>
+        <span><b>${fmtMoney(totals.totalLending)}</b> lending</span>
+        ${stabilityPill(group)}
+      </span>
+    </div>
+    <div class="group-card-body">
+      ${deals.length ? deals.map(d => renderGroupCardDealRow(d, group)).join('') : `<p style="color:var(--text-muted);font-size:12.5px;padding:8px 0">No deals in this group. Add deals from the ungrouped list below.</p>`}
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn ghost" style="font-size:12px" onclick="event.stopPropagation();openGroup('${escArg(group.id)}')">Open group view →</button>
+        <button class="btn ghost" style="font-size:12px" onclick="event.stopPropagation();openMoveDealToGroupPrompt('${escArg(group.id)}')">+ Add deal</button>
+        <button class="btn ghost" style="font-size:12px;margin-left:auto;color:var(--red)" onclick="event.stopPropagation();confirmDeleteGroup('${escArg(group.id)}')">Delete group</button>
+      </div>
+    </div>
+  </div>`;
+}
+function renderGroupCardDealRow(deal, group){
+  const ds = computeDealStability(deal);
+  const stab = ds.ready ? `<span class="stab-pill stable">Ready</span>` :
+    `<span class="stab-pill unstable" title="${escHtml((ds.blockers||[]).join(' · '))}">Pending</span>`;
+  return `<div class="deal-row">
+    <span class="dr-id">${escHtml(deal.id)}</span>
+    <span class="dr-name">${escHtml(deal.name)}</span>
+    <span class="dr-lend">${escHtml(lenderLabel(deal.lender))}</span>
+    <span class="dr-amt">${fmtMoney(deal.amount)}</span>
+    ${stab}
+  </div>`;
+}
+function renderUngroupedDealsSection(deals){
+  if(!deals.length) return '';
+  return `<div style="margin-top:30px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <h3 style="font-family:var(--serif);font-weight:500;font-size:17px;color:var(--text-primary);letter-spacing:-.005em">Ungrouped deals</h3>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">${deals.length} ${deals.length===1?'deal':'deals'}</span>
+    </div>
+    <div class="card" style="padding:6px 14px">
+      ${deals.map(d => `<div class="deal-row" style="grid-template-columns:60px 1fr 100px 90px 130px">
+        <span class="dr-id">${escHtml(d.id)}</span>
+        <span class="dr-name">${escHtml(d.name)}</span>
+        <span class="dr-lend">${escHtml(lenderLabel(d.lender))}</span>
+        <span class="dr-amt">${fmtMoney(d.amount)}</span>
+        <button type="button" class="dr-cta" onclick="openMoveDealPrompt('${escArg(d.id)}')">Move to group →</button>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+/* ---------- Group detail ---------- */
+function renderGroupDetail(el, groupId){
+  const group = (state.lendingGroups||[]).find(g => g.id === groupId);
+  if(!group){ state.activeGroup = null; renderDashboard(el); return; }
+  const deals = dealsInGroup(groupId);
+  const totals = computeGroupRollup(group);
+  const stability = computeGroupStability(group);
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+      <button class="btn ghost" style="font-size:12px;padding:6px 12px" onclick="closeGroup()">← Pipeline · Groups</button>
+    </div>
+    <div class="group-head">
+      <div class="group-head-left">
+        <h1>${escHtml(group.name)}</h1>
+        <div class="gh-id">${escHtml(group.id)}</div>
+        <div class="gh-meta">
+          ${stabilityPill(group)}
+          <span style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">${deals.length} ${deals.length===1?'deal':'deals'} · ${totals.secCount} ${totals.secCount===1?'security':'securities'}</span>
+        </div>
+      </div>
+      <div class="group-head-right">
+        <button class="btn primary" onclick="generateGroupPack('${escArg(group.id)}')">Generate group pack</button>
+        <button class="btn ghost" style="font-size:12px" onclick="openMoveDealToGroupPrompt('${escArg(group.id)}')">+ Add deal</button>
+      </div>
+    </div>
+
+    ${renderProposalBanner(group, stability)}
+
+    <div class="group-rollup">
+      <div class="gr-cell"><span class="gr-label">Total lending</span><span class="gr-value">${fmtMoney(totals.totalLending)}</span></div>
+      <div class="gr-cell"><span class="gr-label">Group LVR</span><span class="gr-value">${totals.totalSecurity>0?totals.groupLvr.toFixed(1)+'%':'—'}</span></div>
+      <div class="gr-cell"><span class="gr-label">Security value</span><span class="gr-value">${fmtMoney(totals.totalSecurity)}</span></div>
+      <div class="gr-cell"><span class="gr-label">Deals serviceable</span><span class="gr-value">${totals.serviceableDeals}/${totals.dealCount}</span></div>
+    </div>
+
+    <div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+      <h3 style="font-family:var(--serif);font-weight:500;font-size:17px;color:var(--text-primary);letter-spacing:-.005em">Deals in this group</h3>
+      <span style="font-family:var(--mono);font-size:10.5px;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase">Tap a card to expand</span>
+    </div>
+    ${deals.length ? deals.map(d => renderGroupDealCard(d, group, stability)).join('') : `<div class="group-empty"><p>No deals in this group yet. Add deals from the Pipeline to compose the submission.</p></div>`}
+  `;
+}
+
+function renderProposalBanner(group, stability){
+  const status = group.proposal_status || 'proposed';
+  const n = (group.deal_ids||[]).length;
+  if(status === 'confirmed'){
+    return `<div class="proposal-banner confirmed">
+      <span class="pb-icon">Confirmed</span>
+      <div class="pb-body">You've signed off on this split. <b>${n}</b> ${n===1?'deal':'deals'} in this group.</div>
+      <div class="pb-cta"><button class="pb-recut" onclick="setGroupProposalStatusAndRender('${escArg(group.id)}','recut')">Re-cut</button></div>
+    </div>`;
+  }
+  if(status === 'recut'){
+    return `<div class="proposal-banner recut">
+      <span class="pb-icon">Re-cut</span>
+      <div class="pb-body">You've adjusted DebtIQ's proposal. Confirm when you're happy with the shape.</div>
+      <div class="pb-cta"><button class="pb-confirm" onclick="setGroupProposalStatusAndRender('${escArg(group.id)}','confirmed')">Confirm split</button></div>
+    </div>`;
+  }
+  // proposed (default)
+  return `<div class="proposal-banner">
+    <span class="pb-icon">Proposed</span>
+    <div class="pb-body">DebtIQ split this group into <b>${n}</b> ${n===1?'deal':'deals'}${n?` (default: one deal per borrowing entity)`:''}. Confirm or re-cut.</div>
+    <div class="pb-cta">
+      <button class="pb-confirm" onclick="setGroupProposalStatusAndRender('${escArg(group.id)}','confirmed')">Confirm</button>
+      <button class="pb-recut" onclick="setGroupProposalStatusAndRender('${escArg(group.id)}','recut')">Re-cut</button>
+    </div>
+  </div>`;
+}
+function setGroupProposalStatusAndRender(groupId, status){
+  setGroupProposalStatus(groupId, status);
+  renderDashboard(document.getElementById('page-dashboard'));
+  toast(status==='confirmed' ? 'Group split confirmed.' : status==='recut' ? 'Group marked as re-cut.' : 'Group reset to proposed.', 'ok');
+}
+
+function renderGroupDealCard(deal, group, groupStability){
+  const ds = computeDealStability(deal);
+  const calc = deal.calc || {};
+  const facs = dealFacilities(deal);
+  const secs = (calc.securities||[]);
+  const ents = (calc.entities||[]).filter(e => e.included !== false);
+  const stab = ds.ready ? `<span class="stab-pill stable">Ready</span>` :
+    `<span class="stab-pill unstable">Pending</span>`;
+  const blockers = (!ds.ready && ds.blockers.length)
+    ? `<div class="gdc-section"><b>Pending:</b> ${escHtml(ds.blockers.join(' · '))}</div>` : '';
+  return `<div class="group-deal-card" data-deal="${escHtml(deal.id)}">
+    <div class="group-deal-card-head" role="button" tabindex="0"
+      onclick="toggleGroupDealCardOpen('${escArg(deal.id)}')"
+      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleGroupDealCardOpen('${escArg(deal.id)}')}">
+      <span class="gdc-id">${escHtml(deal.id)}</span>
+      <div class="gdc-title">
+        <div class="gdc-name">${escHtml(deal.name)}</div>
+        <div class="gdc-sub">${escHtml(deal.type||'—')} · ${escHtml(lenderLabel(deal.lender))} · ${facs.length} ${facs.length===1?'facility':'facilities'} · ${secs.length} ${secs.length===1?'security':'securities'}</div>
+      </div>
+      <div class="gdc-right">${fmtMoney(deal.amount)}<br><span style="font-size:11px">${stab}</span></div>
+    </div>
+    <div class="group-deal-card-body">
+      <div class="gdc-section"><b>Applicants:</b> ${ents.length?ents.map(e=>escHtml(e.name||'Entity')).join(', '):'—'}</div>
+      <div class="gdc-section"><b>Purpose:</b> ${escHtml((CALC_PURPOSES.find(p=>p.id===(calc.purpose||'')) || {label:'—'}).label)}</div>
+      <div class="gdc-section"><b>Facilities:</b> ${facs.map(f=>`${fmtMoney(f.amount)} ${f.product?.toUpperCase()||'PI'} @ ${(+f.rate||0).toFixed(2)}% · ${f.term_years||30}yr`).join(' · ')||'—'}</div>
+      <div class="gdc-section"><b>Securities:</b> ${secs.length?secs.map(s=>`${escHtml(s.address||'Property')} (${fmtMoney(s.value||0)})`).join(' · '):'—'}</div>
+      ${blockers}
+      <button class="gdc-open" onclick="event.stopPropagation();setActiveDeal('${escArg(deal.id)}')">Open deal-builder →</button>
+      <button class="btn ghost" style="font-size:11.5px;margin-left:8px" onclick="event.stopPropagation();removeDealFromGroup('${escArg(deal.id)}');renderDashboard(document.getElementById('page-dashboard'))">Remove from group</button>
+    </div>
+  </div>`;
+}
+
+/* ---------- Create / move prompts ----------
+   Lightweight inline prompts using window.prompt() to keep the surface small;
+   Phase 3 replaces these with a proper dialog as part of the re-cut UI. */
+function openCreateGroupPrompt(){
+  const name = (typeof window.prompt === 'function') ? window.prompt('Name this lending group (e.g. "Mitchell Family — Q2 2026")', 'New lending group') : 'New lending group';
+  if(name===null) return;
+  const g = createGroup({ name: name.trim() || 'New lending group', proposal_status:'proposed' });
+  state.pipelineView = 'groups';
+  saveLendingGroups();
+  renderDashboard(document.getElementById('page-dashboard'));
+  toast(`Group ${g.id} created.`, 'ok');
+}
+function openMoveDealToGroupPrompt(targetGroupId){
+  const target = (state.lendingGroups||[]).find(x => x.id === targetGroupId);
+  if(!target) return;
+  const ungroup = ungroupedDeals();
+  if(!ungroup.length){
+    toast('No ungrouped deals available.', 'info');
+    return;
+  }
+  // Build a numbered list and ask for an index — keeps the UI surface tiny in Phase 2.
+  const opts = ungroup.map((d,i)=>`${i+1}. ${d.id} — ${d.name} (${fmtMoney(d.amount)})`).join('\n');
+  const choice = (typeof window.prompt === 'function') ? window.prompt(`Add deal to "${target.name}". Enter the number:\n\n${opts}`, '1') : null;
+  if(choice===null) return;
+  const idx = parseInt(choice,10) - 1;
+  if(!(idx>=0 && idx<ungroup.length)){ toast('Invalid choice.', 'err'); return; }
+  addDealToGroup(ungroup[idx].id, targetGroupId);
+  renderDashboard(document.getElementById('page-dashboard'));
+  toast(`${ungroup[idx].id} added to ${target.id}.`, 'ok');
+}
+function openMoveDealPrompt(dealId){
+  const deal = DEALS.find(d => d.id === dealId);
+  if(!deal) return;
+  const groups = state.lendingGroups || [];
+  if(!groups.length){
+    if((typeof window.confirm === 'function') ? window.confirm('No groups yet — create a new one and add this deal?') : true){
+      const g = createGroup({ name: `${deal.name} group`, proposal_status:'proposed', deal_ids:[dealId] });
+      state.pipelineView = 'groups';
+      saveLendingGroups();
+      renderDashboard(document.getElementById('page-dashboard'));
+      toast(`Group ${g.id} created with ${dealId}.`, 'ok');
+    }
+    return;
+  }
+  const opts = groups.map((g,i)=>`${i+1}. ${g.id} — ${g.name}`).join('\n') + `\n${groups.length+1}. + Create a new group`;
+  const choice = (typeof window.prompt === 'function') ? window.prompt(`Move ${dealId} to which group?\n\n${opts}`, '1') : null;
+  if(choice===null) return;
+  const idx = parseInt(choice,10) - 1;
+  if(idx === groups.length){
+    const name = window.prompt(`Name the new group`, `${deal.name} group`);
+    if(name===null) return;
+    const g = createGroup({ name: name.trim() || `${deal.name} group`, proposal_status:'proposed', deal_ids:[dealId] });
+    renderDashboard(document.getElementById('page-dashboard'));
+    toast(`Group ${g.id} created with ${dealId}.`, 'ok');
+    return;
+  }
+  if(!(idx>=0 && idx<groups.length)){ toast('Invalid choice.', 'err'); return; }
+  addDealToGroup(dealId, groups[idx].id);
+  renderDashboard(document.getElementById('page-dashboard'));
+  toast(`${dealId} added to ${groups[idx].id}.`, 'ok');
+}
+function confirmDeleteGroup(groupId){
+  const g = (state.lendingGroups||[]).find(x => x.id === groupId);
+  if(!g) return;
+  const ok = (typeof window.confirm === 'function')
+    ? window.confirm(`Delete group "${g.name}" (${groupId})? Its deals stay in the pipeline — they just become ungrouped.`)
+    : true;
+  if(!ok) return;
+  deleteGroup(groupId);
+  renderDashboard(document.getElementById('page-dashboard'));
+  toast(`${groupId} deleted; ${g.deal_ids.length} ${g.deal_ids.length===1?'deal':'deals'} returned to ungrouped.`, 'ok');
+}
+
+/* ---------- Group submission pack — minimal placeholder for Phase 3 ---------- */
+function generateGroupPack(groupId){
+  const g = (state.lendingGroups||[]).find(x => x.id === groupId);
+  if(!g){ toast('Group not found.', 'err'); return; }
+  const deals = dealsInGroup(groupId);
+  const totals = computeGroupRollup(g);
+  toast(`Group pack — ${g.name}: ${deals.length} ${deals.length===1?'deal':'deals'}, ${fmtMoney(totals.totalLending)} total. Full pack UI ships in Phase 3.`, 'info');
+  logEvent(`Group pack preview generated for ${groupId}`);
+}
+
 function renderDealGrid(){
   const grid = document.getElementById('dealGrid');
   if(!grid) return;
@@ -5695,6 +6365,8 @@ function setActiveDeal(dealId){
       if(Array.isArray(intel.securities)) state.calc.securities = JSON.parse(JSON.stringify(intel.securities));
     }
   }
+  // Hydrate calc.purpose from the deal's type if the saved calc didn't carry one (Phase 3 deals predate the field).
+  if(!state.calc.purpose) state.calc.purpose = wizDealTypeToPurpose(d.type);
   updateDealStrip();
   updateCopilot();
   // Refresh the dock — conditions count + active pane content for this deal.
@@ -7571,6 +8243,7 @@ function showDesignPreview(){
   loadSettings();             // pull preferences out of localStorage
   applySettings();            // density + reduced-motion classes on <body>
   loadDockState();            // pull right-dock collapse/tab state from localStorage
+  loadLendingGroups();        // pull lending-group slice (Phase 2 of the round-2 brief)
   await initBackend();
   renderLoginMode();
   // ?styleguide=1 (or legacy ?preview=1) → render the brand styleguide and skip the rest.

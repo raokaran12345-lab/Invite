@@ -1,5 +1,88 @@
 # DebtIQ v6 — Changelog
 
+## Lending Group brief — Phase 2: model + Pipeline Deals/Groups toggle
+
+First half of Part B. Introduces the **Lending Group → Deals →
+Facilities ↔ Securities** model in-memory + localStorage, and the
+Pipeline's new **Deals | Groups** toggle with full group-list +
+group-detail views. Facility editing per deal + the re-cut UI ship
+in Phase 3. The Supabase migration stays DRAFT (not applied).
+
+- **State + model.** `state.lendingGroups`, `state.activeGroup`,
+  `state.pipelineView`. Each group is a thin index over `DEALS` —
+  `{ id:'G-N', name, kind, proposal_status, deal_ids:[], data }`.
+  Deals stay in `DEALS[]`; group membership is a single id per deal
+  (per the user's "deals can move between groups freely" rule).
+- **localStorage persistence** under `debtiq.lendingGroups.v1` —
+  groups + the chosen pipeline view round-trip across reloads.
+  Hydrated on boot via `loadLendingGroups()`. No Supabase changes.
+- **Helpers** (all globally callable):
+  - `createGroup({ name, kind, deal_ids, proposal_status })`
+  - `addDealToGroup(dealId, groupId)` / `removeDealFromGroup(dealId)`
+  - `renameGroup(id, name)` / `deleteGroup(id)` /
+    `setGroupProposalStatus(id, 'proposed'|'confirmed'|'recut')`
+  - `groupOfDeal(dealId)` / `dealsInGroup(groupId)` /
+    `ungroupedDeals()`
+  - `dealFacilities(deal)` — derives a single implicit facility
+    from `deal.calc.newLoan` + every security on the deal. Phase 3
+    replaces the derivation with broker-edited facility rows.
+  - `computeDealStability(deal)` — strict rules: purpose set, ≥1
+    applicant with positive income, ≥1 security with value, ≥1
+    facility with amount, no unresolved document conflicts. Returns
+    `{ ready, blockers:[] }`. Per the user's "Strict but still
+    able to submit" pick, this is a *signal* not a *gate* — the
+    Generate-group-pack button never disables.
+  - `computeGroupStability(group)` rolls up per-deal stability with
+    a per-deal blocker list; `computeGroupRollup(group)` returns
+    total lending / group LVR / security value / serviceable count.
+- **Pipeline toggle (Deals | Groups).** Sits in the page-head;
+  state persists. Switching to Groups while a group is open
+  collapses the detail screen back to the list.
+- **Groups list view.** Group cards with `id · name · deal count ·
+  total lending · stability pill`. Expand inline to see each deal's
+  one-line summary + per-deal stability pill + "Open group view"
+  CTA. Below: an "Ungrouped deals" section listing deals with no
+  group assignment, each with a "Move to group →" button.
+- **Group detail view.** Header (id, name, stability + meta) +
+  proposal banner + group rollup bar (total lending, group LVR,
+  security value, serviceable deals) + per-deal expandable cards
+  showing applicants, purpose, facilities, securities, blockers,
+  and "Open deal-builder →" / "Remove from group" actions.
+- **Proposal banner (B4 — "proposed, not imposed").** Three states:
+  `proposed` (steel-blue, Confirm/Re-cut buttons) → `confirmed`
+  (green, Re-cut button) → `recut` (amber, Confirm-split button).
+  Banner copy explains the default split rule (one deal per
+  borrowing entity).
+- **Stability pill semantics.** Stable (green) when every deal in
+  the group is ready. Pending (amber, with tooltip listing the
+  specific blockers per deal) otherwise. Empty (muted) for a group
+  with zero deals.
+- **Create / move / delete** via the lightweight `window.prompt`
+  flows — keeps the surface small. Phase 3 replaces these with a
+  proper dialog as part of the re-cut UI work.
+- **Empty state** for "no groups yet" explains what a lending
+  group IS in editorial voice (family-style submissions, business
+  across entities, refi + new purchase) + a Create-group button.
+- **Generate group pack** wired to a minimal placeholder — toasts
+  the group totals; the full pack generator ships in Phase 3 by
+  re-using the existing `buildPackHTML` patterns.
+- **setActiveDeal hardened.** When loading a deal that predates
+  the Phase 3 purpose field, hydrate `state.calc.purpose` from
+  `wizDealTypeToPurpose(d.type)` so stability + the deal-spine
+  banner have something to render.
+- **Smoke harness** +25 Phase 2 checks (helpers exposed, default
+  state, toggle render, empty state, create/add/remove/delete,
+  groupOfDeal / ungroupedDeals, persistence round-trip, group
+  detail render, proposal banner state transitions, stability
+  blocker detection + resolution). **290/290 passing.**
+
+**Deferred to Phase 3 (queued, not half-shipped):**
+- Per-deal facility editing (add / remove / split / merge facility
+  rows within the atomic deal-builder).
+- Re-cut UI (drag-and-drop + Move-control + keyboard alt) for
+  moving facilities between deals.
+- Full group submission pack generator (replaces the toast).
+
 ## Lending Group brief — Phase 0/1: audit + Part A polish (A2 + A9)
 
 Round-2 brief. Phase 0 was an audit-only pass with one new artefact:
