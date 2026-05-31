@@ -649,6 +649,64 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .group-empty p{font-family:var(--serif);font-style:italic;font-size:13px;line-height:1.5;max-width:480px;margin:0 auto 18px}
 .group-empty button{font-size:13px;font-weight:700;padding:10px 18px;border-radius:var(--r-btn);background:var(--ink);color:#fff;border:none;cursor:pointer}
 
+/* ============================================================
+   FACILITY EDITOR (Step 7 — round 2 brief, Phase 3)
+   ============================================================ */
+.fac-le-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+@media (max-width:640px){ .fac-le-grid{grid-template-columns:1fr} }
+.fac-card{border:1px solid var(--hairline);border-radius:8px;background:var(--surface-paper);overflow:hidden;margin-top:6px}
+.fac-card-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--hairline);background:var(--ink-bg)}
+.fac-card-head h4{font-family:var(--serif);font-weight:500;font-size:15px;letter-spacing:-.005em;color:var(--text-primary);margin:0}
+.fac-card-meta{font-family:var(--mono);font-size:11px;color:var(--text-secondary)}
+.fac-card-meta b{color:var(--text-primary)}
+.fac-table{display:flex;flex-direction:column}
+.fac-row{padding:12px 16px;border-bottom:1px solid var(--hairline);background:var(--surface-clinical)}
+.fac-row:last-child{border-bottom:none}
+.fac-row-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.fac-row-tag{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase;background:var(--ink-bg);padding:3px 9px;border-radius:var(--r-pill)}
+.fac-row-toggle{display:inline-flex;border:1px solid var(--hairline);border-radius:var(--r-pill);background:var(--surface-paper);padding:1px;height:26px;align-items:center}
+.fac-row-toggle button{background:none;border:none;cursor:pointer;padding:3px 12px;font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--text-muted);letter-spacing:.04em;border-radius:var(--r-pill);transition:background .12s,color .12s}
+.fac-row-toggle button.active{background:var(--ink);color:#fff}
+.fac-row-toggle button:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.fac-row-spacer{flex:1}
+.fac-row-btn{font-size:11px;font-weight:700;padding:5px 10px;border-radius:var(--r-btn);background:var(--surface);color:var(--ink);border:1px solid var(--hairline);cursor:pointer;letter-spacing:.02em}
+.fac-row-btn:hover{background:var(--ink-bg)}
+.fac-row-btn.danger{color:var(--red)}
+.fac-row-btn.danger:hover{background:#fef2f2}
+.fac-row-btn:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.fac-row-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:10px}
+.fac-row-secs{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.fac-row-secs-label{font-family:var(--mono);font-size:10.5px;font-weight:700;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase;margin-right:4px}
+.fac-sec-chip{
+  font-family:var(--mono);font-size:11px;font-weight:600;padding:4px 10px;border-radius:var(--r-pill);
+  background:var(--surface-paper);color:var(--text-secondary);border:1px solid var(--hairline);cursor:pointer;
+  transition:background .12s,color .12s,border-color .12s;
+}
+.fac-sec-chip:hover{background:var(--ink-bg)}
+.fac-sec-chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.fac-sec-chip:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.fac-actions{padding:10px 16px;border-top:1px solid var(--hairline);background:var(--surface-paper);display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.fac-hint{font-family:var(--serif);font-style:italic;font-size:12px;color:var(--text-muted);flex:1;min-width:200px;line-height:1.4}
+
+/* Re-cut UI (Phase 3 — facility move-control + draggable rows in group detail) */
+.gdc-facilities{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.gdc-fac-row{
+  display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;
+  padding:8px 12px;border:1px solid var(--hairline);border-radius:6px;background:var(--surface);
+  font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12px;cursor:grab;
+  transition:background .12s,border-color .12s;
+}
+.gdc-fac-row[draggable="true"]:hover{background:var(--ink-bg);border-color:var(--text-muted)}
+.gdc-fac-row.dragging{opacity:.4;cursor:grabbing}
+.gdc-fac-row.drop-target{background:var(--steel-bg);border-color:var(--accent-interactive);border-style:dashed}
+.gdc-fac-tag{font-size:10.5px;font-weight:700;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase;background:var(--ink-bg);padding:2px 7px;border-radius:var(--r-pill)}
+.gdc-fac-detail{color:var(--text-primary)}
+.gdc-fac-detail b{color:var(--text-primary)}
+.gdc-fac-move{font-family:var(--ui);font-size:11px;font-weight:700;padding:4px 10px;border-radius:var(--r-btn);background:var(--surface-paper);color:var(--ink);border:1px solid var(--hairline);cursor:pointer}
+.gdc-fac-move:hover{background:var(--ink-bg)}
+.gdc-fac-move:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.recut-hint{font-family:var(--serif);font-style:italic;font-size:11.5px;color:var(--text-muted);margin:6px 0 2px;line-height:1.4}
+
 /* Purpose tiles (Step 1) */
 .purpose-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
 .purpose-tile{
@@ -2156,7 +2214,14 @@ const state = {
     securities:[],         // multi-security model; falls back to wizData.propValue when empty
     dependants:0,
     adults:1,
-    newLoan:{amount:785000, rate:6.24, term:30}
+    newLoan:{amount:785000, rate:6.24, term:30},
+    // Additional facilities (round 2 brief, Phase 3). Treated as siblings of
+    // `newLoan` — the primary facility lives in newLoan (every legacy caller
+    // still reads it), while splits/IO bands/LoCs live here. allFacilities()
+    // returns the unified view; the Step 7 UI renders them as one table.
+    // Each entry: { id, label, product:'pi'|'io', amount, rate, term_years,
+    //               io_years, security_ids:[], repayment:'monthly' }
+    facilities:[]
   },
   anthropicKey:'',       // set to a truthy flag when AI is reachable via the server proxy
   backend:false,         // true when Supabase config loaded from /api/config
@@ -2312,38 +2377,205 @@ function removeDealFromGroup(dealId, skipSave){
   if(touched && !skipSave) saveLendingGroups();
 }
 
-/* ---------- Facilities helper (Phase 2: derived from existing calc.newLoan)
-   Phase 3 will let the broker edit facilities per deal directly. Today every
-   deal has ONE implicit facility built from its calc.newLoan + all of its
-   securities. dealFacilities() is the canonical accessor so Phase 3 can replace
-   the derivation without touching every caller. */
-function dealFacilities(deal){
-  if(!deal) return [];
-  if(Array.isArray(deal.facilities) && deal.facilities.length) return deal.facilities;
-  const calc = deal.calc || (state.activeDeal===deal.id ? state.calc : null);
-  if(!calc) return [];
+/* ---------- Facilities (round 2 brief, Phase 3)
+   Primary facility lives in state.calc.newLoan (every legacy caller still
+   reads it directly — KPI strip, copilot, commentary, max-loan finder, AI
+   prompts). Additional facilities live in state.calc.facilities[]. The pair
+   gets unified through allFacilities() / dealFacilitiesAll(): primary as
+   facility[0], extras following. Step 7's UI renders the unified list.
+
+   Why this shape rather than rewriting everything to facilities[]?
+   `state.calc.newLoan` is referenced in ~30 places (wizard, calc engine,
+   AI prompts, max-loan finder, copilot). Keeping it as facility[0] is the
+   smallest blast radius — the engine just iterates allFacilities() now,
+   and the UI lets the broker treat them all identically. */
+function primaryFacilityFromCalc(calc, dealId){
   const nl = calc.newLoan || {};
   const secs = calc.securities || [];
-  return [{
-    id: `f_${deal.id}_1`,
+  return {
+    id: `f_${dealId||'cur'}_primary`,
     label: 'Primary facility',
-    lender: deal.lender || null,
     product: 'pi',
     amount: parseFloat(nl.amount)||0,
     rate: parseFloat(nl.rate)||0,
     term_years: parseInt(nl.term)||30,
+    io_years: 0,
     repayment: 'monthly',
-    io_years: null,
-    // Cross-collateralisation is first-class — implicit facility covers every security on the deal.
+    isPrimary: true,
+    // Cross-coll default — primary covers every security on the deal.
     security_ids: secs.map(s => s.id).filter(Boolean)
-  }];
+  };
+}
+function allFacilities(){
+  // Active-deal view: primary (from state.calc.newLoan) + extras (from state.calc.facilities[]).
+  const c = state.calc || {};
+  const primary = primaryFacilityFromCalc(c, state.activeDeal);
+  const extras = Array.isArray(c.facilities) ? c.facilities : [];
+  return [primary, ...extras];
+}
+function dealFacilities(deal){
+  if(!deal) return [];
+  // Active deal — read straight from state.calc so live edits are reflected.
+  if(state.activeDeal === deal.id) return allFacilities();
+  // Other deal — read from its saved calc snapshot. For seeded deals that haven't
+  // been opened yet, deal.calc is undefined — synthesise a minimal primary from
+  // the deal blob (amount + lender) so the group views still show something useful.
+  const calc = deal.calc || synthCalcForDeal(deal);
+  if(!calc) return [];
+  const primary = primaryFacilityFromCalc(calc, deal.id);
+  const extras = Array.isArray(calc.facilities) ? calc.facilities : [];
+  return [primary, ...extras];
+}
+function synthCalcForDeal(deal){
+  // For unhydrated seeded deals: derive a minimal calc snapshot from the deal
+  // blob + DEMO_DEAL_INTEL so dealFacilities/computeGroupRollup don't return
+  // empty when the broker hasn't opened the deal yet.
+  if(!deal) return null;
+  const intel = (typeof DEMO_DEAL_INTEL !== 'undefined' && DEMO_DEAL_INTEL[deal.id]) || {};
+  return {
+    purpose: wizDealTypeToPurpose(deal.type),
+    entities: Array.isArray(intel.entities) ? JSON.parse(JSON.stringify(intel.entities)) : [],
+    securities: Array.isArray(intel.securities) ? JSON.parse(JSON.stringify(intel.securities)) : [],
+    newLoan: { amount: parseFloat(deal.amount)||0, rate: 6.24, term: 30 },
+    facilities: []
+  };
+}
+function newFacilityId(){
+  const c = state.calc || {};
+  const used = new Set((c.facilities||[]).map(f => f.id));
+  let n = (c.facilities||[]).length + 1;
+  while(used.has(`f_extra_${n}`)) n++;
+  return `f_extra_${n}`;
+}
+function addFacility(){
+  const c = state.calc;
+  c.facilities = c.facilities || [];
+  const primary = primaryFacilityFromCalc(c, state.activeDeal);
+  c.facilities.push({
+    id: newFacilityId(),
+    label: `Facility ${c.facilities.length + 2}`,
+    product: 'io',
+    amount: 0,
+    rate: primary.rate,
+    term_years: primary.term_years,
+    io_years: 5,
+    repayment: 'monthly',
+    security_ids: [...(primary.security_ids||[])]
+  });
+  rerenderCalcAfterFacilityChange();
+}
+function removeFacility(facilityId){
+  const c = state.calc;
+  c.facilities = (c.facilities||[]).filter(f => f.id !== facilityId);
+  rerenderCalcAfterFacilityChange();
+}
+function splitFacility(facilityId){
+  // Split a row into two halves (the second is the IO sibling, useful for
+  // P&I + IO splits) — broker can tune amounts afterward.
+  const c = state.calc;
+  if(facilityId === 'primary' || (facilityId||'').endsWith('_primary')){
+    // Splitting the primary — halve its amount, push an IO sibling for the other half.
+    const primary = primaryFacilityFromCalc(c, state.activeDeal);
+    const half = Math.round(primary.amount / 2);
+    c.newLoan.amount = half;
+    c.facilities = c.facilities || [];
+    c.facilities.push({
+      id: newFacilityId(),
+      label: 'IO split',
+      product: 'io',
+      amount: primary.amount - half,
+      rate: primary.rate,
+      term_years: primary.term_years,
+      io_years: 5,
+      repayment: 'monthly',
+      security_ids: [...(primary.security_ids||[])]
+    });
+  } else {
+    const src = (c.facilities||[]).find(f => f.id === facilityId);
+    if(!src) return;
+    const half = Math.round((src.amount||0) / 2);
+    src.amount = half;
+    c.facilities.push({
+      id: newFacilityId(),
+      label: src.product==='io' ? 'P&I split' : 'IO split',
+      product: src.product==='io' ? 'pi' : 'io',
+      amount: (src.amount + half) - half, // = original - half
+      rate: src.rate,
+      term_years: src.term_years,
+      io_years: src.product==='io' ? 0 : 5,
+      repayment: 'monthly',
+      security_ids: [...(src.security_ids||[])]
+    });
+  }
+  rerenderCalcAfterFacilityChange();
+}
+function updateFacilityField(facilityId, field, value){
+  const c = state.calc;
+  if(facilityId === 'primary' || (facilityId||'').endsWith('_primary')){
+    if(field==='amount') c.newLoan.amount = +value || 0;
+    else if(field==='rate') c.newLoan.rate = +value || 0;
+    else if(field==='term_years') c.newLoan.term = +value || 30;
+    // primary IO years not tracked in newLoan; ignore.
+  } else {
+    const f = (c.facilities||[]).find(x => x.id === facilityId);
+    if(!f) return;
+    if(field==='product') f.product = (value==='io'?'io':'pi');
+    else if(field==='security_ids') f.security_ids = Array.isArray(value) ? value : [];
+    else f[field] = (field==='amount'||field==='rate'||field==='term_years'||field==='io_years') ? (+value||0) : value;
+  }
+  rerenderCalcAfterFacilityChange();
+}
+function toggleFacilitySecurity(facilityId, secId){
+  const c = state.calc;
+  if(facilityId === 'primary' || (facilityId||'').endsWith('_primary')){
+    // Primary cross-coll set is implicit (all securities) by default; allow opt-out.
+    c.primarySecOverrides = c.primarySecOverrides || (c.securities||[]).map(s=>s.id);
+    const set = new Set(c.primarySecOverrides);
+    if(set.has(secId)) set.delete(secId); else set.add(secId);
+    c.primarySecOverrides = [...set];
+  } else {
+    const f = (c.facilities||[]).find(x => x.id === facilityId);
+    if(!f) return;
+    f.security_ids = f.security_ids || [];
+    const set = new Set(f.security_ids);
+    if(set.has(secId)) set.delete(secId); else set.add(secId);
+    f.security_ids = [...set];
+  }
+  rerenderCalcAfterFacilityChange();
+}
+function rerenderCalcAfterFacilityChange(){
+  if(typeof updateCalc==='function') updateCalc();
+  if(document.getElementById('calcEditor')){ renderCalcEditor(); }
+}
+function totalFacilityAmount(){
+  return allFacilities().reduce((s,f) => s + (parseFloat(f.amount)||0), 0);
+}
+function totalNewLoanMonthly(buffer){
+  // Sum the assessed monthly payment across every facility. Mirrors
+  // computeServiceability's old single-facility line.
+  return allFacilities().reduce((sum, f) => {
+    const amt = parseFloat(f.amount)||0;
+    const rate = (parseFloat(f.rate)||0) + buffer*100;
+    const term = parseInt(f.term_years)||30;
+    // IO facilities pay interest only during io_years, then revert to P&I over (term - io_years).
+    // For serviceability we use the *higher* of IO-pay or post-IO-revert P&I — lenders assess on
+    // post-IO P&I over the residual term to avoid understating debt service.
+    if(f.product === 'io' && (parseInt(f.io_years)||0) > 0){
+      const ioYrs = parseInt(f.io_years)||0;
+      const residualTerm = Math.max(1, term - ioYrs);
+      const piRevert = PMT(amt, rate, residualTerm);
+      const ioMonthly = amt * (rate/100) / 12;
+      return sum + Math.max(piRevert, ioMonthly);
+    }
+    return sum + PMT(amt, rate, term);
+  }, 0);
 }
 
 /* ---------- Stability + rollup ---------- */
 function computeDealStability(deal){
   if(!deal) return { ready:false, blockers:['Deal not found'] };
   const blockers = [];
-  const calc = deal.calc || (state.activeDeal===deal.id ? state.calc : null) || {};
+  const calc = (state.activeDeal===deal.id ? state.calc : (deal.calc || synthCalcForDeal(deal))) || {};
   // Purpose
   if(!calc.purpose) blockers.push('Purpose not set');
   // At least one included entity with at least one positive income
@@ -2383,7 +2615,7 @@ function computeGroupRollup(group){
   const deals = dealsInGroup(group.id);
   let totalLending = 0, totalSecurity = 0, serviceable = 0, secCount = 0;
   deals.forEach(d => {
-    const calc = d.calc || {};
+    const calc = (state.activeDeal===d.id ? state.calc : (d.calc || synthCalcForDeal(d))) || {};
     const facs = dealFacilities(d);
     facs.forEach(f => totalLending += parseFloat(f.amount)||0);
     (calc.securities||[]).forEach(s => { totalSecurity += parseFloat(s.value)||0; secCount += 1; });
@@ -2662,8 +2894,11 @@ function computeServiceability(){
     if(l.type!=='credit_card') totalLiab += parseFloat(l.balance)||0;
     });
   });
-  const nl = state.calc.newLoan;
-  const newLoanMo = PMT(parseFloat(nl.amount)||0, ((parseFloat(nl.rate)||0)+buffer*100)/100, parseFloat(nl.term)||30);
+  // Round-2 brief, Phase 3 — sum debt service / amounts across every facility
+  // (primary in state.calc.newLoan + extras in state.calc.facilities[]).
+  const facsAll = allFacilities();
+  const newLoanMo = totalNewLoanMonthly(buffer);
+  const totalNewAmt = facsAll.reduce((s,f)=> s + (parseFloat(f.amount)||0), 0);
   const totalDebt = existingDebt + newLoanMo;
   const HEM = getHEM(shadedAnnual, state.calc.adults||1, state.calc.dependants);
   const ndi = income - totalDebt - HEM;
@@ -2671,9 +2906,9 @@ function computeServiceability(){
   // LVR uses aggregate security value (sum of securities[].value, fallback to wizData.propValue).
   // No fake fallback to amount/0.8 — if no security value is set, lvr stays 0 and the UI shows '—'.
   const propValue = totalSecurityValue();
-  const lvr = propValue>0 ? (parseFloat(nl.amount)||0)/propValue*100 : 0;
-  // DTI: total debt balance (existing + new loan) vs gross shaded annual income (APRA 2026 cap).
-  const dti = shadedAnnual>0 ? (totalLiab + (parseFloat(nl.amount)||0))/shadedAnnual : 0;
+  const lvr = propValue>0 ? totalNewAmt/propValue*100 : 0;
+  // DTI: total debt balance (existing + every new facility) vs gross shaded annual income (APRA 2026 cap).
+  const dti = shadedAnnual>0 ? (totalLiab + totalNewAmt)/shadedAnnual : 0;
 
   let verdict;
   const pass = ndi>0 && dsr<dsrMax;
@@ -2681,7 +2916,10 @@ function computeServiceability(){
   else if(ndi > -250 && dsr < dsrMax+5) verdict='BORDERLINE';
   else verdict='FAIL';
 
-  return {income, shadedAnnual, existingDebt, newLoanMo, totalDebt, HEM, ndi, dsr, lvr, dti, totalLiab, verdict, breakdown, propValue, lvrAvailable: propValue>0, assessedRate:(parseFloat(nl.rate)||0)+buffer*100};
+  // assessedRate reflects the *primary* facility's contract rate + the active buffer — the figure brokers
+  // recognise on the assessment console headline; per-facility rates show in the facility breakdown.
+  const primaryRate = parseFloat((state.calc.newLoan||{}).rate)||0;
+  return {income, shadedAnnual, existingDebt, newLoanMo, totalDebt, HEM, ndi, dsr, lvr, dti, totalLiab, verdict, breakdown, propValue, lvrAvailable: propValue>0, assessedRate: primaryRate + buffer*100, totalNewAmt, facilities: facsAll};
 }
 
 /* ============================================================
@@ -2995,7 +3233,10 @@ function renderGroupDealCard(deal, group, groupStability){
     `<span class="stab-pill unstable">Pending</span>`;
   const blockers = (!ds.ready && ds.blockers.length)
     ? `<div class="gdc-section"><b>Pending:</b> ${escHtml(ds.blockers.join(' · '))}</div>` : '';
-  return `<div class="group-deal-card" data-deal="${escHtml(deal.id)}">
+  return `<div class="group-deal-card" data-deal="${escHtml(deal.id)}"
+      ondragover="onFacilityDragOverDeal(event,'${escArg(deal.id)}')"
+      ondragleave="onFacilityDragLeaveDeal(event)"
+      ondrop="onFacilityDropOnDeal(event,'${escArg(deal.id)}','${escArg(group.id)}')">
     <div class="group-deal-card-head" role="button" tabindex="0"
       onclick="toggleGroupDealCardOpen('${escArg(deal.id)}')"
       onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleGroupDealCardOpen('${escArg(deal.id)}')}">
@@ -3009,13 +3250,124 @@ function renderGroupDealCard(deal, group, groupStability){
     <div class="group-deal-card-body">
       <div class="gdc-section"><b>Applicants:</b> ${ents.length?ents.map(e=>escHtml(e.name||'Entity')).join(', '):'—'}</div>
       <div class="gdc-section"><b>Purpose:</b> ${escHtml((CALC_PURPOSES.find(p=>p.id===(calc.purpose||'')) || {label:'—'}).label)}</div>
-      <div class="gdc-section"><b>Facilities:</b> ${facs.map(f=>`${fmtMoney(f.amount)} ${f.product?.toUpperCase()||'PI'} @ ${(+f.rate||0).toFixed(2)}% · ${f.term_years||30}yr`).join(' · ')||'—'}</div>
       <div class="gdc-section"><b>Securities:</b> ${secs.length?secs.map(s=>`${escHtml(s.address||'Property')} (${fmtMoney(s.value||0)})`).join(' · '):'—'}</div>
+      <div class="gdc-section"><b>Facilities</b> <span class="recut-hint">drag a facility onto another deal in this group · or use the Move button · or focus a row and press <kbd>M</kbd></span></div>
+      ${renderFacilitiesReCut(deal, group, facs)}
       ${blockers}
       <button class="gdc-open" onclick="event.stopPropagation();setActiveDeal('${escArg(deal.id)}')">Open deal-builder →</button>
       <button class="btn ghost" style="font-size:11.5px;margin-left:8px" onclick="event.stopPropagation();removeDealFromGroup('${escArg(deal.id)}');renderDashboard(document.getElementById('page-dashboard'))">Remove from group</button>
     </div>
   </div>`;
+}
+function renderFacilitiesReCut(deal, group, facs){
+  if(!facs.length) return `<div class="gdc-facilities"><div style="font-style:italic;color:var(--text-muted);font-size:12.5px;padding:6px 0">No facilities on this deal yet — set the loan amount on the deal-builder.</div></div>`;
+  return `<div class="gdc-facilities">${facs.map(f => `
+    <div class="gdc-fac-row" draggable="true" tabindex="0"
+      data-facility="${escHtml(f.id)}" data-source-deal="${escHtml(deal.id)}" data-group="${escHtml(group.id)}"
+      ondragstart="onFacilityDragStart(event,'${escArg(deal.id)}','${escArg(f.id)}','${escArg(group.id)}')"
+      ondragend="onFacilityDragEnd(event)"
+      onkeydown="onFacilityKeyMove(event,'${escArg(deal.id)}','${escArg(f.id)}','${escArg(group.id)}')">
+      <span class="gdc-fac-tag">${escHtml((f.product||'pi').toUpperCase())}</span>
+      <span class="gdc-fac-detail"><b>${fmtMoney(f.amount)}</b> · ${(parseFloat(f.rate)||0).toFixed(2)}% · ${parseInt(f.term_years)||30}yr${f.product==='io' && f.io_years?` · IO ${f.io_years}yr`:''}</span>
+      <button type="button" class="gdc-fac-move" onclick="event.stopPropagation();openFacilityMoveMenu('${escArg(deal.id)}','${escArg(f.id)}','${escArg(group.id)}',this)">Move →</button>
+    </div>`).join('')}</div>`;
+}
+
+/* ============================================================
+   RE-CUT — move a facility between deals in the same group
+   Three interaction methods (the user picked "multiway 1,2,3"):
+     1. Drag-and-drop  (HTML5 native draggable + dragover/drop on deal cards)
+     2. Move-control   (button on each facility row → opens a chooser)
+     3. Keyboard alt   (focus the row, press M, pick from prompt)
+   ============================================================ */
+function moveFacility(sourceDealId, facilityId, targetDealId){
+  if(sourceDealId === targetDealId){ toast('Already on that deal.', 'info'); return; }
+  const sourceDeal = DEALS.find(d => d.id === sourceDealId);
+  const targetDeal = DEALS.find(d => d.id === targetDealId);
+  if(!sourceDeal || !targetDeal){ toast('Deal not found.', 'err'); return; }
+  const sourceCalc = (state.activeDeal === sourceDealId) ? state.calc : sourceDeal.calc;
+  const targetCalc = (state.activeDeal === targetDealId) ? state.calc : targetDeal.calc;
+  if(!sourceCalc || !targetCalc){ toast('Deal calc not loaded — open both deals once to hydrate.', 'err'); return; }
+
+  // Move semantics — primary can't be detached (it's the deal's anchor), so
+  // moving "primary" actually moves the WHOLE deal into a single-deal slot. For
+  // extras, splice out of source and push into target.
+  if(facilityId === 'primary' || (facilityId||'').endsWith('_primary')){
+    toast('A primary facility moves with its deal — drag the whole deal instead.', 'info');
+    return;
+  }
+  sourceCalc.facilities = sourceCalc.facilities || [];
+  const idx = sourceCalc.facilities.findIndex(f => f.id === facilityId);
+  if(idx === -1){ toast('Facility not found on source deal.', 'err'); return; }
+  const [f] = sourceCalc.facilities.splice(idx, 1);
+  // Re-id with target prefix to keep ids globally unique inside the deal.
+  f.id = `f_${targetDealId}_${(targetCalc.facilities||[]).length + 1}`;
+  targetCalc.facilities = targetCalc.facilities || [];
+  targetCalc.facilities.push(f);
+
+  // Persist both deals + flag the group as re-cut.
+  if(typeof saveDeal === 'function'){ saveDeal(sourceDeal); saveDeal(targetDeal); }
+  const grp = groupOfDeal(targetDealId);
+  if(grp) setGroupProposalStatus(grp.id, 'recut');
+  saveLendingGroups();
+  toast(`Facility moved · ${sourceDealId} → ${targetDealId}.`, 'ok');
+  logEvent(`Facility ${facilityId} re-cut from ${sourceDealId} → ${targetDealId}`);
+  const dashEl = document.getElementById('page-dashboard');
+  if(dashEl) renderDashboard(dashEl);
+}
+
+let _facilityDrag = null;
+function onFacilityDragStart(ev, dealId, facId, groupId){
+  _facilityDrag = { dealId, facId, groupId };
+  try{ ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', `${dealId}:${facId}`); }catch(_){}
+  ev.currentTarget.classList.add('dragging');
+}
+function onFacilityDragEnd(ev){
+  if(ev && ev.currentTarget) ev.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.group-deal-card.drop-target').forEach(el => el.classList.remove('drop-target'));
+  _facilityDrag = null;
+}
+function onFacilityDragOverDeal(ev, dealId){
+  if(!_facilityDrag) return;
+  if(_facilityDrag.dealId === dealId) return; // same deal — no-op
+  ev.preventDefault();
+  try{ ev.dataTransfer.dropEffect = 'move'; }catch(_){}
+  ev.currentTarget.classList.add('drop-target');
+}
+function onFacilityDragLeaveDeal(ev){
+  if(!ev.currentTarget) return;
+  ev.currentTarget.classList.remove('drop-target');
+}
+function onFacilityDropOnDeal(ev, dealId, groupId){
+  if(!_facilityDrag) return;
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('drop-target');
+  if(_facilityDrag.groupId !== groupId){
+    toast('Facilities can only be re-cut within the same group.', 'err');
+    _facilityDrag = null; return;
+  }
+  const src = _facilityDrag;
+  _facilityDrag = null;
+  moveFacility(src.dealId, src.facId, dealId);
+}
+function onFacilityKeyMove(ev, dealId, facId, groupId){
+  // Keyboard alt — focus a row, press M to open the move chooser.
+  if(ev.key === 'm' || ev.key === 'M'){
+    ev.preventDefault();
+    openFacilityMoveMenu(dealId, facId, groupId, ev.currentTarget);
+  }
+}
+function openFacilityMoveMenu(dealId, facId, groupId, anchorEl){
+  const group = (state.lendingGroups||[]).find(g => g.id === groupId);
+  if(!group){ toast('Group not found.', 'err'); return; }
+  const targets = dealsInGroup(groupId).filter(d => d.id !== dealId);
+  if(!targets.length){ toast('No other deals in this group — add one first.', 'info'); return; }
+  const opts = targets.map((d,i)=>`${i+1}. ${d.id} — ${d.name}`).join('\n');
+  const choice = (typeof window.prompt === 'function') ? window.prompt(`Move facility to which deal?\n\n${opts}`, '1') : null;
+  if(choice===null) return;
+  const idx = parseInt(choice,10) - 1;
+  if(!(idx>=0 && idx<targets.length)){ toast('Invalid choice.', 'err'); return; }
+  moveFacility(dealId, facId, targets[idx].id);
 }
 
 /* ---------- Create / move prompts ----------
@@ -3091,14 +3443,214 @@ function confirmDeleteGroup(groupId){
   toast(`${groupId} deleted; ${g.deal_ids.length} ${g.deal_ids.length===1?'deal':'deals'} returned to ungrouped.`, 'ok');
 }
 
-/* ---------- Group submission pack — minimal placeholder for Phase 3 ---------- */
+/* ---------- Group submission pack (round 2 brief, Phase 3 / B7)
+   Format: cover + per-deal one-pager + cross-deal summary table.
+   Opens in a new tab via openPackWindow() (same as per-deal packs). */
 function generateGroupPack(groupId){
   const g = (state.lendingGroups||[]).find(x => x.id === groupId);
   if(!g){ toast('Group not found.', 'err'); return; }
   const deals = dealsInGroup(groupId);
+  if(!deals.length){ toast('Add deals to the group before generating the pack.', 'err'); return; }
   const totals = computeGroupRollup(g);
-  toast(`Group pack — ${g.name}: ${deals.length} ${deals.length===1?'deal':'deals'}, ${fmtMoney(totals.totalLending)} total. Full pack UI ships in Phase 3.`, 'info');
-  logEvent(`Group pack preview generated for ${groupId}`);
+  const stability = computeGroupStability(g);
+  const html = buildGroupPackHTML(g, deals, totals, stability);
+  openPackWindow(html);
+  logEvent(`Group submission pack generated for ${groupId} (${deals.length} ${deals.length===1?'deal':'deals'})`);
+  toast(`Group pack opened · ${g.name}.`, 'ok');
+}
+function buildGroupPackHTML(group, deals, totals, stability){
+  const today = new Date().toLocaleDateString('en-AU', { day:'numeric', month:'long', year:'numeric' });
+  const lvr = totals.totalSecurity>0 ? totals.groupLvr.toFixed(1)+'%' : '—';
+  const statusBadge = group.proposal_status === 'confirmed' ? 'Confirmed split'
+                    : group.proposal_status === 'recut' ? 'Broker re-cut'
+                    : 'Proposed';
+  const stabilityBadge = stability.stable ? '<span class="pk-pill pk-pill-ok">Stable</span>'
+                       : `<span class="pk-pill pk-pill-warn">${stability.blockers.length} blocker${stability.blockers.length===1?'':'s'}</span>`;
+
+  // ---- Cover ----
+  const cover = `
+    <section class="pk-section pk-cover">
+      <div class="pk-cover-head">
+        <div class="pk-brand">DebtIQ</div>
+        <div class="pk-cover-meta">${escHtml(today)} · ${escHtml(state.userName||'Broker')}</div>
+      </div>
+      <h1 class="pk-title">${escHtml(group.name)}</h1>
+      <div class="pk-sub">Group ${escHtml(group.id)} · ${deals.length} ${deals.length===1?'deal':'deals'} · ${statusBadge} ${stabilityBadge}</div>
+      <p class="pk-lede">A coordinated lending group spanning ${deals.length} ${deals.length===1?'deal':'deals'}. Each deal stands on its own credit merits; this pack presents them as a single submission so the assessor can see how facilities, securities and entities relate across the group.</p>
+      <table class="pk-rollup">
+        <tr><th>Total lending</th><td class="pk-mono">${fmtMoney(totals.totalLending)}</td>
+            <th>Group LVR</th><td class="pk-mono">${lvr}</td></tr>
+        <tr><th>Security value</th><td class="pk-mono">${fmtMoney(totals.totalSecurity)}</td>
+            <th>Securities</th><td class="pk-mono">${totals.secCount}</td></tr>
+        <tr><th>Deals serviceable</th><td class="pk-mono">${totals.serviceableDeals} / ${totals.dealCount}</td>
+            <th>Group status</th><td>${escHtml(statusBadge)}</td></tr>
+      </table>
+    </section>`;
+
+  // ---- Deal index ----
+  const dealIndex = `
+    <section class="pk-section">
+      <h2 class="pk-h2">Deal index</h2>
+      <table class="pk-table">
+        <thead><tr><th>Deal</th><th>Applicants</th><th>Lender</th><th class="pk-r">Lending</th><th class="pk-r">Securities</th><th>Stability</th></tr></thead>
+        <tbody>
+        ${deals.map(d => {
+          const calc = d.calc || {};
+          const ents = (calc.entities||[]).filter(e=>e.included!==false).map(e=>e.name||'Entity').join(', ');
+          const ds = computeDealStability(d);
+          const facs = dealFacilities(d);
+          const facAmt = facs.reduce((s,f)=>s+(parseFloat(f.amount)||0),0);
+          const secCount = (calc.securities||[]).length;
+          return `<tr>
+            <td><b>${escHtml(d.id)}</b> · ${escHtml(d.name)}</td>
+            <td>${escHtml(ents||'—')}</td>
+            <td>${escHtml(lenderLabel(d.lender))}</td>
+            <td class="pk-mono pk-r">${fmtMoney(facAmt)}</td>
+            <td class="pk-r">${secCount}</td>
+            <td>${ds.ready?'<span class="pk-pill pk-pill-ok">Ready</span>':'<span class="pk-pill pk-pill-warn">'+escHtml(ds.blockers[0]||'Pending')+'</span>'}</td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>
+    </section>`;
+
+  // ---- Per-deal one-pagers ----
+  const dealPages = deals.map((d, i) => {
+    const calc = d.calc || {};
+    const purpose = (CALC_PURPOSES.find(p=>p.id===(calc.purpose||''))||{label:'—'}).label;
+    const ents = (calc.entities||[]).filter(e=>e.included!==false);
+    const facs = dealFacilities(d);
+    const facAmt = facs.reduce((s,f)=>s+(parseFloat(f.amount)||0),0);
+    const secs = calc.securities || [];
+    const secVal = secs.reduce((s,x)=>s+(parseFloat(x.value)||0),0);
+    const dealLvr = secVal>0 ? (facAmt/secVal*100).toFixed(1)+'%' : '—';
+    const ds = computeDealStability(d);
+    return `<section class="pk-section pk-break">
+      <div class="pk-deal-head">
+        <h2 class="pk-h2">Deal ${i+1} of ${deals.length} · ${escHtml(d.id)} — ${escHtml(d.name)}</h2>
+        <span>${ds.ready?'<span class="pk-pill pk-pill-ok">Ready</span>':'<span class="pk-pill pk-pill-warn">Pending</span>'}</span>
+      </div>
+      <table class="pk-kv">
+        <tr><th>Purpose</th><td>${escHtml(purpose)}</td></tr>
+        <tr><th>Lender</th><td>${escHtml(lenderLabel(d.lender))}</td></tr>
+        <tr><th>Applicants</th><td>${escHtml(ents.map(e=>e.name||'Entity').join(', ')||'—')}</td></tr>
+        <tr><th>Total lending</th><td class="pk-mono">${fmtMoney(facAmt)}</td></tr>
+        <tr><th>Security value</th><td class="pk-mono">${fmtMoney(secVal)}</td></tr>
+        <tr><th>Deal LVR</th><td class="pk-mono">${dealLvr}</td></tr>
+      </table>
+
+      <h3 class="pk-h3">Facilities</h3>
+      <table class="pk-table">
+        <thead><tr><th>Type</th><th class="pk-r">Amount</th><th class="pk-r">Rate</th><th class="pk-r">Term</th><th class="pk-r">IO yrs</th><th>Secured by</th></tr></thead>
+        <tbody>
+          ${facs.map(f => `<tr>
+            <td>${escHtml((f.product||'pi').toUpperCase())}</td>
+            <td class="pk-mono pk-r">${fmtMoney(f.amount)}</td>
+            <td class="pk-mono pk-r">${(parseFloat(f.rate)||0).toFixed(2)}%</td>
+            <td class="pk-mono pk-r">${parseInt(f.term_years)||30}</td>
+            <td class="pk-mono pk-r">${f.product==='io'?(parseInt(f.io_years)||0):'—'}</td>
+            <td>${escHtml(((f.security_ids||[]).map(sid => {
+              const s = secs.find(x => x.id === sid);
+              return s ? (s.address || 'Property') : sid;
+            })).join(' · ')||'—')}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+
+      ${secs.length ? `<h3 class="pk-h3">Securities</h3>
+      <table class="pk-table">
+        <thead><tr><th>Address</th><th>Type</th><th class="pk-r">Value</th></tr></thead>
+        <tbody>${secs.map(s => `<tr><td>${escHtml(s.address||'Property')}</td><td>${escHtml(s.type||'—')}</td><td class="pk-mono pk-r">${fmtMoney(s.value||0)}</td></tr>`).join('')}</tbody>
+      </table>` : ''}
+
+      ${!ds.ready ? `<div class="pk-callout"><b>Pending items:</b> ${escHtml((ds.blockers||[]).join(' · '))}</div>` : ''}
+    </section>`;
+  }).join('');
+
+  // ---- Cross-deal summary ----
+  const allFacRows = [];
+  const allSecRows = [];
+  deals.forEach(d => {
+    const calc = d.calc || {};
+    const facs = dealFacilities(d);
+    const secs = calc.securities || [];
+    facs.forEach(f => allFacRows.push({ deal: d.id, ...f }));
+    secs.forEach(s => allSecRows.push({ deal: d.id, ...s }));
+  });
+  const summary = `<section class="pk-section pk-break">
+    <h2 class="pk-h2">Cross-deal summary</h2>
+    <h3 class="pk-h3">All facilities (${allFacRows.length})</h3>
+    <table class="pk-table">
+      <thead><tr><th>Deal</th><th>Type</th><th class="pk-r">Amount</th><th class="pk-r">Rate</th><th class="pk-r">Term</th></tr></thead>
+      <tbody>${allFacRows.map(f => `<tr>
+        <td>${escHtml(f.deal)}</td>
+        <td>${escHtml((f.product||'pi').toUpperCase())}</td>
+        <td class="pk-mono pk-r">${fmtMoney(f.amount)}</td>
+        <td class="pk-mono pk-r">${(parseFloat(f.rate)||0).toFixed(2)}%</td>
+        <td class="pk-mono pk-r">${parseInt(f.term_years)||30}</td>
+      </tr>`).join('')}
+      <tr class="pk-total"><td colspan="2"><b>Group total</b></td><td class="pk-mono pk-r"><b>${fmtMoney(totals.totalLending)}</b></td><td colspan="2"></td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="pk-h3">All securities (${allSecRows.length})</h3>
+    <table class="pk-table">
+      <thead><tr><th>Deal</th><th>Address</th><th>Type</th><th class="pk-r">Value</th></tr></thead>
+      <tbody>${allSecRows.map(s => `<tr>
+        <td>${escHtml(s.deal)}</td>
+        <td>${escHtml(s.address||'Property')}</td>
+        <td>${escHtml(s.type||'—')}</td>
+        <td class="pk-mono pk-r">${fmtMoney(s.value||0)}</td>
+      </tr>`).join('')}
+      <tr class="pk-total"><td colspan="3"><b>Group security value</b></td><td class="pk-mono pk-r"><b>${fmtMoney(totals.totalSecurity)}</b></td></tr>
+      </tbody>
+    </table>
+
+    <h3 class="pk-h3">Group metrics</h3>
+    <table class="pk-kv">
+      <tr><th>Total lending</th><td class="pk-mono">${fmtMoney(totals.totalLending)}</td></tr>
+      <tr><th>Total security value</th><td class="pk-mono">${fmtMoney(totals.totalSecurity)}</td></tr>
+      <tr><th>Group LVR</th><td class="pk-mono">${lvr}</td></tr>
+      <tr><th>Serviceable deals</th><td class="pk-mono">${totals.serviceableDeals} / ${totals.dealCount}</td></tr>
+      <tr><th>Status</th><td>${escHtml(statusBadge)}</td></tr>
+    </table>
+  </section>`;
+
+  // ---- Document shell (self-contained CSS so the new tab renders standalone) ----
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escHtml(group.name)} — Group Pack</title>
+<style>
+  body{font-family:Georgia, 'Times New Roman', serif;color:#1a1a1a;background:#fafaf7;margin:0;padding:30px;line-height:1.5;font-size:13px}
+  .pk-section{background:#fff;border:1px solid #e6e6df;border-radius:6px;padding:28px 36px;margin-bottom:18px;max-width:880px;margin-left:auto;margin-right:auto}
+  .pk-cover{border-top:4px solid #1a1a1a}
+  .pk-cover-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px;padding-bottom:10px;border-bottom:1px solid #e6e6df}
+  .pk-brand{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:800;font-size:13px;letter-spacing:.2em;text-transform:uppercase}
+  .pk-cover-meta{font-family:'Menlo','Monaco',monospace;font-size:11px;color:#666}
+  .pk-title{font-size:32px;font-weight:500;letter-spacing:-.01em;margin:6px 0 4px}
+  .pk-sub{font-family:'Menlo','Monaco',monospace;font-size:11px;color:#666;margin-bottom:18px}
+  .pk-lede{font-style:italic;color:#444;font-size:14px;line-height:1.6;margin:0 0 22px;max-width:680px}
+  .pk-h2{font-size:18px;font-weight:600;letter-spacing:-.005em;margin:0 0 14px;padding-bottom:8px;border-bottom:1px solid #e6e6df}
+  .pk-h3{font-size:14px;font-weight:600;margin:18px 0 8px;color:#333;text-transform:uppercase;letter-spacing:.04em;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif}
+  .pk-mono{font-family:'Menlo','Monaco',monospace;font-variant-numeric:tabular-nums}
+  .pk-r{text-align:right}
+  .pk-rollup, .pk-table, .pk-kv{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px}
+  .pk-rollup th, .pk-table th, .pk-kv th{background:#f4f4ee;font-weight:600;text-align:left;padding:8px 12px;border-bottom:1px solid #e6e6df;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#666}
+  .pk-rollup td, .pk-table td, .pk-kv td{padding:8px 12px;border-bottom:1px solid #f0f0e8}
+  .pk-table .pk-total td{background:#f4f4ee;font-weight:600}
+  .pk-deal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .pk-pill{display:inline-block;font-family:'Menlo','Monaco',monospace;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:10px}
+  .pk-pill-ok{background:#dcf5e6;color:#0a7042}
+  .pk-pill-warn{background:#fff1cc;color:#9a6c00}
+  .pk-callout{background:#fff1cc;border-left:3px solid #c9a000;padding:10px 14px;font-size:12px;color:#5a4400;margin-top:14px;border-radius:4px}
+  .pk-break{page-break-before:always}
+  @media print { body{background:#fff;padding:0} .pk-section{box-shadow:none;border:none;margin:0;padding:32px 40px} }
+</style></head>
+<body>
+${cover}
+${dealIndex}
+${dealPages}
+${summary}
+<scr`+`ipt>setTimeout(function(){window.focus&&window.focus()},200);</scr`+`ipt>
+</body></html>`;
 }
 
 function renderDealGrid(){
@@ -3858,18 +4410,16 @@ function renderCalcEditor(){
     </div>`).join('');
 
   const nl = state.calc.newLoan;
-  /* ---- Step 7: Living expenses + Loan structure (body only — wrapped below) ---- */
+  /* ---- Step 7: Living expenses + Facilities (round 2 brief, Phase 3) ---- */
   const stepLoan = `<div class="step-frame-body">
-      <div class="inp" style="margin-bottom:12px"><label>Loan Amount (${m().sym})</label><input type="number" value="${nl.amount}" oninput="state.calc.newLoan.amount=+this.value;updateCalc()"></div>
-      <div class="slider-row"><label><span>Interest Rate</span><span class="mono" id="nlRateLbl">${(+nl.rate||0).toFixed(2)}%</span></label>
-        <input type="range" min="2" max="12" step="0.01" value="${nl.rate}" oninput="state.calc.newLoan.rate=+this.value;updateCalc()"></div>
-      <div class="slider-row"><label><span>Term</span><span class="mono" id="nlTermLbl">${nl.term} yrs</span></label>
-        <input type="range" min="5" max="30" step="1" value="${nl.term}" oninput="state.calc.newLoan.term=+this.value;updateCalc()"></div>
-      <div class="slider-row"><label><span>Adults</span><span class="mono" id="nlAdLbl">${state.calc.adults||1}</span></label>
-        <input type="range" min="1" max="2" step="1" value="${state.calc.adults||1}" oninput="state.calc.adults=+this.value;setText('nlAdLbl',this.value);updateCalc()"></div>
-      <div class="slider-row"><label><span>Dependants</span><span class="mono" id="nlDepLbl">${state.calc.dependants}</span></label>
-        <input type="range" min="0" max="6" step="1" value="${state.calc.dependants}" oninput="state.calc.dependants=+this.value;updateCalc()"></div>
-      <div class="assessed-note" id="nlAssessed">Assessed rate: ${((+nl.rate||0)+buffer*100).toFixed(2)}% (contract ${(+nl.rate||0).toFixed(2)}% + ${(buffer*100).toFixed(0)}% ${activePolicy()?(activePolicy().label+' '):''}buffer)</div>
+      <div class="fac-le-grid">
+        <div class="slider-row"><label><span>Adults</span><span class="mono" id="nlAdLbl">${state.calc.adults||1}</span></label>
+          <input type="range" min="1" max="2" step="1" value="${state.calc.adults||1}" oninput="state.calc.adults=+this.value;setText('nlAdLbl',this.value);updateCalc()"></div>
+        <div class="slider-row"><label><span>Dependants</span><span class="mono" id="nlDepLbl">${state.calc.dependants}</span></label>
+          <input type="range" min="0" max="6" step="1" value="${state.calc.dependants}" oninput="state.calc.dependants=+this.value;setText('nlDepLbl',this.value);updateCalc()"></div>
+      </div>
+      ${renderFacilityEditor()}
+      <div class="assessed-note" id="nlAssessed">Assessed rate (primary): ${((+nl.rate||0)+buffer*100).toFixed(2)}% (contract ${(+nl.rate||0).toFixed(2)}% + ${(buffer*100).toFixed(0)}% ${activePolicy()?(activePolicy().label+' '):''}buffer)</div>
     </div>`;
   /* ---- Step 2: Applicants wrap ---- */
   const s2Collapsed = isStepCollapsed('2');
@@ -3897,6 +4447,90 @@ function renderCalcEditor(){
   /* ---- Compose: 1 → 2 (which contains 4+5) → 3 → 6 → 7. Step 8 (Result) lives in the right pane. ---- */
   ed.innerHTML = stepPurpose + stepApplicants + stepSecurities + stepAssets + stepLoanWrapped;
 }
+/* ============================================================
+   FACILITY EDITOR (round 2 brief, Phase 3 — replaces Step 7's
+   single-loan inputs with a unified facility table). Primary
+   facility = state.calc.newLoan (so legacy callers keep working);
+   additional facilities live in state.calc.facilities[]. The UI
+   treats them identically — broker sees one list, can add/remove/
+   split, and assigns each facility to one or more securities for
+   cross-collateralisation.
+   ============================================================ */
+function renderFacilityEditor(){
+  const facs = allFacilities();
+  const secs = state.calc.securities || [];
+  const total = facs.reduce((s,f)=> s + (parseFloat(f.amount)||0), 0);
+  return `<div class="fac-card" id="facCard">
+    <div class="fac-card-head">
+      <h4>Facilities</h4>
+      <span class="fac-card-meta"><b>${facs.length}</b> ${facs.length===1?'facility':'facilities'} · <b>${fmtMoney(total)}</b> total</span>
+    </div>
+    <div class="fac-table" role="list">
+      ${facs.map((f, idx) => renderFacilityRow(f, idx, secs)).join('')}
+    </div>
+    <div class="fac-actions">
+      <button type="button" class="btn ghost" onclick="addFacility()">+ Add facility</button>
+      <span class="fac-hint">Splits, IO bands, lines of credit — each row stands on its own and can sit over different securities.</span>
+    </div>
+  </div>`;
+}
+function renderFacilityRow(f, idx, secs){
+  const isPrimary = !!f.isPrimary;
+  const fid = f.id;
+  // Primary's security set: state.calc.primarySecOverrides if set, else all securities.
+  let activeSet;
+  if(isPrimary){
+    activeSet = new Set(Array.isArray(state.calc.primarySecOverrides) ? state.calc.primarySecOverrides : secs.map(s=>s.id));
+  } else {
+    activeSet = new Set(Array.isArray(f.security_ids) ? f.security_ids : []);
+  }
+  const facLabel = isPrimary ? 'Primary' : (f.label || `Facility ${idx+1}`);
+  const product = f.product || 'pi';
+  return `<div class="fac-row" data-fid="${escHtml(fid)}" role="listitem">
+    <div class="fac-row-head">
+      <span class="fac-row-tag">${escHtml(facLabel)}</span>
+      <div class="fac-row-toggle" role="tablist" aria-label="Repayment type">
+        <button type="button" class="${product==='pi'?'active':''}" role="tab" aria-selected="${product==='pi'}"
+          onclick="updateFacilityField('${escArg(fid)}','product','pi')">P&amp;I</button>
+        <button type="button" class="${product==='io'?'active':''}" role="tab" aria-selected="${product==='io'}"
+          onclick="updateFacilityField('${escArg(fid)}','product','io')">IO</button>
+      </div>
+      <span class="fac-row-spacer"></span>
+      <button type="button" class="fac-row-btn" title="Split this facility into a P&amp;I + IO pair"
+        onclick="splitFacility('${escArg(fid)}')">Split</button>
+      ${isPrimary ? '' : `<button type="button" class="fac-row-btn danger" title="Remove this facility" onclick="removeFacility('${escArg(fid)}')">Remove</button>`}
+    </div>
+    <div class="fac-row-grid">
+      <div class="inp"><label>Amount (${m().sym})</label>
+        <input type="number" value="${parseFloat(f.amount)||0}"
+          oninput="updateFacilityField('${escArg(fid)}','amount',this.value)"></div>
+      <div class="inp"><label>Rate (%)</label>
+        <input type="number" step="0.01" value="${(parseFloat(f.rate)||0).toFixed(2)}"
+          oninput="updateFacilityField('${escArg(fid)}','rate',this.value)"></div>
+      <div class="inp"><label>Term (yrs)</label>
+        <input type="number" value="${parseInt(f.term_years)||30}"
+          oninput="updateFacilityField('${escArg(fid)}','term_years',this.value)"></div>
+      ${product==='io' && !isPrimary ? `<div class="inp"><label>IO years</label>
+        <input type="number" value="${parseInt(f.io_years)||0}"
+          oninput="updateFacilityField('${escArg(fid)}','io_years',this.value)"></div>` : ''}
+    </div>
+    ${secs.length ? `<div class="fac-row-secs">
+      <span class="fac-row-secs-label">Secured by:</span>
+      ${secs.map(s => {
+        const on = activeSet.has(s.id);
+        return `<button type="button" class="fac-sec-chip ${on?'on':''}" aria-pressed="${on}"
+          onclick="toggleFacilitySecurity('${escArg(fid)}','${escArg(s.id)}')"
+          title="${escHtml(s.address||'Property')} (${fmtMoney(s.value||0)})">${escHtml(shortSecLabel(s))}</button>`;
+      }).join('')}
+    </div>` : ''}
+  </div>`;
+}
+function shortSecLabel(s){
+  const a = (s.address||'').trim() || 'Property';
+  if(a.length <= 18) return a;
+  return a.slice(0, 16) + '…';
+}
+
 function addEntity(kind){
   state.calc.entities.push(newEntity(kind));
   auditLog('ENTITY_ADDED', kind||'individual', 'Broker','broker');

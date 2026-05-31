@@ -1,5 +1,97 @@
 # DebtIQ v6 — Changelog
 
+## Lending Group brief — Phase 3: facility editor + re-cut UI + group pack
+
+Second half of Part B. The model from Phase 2 is now interactive end
+to end: brokers edit facilities per deal, move them between deals in a
+group with three different interaction methods, and generate a single
+coordinated submission pack spanning the whole group.
+
+### Per-deal facility editor (B6)
+Replaces Step 7's single-loan inputs with a unified facility list.
+- **Model.** `state.calc.facilities[]` siblings `state.calc.newLoan`.
+  Primary (facility[0]) keeps living in `newLoan` so the ~30 legacy
+  callers (KPI strip, copilot, commentary, max-loan finder, AI
+  prompts) keep working. Extras live in `facilities[]`. The editor
+  treats them identically — broker sees one list.
+- **Helpers** (all globally callable): `allFacilities()`,
+  `primaryFacilityFromCalc()`, `addFacility()`, `removeFacility(id)`,
+  `splitFacility(id)`, `updateFacilityField(id, field, value)`,
+  `toggleFacilitySecurity(id, secId)`, `totalFacilityAmount()`,
+  `totalNewLoanMonthly(buffer)`.
+- **UI.** Living-expenses card (Adults + Dependants) on top; below it,
+  a Facilities card with one row per facility. Each row: P&I/IO
+  toggle · Amount · Rate · Term · IO yrs (when IO) · security chips
+  (multi-select for cross-collateralisation) · [Split] · [Remove]
+  (primary can't be removed). + Add facility button at the bottom.
+- **Serviceability multi-facility.** `computeServiceability()` now
+  sums payments across every facility. IO facilities assess at the
+  *higher* of IO-pay or post-IO P&I-revert over the residual term
+  (lender-standard treatment — avoids understating debt service).
+  LVR and DTI use `totalNewAmt` across facilities, not just primary.
+- **assessedRate** on the serviceability return still reflects the
+  primary's contract + buffer (the headline figure brokers recognise);
+  the per-facility breakdown lives in the new `r.facilities` array.
+
+### Re-cut UI (B5) — three interaction methods, per your "multiway 1,2,3"
+Brokers can move a facility from one deal to another within the same
+group three different ways — choose whatever's fastest in context.
+- **(1) Drag-and-drop.** Each facility row in group detail is
+  `draggable="true"`; deal cards accept drops via dragover/drop
+  handlers. Source row goes translucent (`.dragging`); target deal
+  gets a dashed steel-blue ring (`.drop-target`).
+- **(2) Move-control.** Each facility row has a "Move →" button
+  that opens a chooser listing the other deals in the group.
+- **(3) Keyboard alt.** Focus a facility row and press `M` to open
+  the same chooser. Row hint: *"drag a facility onto another deal
+  in this group · or use the Move button · or focus a row and
+  press M"*.
+- **`moveFacility(srcDeal, facId, tgtDeal)`** splices the facility
+  out of source, re-ids it under the target deal, pushes onto
+  target, then bumps the group's `proposal_status` to `'recut'`
+  (the proposal banner flips amber so the broker has a visual
+  marker the group is no longer the AI's proposed shape).
+- **Primary facility can't be detached** — it's the deal's anchor,
+  so a primary move means moving the whole deal (the brief calls
+  this out). Move on a primary toasts the explanation.
+
+### Group submission pack (B7) — cover + per-deal append + cross-deal summary
+- **Cover page.** Group id + name + broker + date + status badge
+  (proposed / confirmed / re-cut) + stability badge + a lede
+  paragraph in italic Georgia that frames the submission for the
+  assessor, followed by a rollup table (total lending, group LVR,
+  security value, securities count, serviceable deals, status).
+- **Deal index.** One row per deal with applicants, lender,
+  lending amount, security count, stability pill.
+- **Per-deal one-pagers** (one section per deal, page-break-before
+  in print): purpose, lender, applicants, totals, facilities table
+  (type/amount/rate/term/IO-yrs/secured-by), securities table,
+  pending-items callout when stability blockers exist.
+- **Cross-deal summary** at the end: every facility in one table
+  (with group total), every security in one table (with group
+  security value), and a final group-metrics block. Opens in a new
+  tab via the existing `openPackWindow()` helper; the new tab is
+  fully self-contained (Georgia / Menlo type, ASIC-pack look) and
+  prints to A4 with proper page breaks.
+
+### Hydration safety
+- `synthCalcForDeal(deal)` derives a minimal calc snapshot from the
+  deal blob + `DEMO_DEAL_INTEL` for seeded deals that haven't been
+  opened yet — so group rollup, stability and facility rows render
+  *something useful* even when `deal.calc` is undefined.
+- `dealFacilities`, `computeDealStability`, `computeGroupRollup`
+  all route through the synth fallback.
+
+### Smoke harness — +23 Phase 3 checks (313/313 passing)
+- Helper exposure · primary facility synthesis from newLoan ·
+  addFacility / updateFacilityField / splitFacility / removeFacility ·
+  toggleFacilitySecurity flip · computeServiceability sums across
+  facilities · `r.facilities` array · Step 7 facility editor render ·
+  group-detail re-cut row + Move button + recut hint · moveFacility
+  source/target round-trip + 'recut' status flip · group pack
+  DOCTYPE + title + cover + deal index + per-deal pages + cross-deal
+  summary + facilities/securities tables.
+
 ## Lending Group brief — Phase 2: model + Pipeline Deals/Groups toggle
 
 First half of Part B. Introduces the **Lending Group → Deals →
