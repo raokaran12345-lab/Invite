@@ -991,6 +991,27 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .wf-v-state-btn.active.discrepancy{background:var(--red);color:#fff}
 .wf-v-when{font-size:10.5px;color:var(--t3-cool);letter-spacing:.02em}
 
+/* Phase 3 — access regimes (broker wall + lender stage ownership) */
+.wf-stage.locked .wf-stage-head{opacity:.75}
+.wf-stage.locked .wf-stage-body{filter:saturate(.7)}
+.wf-stage.readonly .wf-stage-body input,
+.wf-stage.readonly .wf-stage-body select,
+.wf-stage.readonly .wf-stage-body textarea,
+.wf-stage.readonly .wf-stage-body button.wf-status-btn,
+.wf-stage.readonly .wf-stage-body button.wf-v-state-btn{cursor:not-allowed}
+.wf-stage-lock{margin-left:8px;font-size:11px;color:var(--amber);vertical-align:middle}
+.wf-stage-readonly{margin-left:8px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--t3-cool);padding:2px 7px;border-radius:var(--r-pill);background:var(--ink-bg)}
+.wf-stage-actions{display:flex;gap:8px;padding:6px 18px 10px;background:var(--paper);border-top:1px dashed var(--line);flex-wrap:wrap}
+.wf-stage-action{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:5px 11px;border:1px solid var(--steel);border-radius:var(--r-pill);background:var(--white);color:var(--steel);cursor:pointer}
+.wf-stage-action:hover{background:var(--steel-bg)}
+.wf-stage-action:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.wf-stage-action.send-back{border-color:var(--brass);color:var(--brass)}
+.wf-stage-action.send-back:hover{background:var(--amber-bg)}
+.wf-brokerbanner{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 16px;border:1px solid var(--line);border-left:3px solid var(--steel);border-radius:8px;background:var(--steel-bg);margin-bottom:14px}
+.wf-bb-cap{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--steel)}
+.wf-bb-status{font-size:13px;font-weight:600;color:var(--t1)}
+.wf-bb-note{font-size:12px;color:var(--t2);line-height:1.5;flex:1;min-width:240px}
+
 /* Docs tab — focused row highlight on openVerificationDoc() */
 #docBody tr.focused{background:var(--steel-bg);outline:2px solid var(--steel);outline-offset:-2px;animation:wfFocusPulse 2.4s ease}
 @keyframes wfFocusPulse{0%{background:rgba(59,111,181,.25)} 100%{background:var(--steel-bg)}}
@@ -3016,9 +3037,21 @@ const CAPABILITIES = {
   'member.remove'    : ['owner','admin'],
   'pii.view'         : ['owner','admin','broker','processor'],
   'pii.export'       : ['owner','admin'],
-  'audit.view'       : ['owner','admin']
+  'audit.view'       : ['owner','admin'],
+  // Workflow brief Phase 3 — per-stage edit caps + override.
+  // Owner/Admin can edit every stage. Broker edits only the Broker stage.
+  // Processor handles operational stages (pre-assess + fulfilment). Readonly
+  // edits nothing. workflow.override is the soft-gate bypass + send-back cap.
+  'stage.broker.edit'    : ['owner','admin','broker'],
+  'stage.preassess.edit' : ['owner','admin','processor'],
+  'stage.assess.edit'    : ['owner','admin'],
+  'stage.credit.edit'    : ['owner','admin'],
+  'stage.fulfil.edit'    : ['owner','admin','processor'],
+  'stage.docgen.edit'    : ['owner','admin','processor'],
+  'stage.settle.edit'    : ['owner','admin','broker'],
+  'workflow.override'    : ['owner','admin']
 };
-const SENSITIVE_CAPS = new Set(['member.role.change','member.remove','pii.export','settlement.action']);
+const SENSITIVE_CAPS = new Set(['member.role.change','member.remove','pii.export','settlement.action','workflow.override']);
 
 function accessLive(){ return !!(state.backend && state.user); }
 function currentMember(){
@@ -8597,6 +8630,10 @@ function _wfActor(){
 }
 function wfSetTaskStatus(dealId, stageId, taskId, status){
   if(!['not_started','in_progress','complete'].includes(status)) return;
+  if(typeof wfCanEditStage === 'function' && !wfCanEditStage(stageId, dealId)){
+    if(typeof requirePermission==='function') requirePermission(`stage.${stageId}.edit`, `edit ${stageId} tasks`);
+    return;
+  }
   const wf = getOrInitWorkflow(dealId);
   const stage = wf.stages[stageId]; if(!stage) return;
   const task = (stage.tasks||[]).find(t=>t.id===taskId); if(!task) return;
@@ -8611,6 +8648,7 @@ function wfSetTaskStatus(dealId, stageId, taskId, status){
   rerenderWorkflow(dealId);
 }
 function wfSetTaskCommentary(dealId, stageId, taskId, text){
+  if(typeof wfCanEditStage === 'function' && !wfCanEditStage(stageId, dealId)) return;
   const wf = getOrInitWorkflow(dealId);
   const stage = wf.stages[stageId]; if(!stage) return;
   const task = (stage.tasks||[]).find(t=>t.id===taskId); if(!task) return;
@@ -8620,6 +8658,7 @@ function wfSetTaskCommentary(dealId, stageId, taskId, text){
   // No re-render — textarea has focus.
 }
 function wfSetTaskInput(dealId, stageId, taskId, key, value){
+  if(typeof wfCanEditStage === 'function' && !wfCanEditStage(stageId, dealId)) return;
   const wf = getOrInitWorkflow(dealId);
   const stage = wf.stages[stageId]; if(!stage) return;
   const task = (stage.tasks||[]).find(t=>t.id===taskId); if(!task) return;
@@ -8643,6 +8682,10 @@ function _wfVerifyEntry(task, key){
 }
 function wfSetVerifyState(dealId, stageId, taskId, key, vstate){
   if(!['unverified','verified','discrepancy'].includes(vstate)) return;
+  if(typeof wfCanEditStage === 'function' && !wfCanEditStage(stageId, dealId)){
+    if(typeof requirePermission==='function') requirePermission(`stage.${stageId}.edit`, `verify ${stageId} fields`);
+    return;
+  }
   const t = _wfFindTask(dealId, stageId, taskId); if(!t) return;
   const v = _wfVerifyEntry(t, key); if(!v) return;
   const prev = v.state;
@@ -8655,6 +8698,7 @@ function wfSetVerifyState(dealId, stageId, taskId, key, vstate){
   rerenderWorkflow(dealId);
 }
 function wfSetVerifyEvidence(dealId, stageId, taskId, key, fieldKey, value){
+  if(typeof wfCanEditStage === 'function' && !wfCanEditStage(stageId, dealId)) return;
   const t = _wfFindTask(dealId, stageId, taskId); if(!t) return;
   const v = _wfVerifyEntry(t, key); if(!v) return;
   v.captured = v.captured || {};
@@ -8662,6 +8706,7 @@ function wfSetVerifyEvidence(dealId, stageId, taskId, key, fieldKey, value){
   saveWorkflows();
 }
 function wfSetVerifyDoc(dealId, stageId, taskId, key, docName){
+  if(typeof wfCanEditStage === 'function' && !wfCanEditStage(stageId, dealId)) return;
   const t = _wfFindTask(dealId, stageId, taskId); if(!t) return;
   const v = _wfVerifyEntry(t, key); if(!v) return;
   v.doc_id = docName || null;
@@ -8677,6 +8722,144 @@ function wfSetVerifyNotes(dealId, stageId, taskId, key, text){
 function wfToggleVerifyPanel(taskId, key){
   const el = document.querySelector(`.wf-verify[data-task="${taskId}"][data-key="${key}"]`);
   if(el) el.classList.toggle('open');
+}
+
+/* ============================================================
+   Phase 3 — access regimes (broker wall + lender stage ownership)
+   ============================================================
+   - Broker side (deal status < SUBMITTED): edits Broker stage only;
+     lender stages (preassess … settle) are NOT visible to broker.
+     After SUBMITTED → broker becomes view-only, still no lender content.
+   - Lender side (SUBMITTED+): sees the whole file; edits only stages
+     they hold the stage.X.edit cap for; everything else is read-only.
+   - Soft-gate: stages unlock sequentially. workflow.override bypasses
+     (logged with reason) and powers send-back (later → earlier stage,
+     LENDER-INTERNAL, invisible to broker, audit-logged).
+*/
+const WF_STAGE_ORDER = ['broker','preassess','assess','credit','fulfil','docgen','settle'];
+const WF_LENDER_STAGES = ['preassess','assess','credit','fulfil','docgen','settle'];
+const WF_SUBMITTED_STATUSES = new Set(['AI_PROCESSING','SUBMITTED','APPROVED']);
+
+function dealIsSubmitted(dealId){
+  const d = (typeof DEALS!=='undefined') ? DEALS.find(x=>x.id===(dealId||state.activeDeal)) : null;
+  if(!d) return false;
+  return WF_SUBMITTED_STATUSES.has(String(d.status||'').toUpperCase());
+}
+/* Broker view = current role is broker AND not owner/admin/processor.
+   In demo mode `simulateRole` rules; in live, currentMember(). */
+function wfIsBrokerView(){
+  if(typeof effectiveRole === 'function'){
+    const r = effectiveRole();
+    if(r === 'broker') return true;
+    if(r === null) return false;            // live-unwired → full access (existing behaviour)
+  }
+  return false;
+}
+function wfVisibleStages(dealId){
+  // Broker sees only the Broker stage — pre-submit AND post-submit.
+  // Lender team sees all stages once the file has been submitted (or in
+  // demo, always — there's no broker view to enforce against).
+  return wfIsBrokerView() ? ['broker'] : WF_STAGE_ORDER.slice();
+}
+function wfCanEditStage(stageId, dealId){
+  // RBAC cap check — driven by CAPABILITIES.stage.X.edit
+  const cap = `stage.${stageId}.edit`;
+  if(typeof can !== 'function') return true;
+  if(!can(cap)) return false;
+  // Post-submit: broker becomes view-only on every stage (even Broker stage).
+  if(stageId === 'broker' && wfIsBrokerView() && dealIsSubmitted(dealId)) return false;
+  return true;
+}
+function wfStageUnlocked(wf, stageId){
+  // Sequential soft-gate: a stage unlocks once the prior stage is complete.
+  // Broker stage is always unlocked. workflow.override bypasses this.
+  if(stageId === 'broker') return true;
+  if(typeof can === 'function' && can('workflow.override')) return true;
+  const idx = WF_STAGE_ORDER.indexOf(stageId);
+  if(idx <= 0) return true;
+  const prev = WF_STAGE_ORDER[idx-1];
+  return (wf.stages[prev] && wf.stages[prev].status === 'complete');
+}
+function wfCanOverride(){
+  return typeof can === 'function' ? can('workflow.override') : true;
+}
+function wfBrokerStatusBanner(dealId){
+  // Read-only "where is the file" label shown to the broker in place
+  // of the lender stages. Reveals only the stage label, never content.
+  const wf = state.workflows && state.workflows[dealId]; if(!wf) return null;
+  if(!dealIsSubmitted(dealId)) return 'With you (broker)';
+  // Find the latest stage with status in_progress or complete.
+  let label = 'With lender';
+  for(let i = WF_LENDER_STAGES.length - 1; i >= 0; i--){
+    const id = WF_LENDER_STAGES[i];
+    const s = wf.stages[id];
+    if(s && (s.status === 'in_progress' || s.status === 'complete')){
+      const def = WF_STAGES.find(x=>x.id===id);
+      label = `With lender · ${def ? def.label : id}`;
+      break;
+    }
+  }
+  return label;
+}
+function wfOverrideMoveStage(dealId, targetStageId, reason){
+  if(!requirePermission('workflow.override','move the file to another stage')) return;
+  const wf = getOrInitWorkflow(dealId);
+  const prev = wf.current_stage;
+  wf.current_stage = targetStageId;
+  const a = _wfActor();
+  saveWorkflows();
+  if(typeof auditLog==='function') auditLog('STAGE_OVERRIDE', `${prev} → ${targetStageId}${reason?` · reason: ${reason}`:''}`, a.actor, a.role);
+  rerenderWorkflow(dealId);
+}
+function wfSendBack(dealId, fromStageId, toStageId, reason){
+  if(!requirePermission('workflow.override','send the file back to a prior stage')) return;
+  const wf = getOrInitWorkflow(dealId);
+  const fi = WF_STAGE_ORDER.indexOf(fromStageId), ti = WF_STAGE_ORDER.indexOf(toStageId);
+  if(ti < 0 || ti >= fi){ toast('Send-back goes to an EARLIER stage.', 'err'); return; }
+  // Reopen the target stage, every stage between, AND the from-stage —
+  // the from-team's decision is paused while the file travels back.
+  for(let i = ti; i <= fi; i++){
+    const id = WF_STAGE_ORDER[i];
+    const s = wf.stages[id]; if(!s) continue;
+    s.status = 'in_progress';
+    s.completed_at = null;
+  }
+  wf.current_stage = toStageId;
+  const a = _wfActor();
+  saveWorkflows();
+  if(typeof auditLog==='function') auditLog('STAGE_SENT_BACK', `${fromStageId} → ${toStageId}${reason?` · reason: ${reason}`:''} · lender-internal`, a.actor, a.role);
+  toast('File sent back (lender-internal · invisible to broker).', 'ok');
+  rerenderWorkflow(dealId);
+}
+function wfPromptOverrideMove(dealId, targetStageId){
+  if(!wfCanOverride()){ toast("Your role can't override the workflow gate.", 'err'); return; }
+  const def = WF_STAGES.find(x=>x.id===targetStageId);
+  const reason = (typeof window.prompt==='function')
+    ? window.prompt(`Move this file to "${def?def.label:targetStageId}" — reason:`, 'Manual move (override)')
+    : 'override';
+  if(reason === null) return;
+  requireReauth(`override the workflow gate (move to ${def?def.label:targetStageId})`, ()=>{
+    wfOverrideMoveStage(dealId, targetStageId, reason);
+  });
+}
+function wfPromptSendBack(dealId, fromStageId){
+  if(!wfCanOverride()){ toast("Your role can't send the file back.", 'err'); return; }
+  const fi = WF_STAGE_ORDER.indexOf(fromStageId);
+  const targets = WF_STAGE_ORDER.slice(0, fi).filter(id => id !== 'broker'); // send-back is lender-internal — never goes to broker
+  if(!targets.length){ toast('No earlier lender stage to send back to.', 'err'); return; }
+  const list = targets.map((id,i)=>`${i+1}. ${(WF_STAGES.find(x=>x.id===id)||{}).label||id}`).join('\n');
+  const choice = (typeof window.prompt==='function') ? window.prompt(`Send back from "${(WF_STAGES.find(x=>x.id===fromStageId)||{}).label}" to which stage?\n\n${list}\n\nEnter the number:`,'1') : null;
+  if(choice === null) return;
+  const idx = parseInt(choice,10) - 1;
+  if(!(idx>=0 && idx<targets.length)){ toast('Invalid choice.', 'err'); return; }
+  const target = targets[idx];
+  const reason = (typeof window.prompt==='function')
+    ? window.prompt('Reason for sending back (lender-internal, invisible to broker):', 'Needs further review')
+    : '';
+  if(reason === null) return;
+  requireReauth(`send back to ${(WF_STAGES.find(x=>x.id===target)||{}).label||target}`, ()=>{
+    wfSendBack(dealId, fromStageId, target, reason);
+  });
 }
 /* Open the per-deal Docs tab and focus a specific document. */
 function openVerificationDoc(docName){
@@ -8712,20 +8895,49 @@ function renderWorkflow(host, dealId){
   }
   const wf = getOrInitWorkflow(dealId);
   const overall = wfOverallProgress(wf);
-  const stagesHtml = WF_STAGES.map(def=>{
+  // Phase 3 — filter visible stages for the broker hard-lock.
+  const brokerView = wfIsBrokerView();
+  const submitted = dealIsSubmitted(dealId);
+  const visibleStageIds = wfVisibleStages(dealId);
+  const visibleStages = WF_STAGES.filter(s => visibleStageIds.includes(s.id));
+  const brokerStatus = brokerView ? wfBrokerStatusBanner(dealId) : null;
+
+  const stagesHtml = visibleStages.map(def=>{
     const stage = wf.stages[def.id];
     const p = wfStageProgress(stage);
     const statusCls = stage.status === 'complete' ? 'complete'
                     : stage.status === 'in_progress' ? 'in-progress' : 'idle';
-    const tasksHtml = (stage.tasks||[]).map(task => _wfRenderTask(dealId, def.id, task)).join('');
-    return `<div class="wf-stage ${statusCls}" data-stage="${escHtml(def.id)}">
+    const editable = wfCanEditStage(def.id, dealId);
+    const unlocked = wfStageUnlocked(wf, def.id);
+    const tasksHtml = (stage.tasks||[]).map(task => _wfRenderTask(dealId, def.id, task, !editable)).join('');
+
+    // Override / send-back actions visible only to workflow.override holders, and
+    // only on the stage that's currently in progress (or any complete stage,
+    // for send-back). NEVER on the broker stage when in broker view.
+    let stageActions = '';
+    if(!brokerView && wfCanOverride()){
+      const isCurrent = wf.current_stage === def.id;
+      if(!isCurrent && def.id !== 'broker'){
+        stageActions += `<button type="button" class="wf-stage-action" onclick="event.stopPropagation();wfPromptOverrideMove('${escArg(dealId)}','${escArg(def.id)}')">Move file here</button>`;
+      }
+      // Send-back only meaningful from a lender stage with at least one earlier lender stage.
+      const idx = WF_STAGE_ORDER.indexOf(def.id);
+      if(idx > 1 && WF_LENDER_STAGES.includes(def.id)){
+        stageActions += `<button type="button" class="wf-stage-action send-back" onclick="event.stopPropagation();wfPromptSendBack('${escArg(dealId)}','${escArg(def.id)}')">Send back ↩</button>`;
+      }
+    }
+
+    const lockNote = !unlocked && !brokerView ? `<span class="wf-stage-lock" title="Soft-gate: previous stage not complete">🔒</span>` : '';
+    const readonlyNote = !editable && !brokerView ? `<span class="wf-stage-readonly" title="Your role can't edit this stage">read-only</span>` : '';
+
+    return `<div class="wf-stage ${statusCls} ${unlocked?'unlocked':'locked'} ${editable?'editable':'readonly'}" data-stage="${escHtml(def.id)}">
       <button class="wf-stage-head" type="button"
               onclick="wfToggleStage('${escArg(def.id)}')"
               aria-expanded="false"
               aria-label="${escHtml(def.label)} stage — ${p.done} of ${p.total} tasks complete">
         <span class="wf-stage-num">${WF_STAGES.indexOf(def)+1}</span>
         <span class="wf-stage-title">
-          <span class="wf-stage-label">${escHtml(def.label)}</span>
+          <span class="wf-stage-label">${escHtml(def.label)}${lockNote}${readonlyNote}</span>
           <span class="wf-stage-desc">${escHtml(def.desc)}</span>
         </span>
         <span class="wf-stage-progress">
@@ -8734,11 +8946,20 @@ function renderWorkflow(host, dealId){
         </span>
         <span class="wf-stage-caret">▾</span>
       </button>
+      ${stageActions ? `<div class="wf-stage-actions">${stageActions}</div>` : ''}
       <div class="wf-stage-body">
         ${tasksHtml || '<p class="wf-empty">No tasks for this stage.</p>'}
       </div>
     </div>`;
   }).join('');
+
+  // Broker-view status indicator (read-only).
+  const brokerStatusBanner = brokerView
+    ? `<div class="wf-brokerbanner" role="status">
+         <span class="wf-bb-cap">Where the file is</span>
+         <span class="wf-bb-status mono">${escHtml(brokerStatus||'')}</span>
+         ${submitted ? `<span class="wf-bb-note serif-italic">After submission, this view is read-only. The broker-tasks tab is the channel for requests from the lender.</span>` : ''}
+       </div>` : '';
 
   host.innerHTML = `
     <section class="wf-wrap" aria-label="Deal workflow">
@@ -8746,7 +8967,9 @@ function renderWorkflow(host, dealId){
         <div class="wf-head-left">
           <span class="wf-cap">Workflow</span>
           <h2 class="wf-title">One-page deal workflow</h2>
-          <p class="wf-sub">Tracks this file from broker intake to settled. Each stage groups its tasks; expand to fill in inputs, commentary, and tick status by hand.</p>
+          <p class="wf-sub">${brokerView
+            ? 'Your stage of the file. Lender stages run separately — you\'ll see status only.'
+            : 'Tracks this file from broker intake to settled. Stage editing is scoped to the team that owns it; the file moves sequentially with an authorised override available.'}</p>
         </div>
         <div class="wf-overall" role="status" aria-label="Overall file progress">
           <div class="wf-overall-pct mono">${overall.pct}%</div>
@@ -8754,13 +8977,17 @@ function renderWorkflow(host, dealId){
           <div class="wf-overall-text mono">${overall.done}/${overall.total} tasks</div>
         </div>
       </div>
+      ${brokerStatusBanner}
       ${stagesHtml}
-      <p class="wf-foot">Phase 1 — manual status by design. Field verification + access regimes + broker-tasks tab arrive in subsequent phases. All status changes are written to the audit trail.</p>
+      <p class="wf-foot">${brokerView
+        ? 'Broker view — lender stages are not shown here. The audit trail records every step and is reviewable.'
+        : 'Stage edits are scoped per role. Soft-gate unlocks each stage when the prior is complete; Owner/Admin can override with a logged reason. Send-back is lender-internal and never visible to the broker.'}</p>
     </section>`;
 }
-function _wfRenderVerifyRow(dealId, stageId, task, d){
+function _wfRenderVerifyRow(dealId, stageId, task, d, readOnly){
   const v = _wfVerifyEntry(task, d.key);
   if(!v) return '';
+  const ro = !!readOnly;
   const docType = VERIFY_DOC_TYPES[v.doc_type] || VERIFY_DOC_TYPES.generic;
   // Doc picker — restricts to this deal's docs.
   const dealDocs = (typeof DOCS!=='undefined') ? DOCS.filter(x => x.deal === dealId) : [];
@@ -8809,20 +9036,20 @@ function _wfRenderVerifyRow(dealId, stageId, task, d){
       <div class="wf-v-doc-row">
         <label class="wf-v-field" style="flex:1">
           <span class="wf-input-label">Linked document</span>
-          <select onchange="wfSetVerifyDoc('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}','${escArg(d.key)}', this.value)">
+          <select ${ro?'disabled':''} onchange="wfSetVerifyDoc('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}','${escArg(d.key)}', this.value)">
             ${docOpts}
           </select>
         </label>
       </div>
-      <div class="wf-v-grid">${evidenceHtml}</div>
+      <div class="wf-v-grid">${evidenceHtml.replace(/<(input|select|textarea)\b/g, (m)=> ro ? m + ' disabled' : m)}</div>
       <label class="wf-v-notes-wrap">
-        <span class="wf-input-label">Notes  <span class="wf-input-hint">discrepancies / context</span></span>
-        <textarea rows="2" placeholder="If the captured figure doesn't match the application, set state to Discrepancy and note why."
+        <span class="wf-input-label">Notes  <span class="wf-input-hint">${ro?'read-only':'discrepancies / context'}</span></span>
+        <textarea rows="2" placeholder="If the captured figure doesn't match the application, set state to Discrepancy and note why." ${ro?'readonly':''}
                   oninput="wfSetVerifyNotes('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}','${escArg(d.key)}', this.value)">${escHtml(v.notes||'')}</textarea>
       </label>
       <div class="wf-v-actions">
         <div class="wf-v-state-group" role="radiogroup" aria-label="Verification state">
-          ${['unverified','verified','discrepancy'].map(s=>`<button type="button" class="wf-v-state-btn ${s} ${v.state===s?'active':''}" role="radio" aria-checked="${v.state===s}" onclick="wfSetVerifyState('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}','${escArg(d.key)}','${s}')">${escHtml({unverified:'Unverified',verified:'Verified',discrepancy:'Discrepancy'}[s])}</button>`).join('')}
+          ${['unverified','verified','discrepancy'].map(s=>`<button type="button" class="wf-v-state-btn ${s} ${v.state===s?'active':''}" role="radio" aria-checked="${v.state===s}" ${ro?'disabled':''} onclick="wfSetVerifyState('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}','${escArg(d.key)}','${s}')">${escHtml({unverified:'Unverified',verified:'Verified',discrepancy:'Discrepancy'}[s])}</button>`).join('')}
         </div>
         ${verifiedNote}
       </div>
@@ -8830,20 +9057,21 @@ function _wfRenderVerifyRow(dealId, stageId, task, d){
   </div>`;
 }
 
-function _wfRenderTask(dealId, stageId, task){
+function _wfRenderTask(dealId, stageId, task, readOnly){
   const status = task.status || 'not_started';
   const statusCls = status.replace('_','-');
+  const ro = !!readOnly;
   // Phase 2 — read structured input definitions (label / type / verify / doc_type).
   const defs = Array.isArray(task.input_defs) ? task.input_defs
              : (Array.isArray(task.input_keys) ? task.input_keys.map(k=>({key:k,label:_wfPrettyKey(k)})) : []);
   const inputsHtml = defs.map(d=>{
     const v = (task.inputs && task.inputs[d.key] != null) ? task.inputs[d.key] : '';
     const inputType = d.type === 'number' ? 'number' : (d.type === 'date' ? 'date' : 'text');
-    const verifyHtml = d.verify ? _wfRenderVerifyRow(dealId, stageId, task, d) : '';
+    const verifyHtml = d.verify ? _wfRenderVerifyRow(dealId, stageId, task, d, ro) : '';
     return `<div class="wf-input ${d.verify?'has-verify':''}">
       <label>
         <span class="wf-input-label">${escHtml(d.label)}</span>
-        <input type="${inputType}" value="${escHtml(String(v))}"
+        <input type="${inputType}" value="${escHtml(String(v))}" ${ro?'readonly':''}
                oninput="wfSetTaskInput('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}','${escArg(d.key)}', this.value)"
                placeholder="—">
       </label>
@@ -8865,15 +9093,15 @@ function _wfRenderTask(dealId, stageId, task){
     <div class="wf-task-body">
       ${inputsHtml ? `<div class="wf-inputs">${inputsHtml}</div>` : ''}
       <label class="wf-commentary-wrap">
-        <span class="wf-input-label">Commentary  <span class="wf-input-hint">unlimited</span></span>
-        <textarea rows="3" placeholder="Notes for this task — figures, decisions, anything the next person needs to know."
+        <span class="wf-input-label">Commentary  <span class="wf-input-hint">${ro?'read-only':'unlimited'}</span></span>
+        <textarea rows="3" placeholder="Notes for this task — figures, decisions, anything the next person needs to know." ${ro?'readonly':''}
                   oninput="wfSetTaskCommentary('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}', this.value)">${escHtml(task.commentary||'')}</textarea>
       </label>
       <div class="wf-task-foot">
         <div class="wf-status-group" role="radiogroup" aria-label="Task status">
           ${['not_started','in_progress','complete'].map(s=>`<button type="button"
             class="wf-status-btn ${status===s?'active':''} ${s.replace('_','-')}"
-            role="radio" aria-checked="${status===s}"
+            role="radio" aria-checked="${status===s}" ${ro?'disabled':''}
             onclick="wfSetTaskStatus('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}','${s}')">${escHtml(WF_STATUS_LABELS[s])}</button>`).join('')}
         </div>
         ${updated}
