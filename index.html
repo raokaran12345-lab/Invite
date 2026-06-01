@@ -856,6 +856,87 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .stg-action{flex-shrink:0}
 .acc-mini.is-disabled{opacity:.45;cursor:not-allowed}
 
+/* ============================================================
+   ONE-PAGE DEAL WORKFLOW (Phase 1)
+   ============================================================ */
+.wf-wrap{margin-top:32px;padding-top:24px;border-top:2px solid var(--line)}
+.wf-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:18px;flex-wrap:wrap}
+.wf-head-left{flex:1;min-width:260px}
+.wf-cap{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--brass);margin-bottom:6px}
+.wf-title{font-family:var(--serif);font-style:italic;font-weight:500;font-size:22px;letter-spacing:-.005em;color:var(--t1);margin:0 0 4px}
+.wf-sub{font-size:12.5px;color:var(--t2);margin:0;line-height:1.5;max-width:640px}
+.wf-overall{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:200px}
+.wf-overall-pct{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:28px;font-weight:700;color:var(--t1);line-height:1}
+.wf-overall-bar{width:200px;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.wf-overall-fill{height:100%;background:var(--ink);border-radius:3px;transition:width .3s ease}
+.wf-overall-text{font-size:10.5px;color:var(--t3-cool);letter-spacing:.04em}
+
+.wf-stage{border:1px solid var(--line);border-radius:8px;background:var(--surface-clinical);margin-bottom:10px;overflow:hidden;transition:border-color .15s}
+.wf-stage.complete{border-color:rgba(11,107,79,.35)}
+.wf-stage.in-progress{border-color:rgba(59,111,181,.35)}
+.wf-stage-head{display:grid;grid-template-columns:36px 1fr 220px 22px;gap:14px;align-items:center;width:100%;text-align:left;padding:14px 18px;background:transparent;border:none;cursor:pointer;font-family:inherit;color:inherit;border-bottom:1px solid transparent;transition:background .12s,border-color .12s}
+.wf-stage-head:hover{background:var(--ink-bg)}
+.wf-stage-head:focus-visible{outline:none;box-shadow:var(--focus-ring) inset}
+.wf-stage.open .wf-stage-head{border-bottom-color:var(--line)}
+.wf-stage-num{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:var(--white);border:1.5px solid var(--line);font-family:var(--mono);font-size:12px;font-weight:700;color:var(--t3-cool)}
+.wf-stage.complete .wf-stage-num{background:var(--green);color:#fff;border-color:var(--green)}
+.wf-stage.in-progress .wf-stage-num{background:var(--steel);color:#fff;border-color:var(--steel)}
+.wf-stage-title{display:flex;flex-direction:column;gap:2px;min-width:0}
+.wf-stage-label{font-family:var(--serif);font-style:italic;font-weight:500;font-size:16px;color:var(--t1);letter-spacing:-.003em}
+.wf-stage-desc{font-size:11.5px;color:var(--t2);line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wf-stage-progress{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.wf-stage-progress-text{font-size:11.5px;color:var(--t2);min-width:36px;text-align:right;font-variant-numeric:tabular-nums}
+.wf-stage-progress-bar{width:120px;height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.wf-stage-progress-fill{height:100%;background:var(--steel);border-radius:3px;transition:width .3s ease}
+.wf-stage.complete .wf-stage-progress-fill{background:var(--green)}
+.wf-stage-caret{font-family:var(--mono);font-size:14px;color:var(--t3-cool);transition:transform .2s ease;display:inline-flex;justify-content:center}
+.wf-stage.open .wf-stage-caret{transform:rotate(180deg)}
+.wf-stage-body{display:none;padding:8px 18px 14px}
+.wf-stage.open .wf-stage-body{display:block;animation:fadeUp .2s ease}
+
+.wf-task{border:1px solid var(--line);border-radius:6px;background:var(--surface-paper);margin:8px 0;overflow:hidden}
+.wf-task.complete{background:rgba(11,107,79,.04);border-color:rgba(11,107,79,.25)}
+.wf-task.in-progress{background:rgba(59,111,181,.04);border-color:rgba(59,111,181,.25)}
+.wf-task-head{display:grid;grid-template-columns:14px 1fr auto 22px;gap:10px;align-items:center;width:100%;text-align:left;padding:9px 14px;background:transparent;border:none;cursor:pointer;font-family:inherit;color:inherit}
+.wf-task-head:hover{background:var(--ink-bg)}
+.wf-task-head:focus-visible{outline:none;box-shadow:var(--focus-ring) inset}
+.wf-task-status-dot{width:10px;height:10px;border-radius:50%;background:var(--line);border:1.5px solid var(--t3-cool)}
+.wf-task.in-progress .wf-task-status-dot{background:var(--steel);border-color:var(--steel)}
+.wf-task.complete .wf-task-status-dot{background:var(--green);border-color:var(--green)}
+.wf-task-title{font-size:13px;font-weight:500;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.wf-task-status-pill{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:var(--r-pill);background:var(--ink-bg);color:var(--t3-cool)}
+.wf-task.in-progress .wf-task-status-pill{background:var(--steel-bg);color:var(--steel)}
+.wf-task.complete .wf-task-status-pill{background:var(--green-bg);color:var(--green)}
+.wf-task-caret{font-family:var(--mono);font-size:12px;color:var(--t3-cool);transition:transform .2s ease}
+.wf-task.open .wf-task-caret{transform:rotate(180deg)}
+.wf-task-body{display:none;padding:0 14px 14px;border-top:1px dashed var(--line);background:var(--white)}
+.wf-task.open .wf-task-body{display:block;animation:fadeUp .18s ease}
+.wf-inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:12px 0}
+.wf-input{display:flex;flex-direction:column;gap:4px}
+.wf-input-label{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--t3-warm)}
+.wf-input-hint{text-transform:none;letter-spacing:0;font-size:10px;color:var(--t3-cool);font-weight:500;margin-left:4px;font-style:italic;font-family:var(--serif)}
+.wf-input input{font-family:var(--mono);font-size:12px;padding:7px 10px;border:1px solid var(--line);border-radius:5px;background:var(--white);color:var(--t1)}
+.wf-input input:focus-visible{outline:none;border-color:var(--steel);box-shadow:var(--focus-ring)}
+.wf-commentary-wrap{display:flex;flex-direction:column;gap:4px;margin:12px 0 8px}
+.wf-commentary-wrap textarea{font-family:var(--ui);font-size:13px;line-height:1.5;padding:9px 11px;border:1px solid var(--line);border-radius:6px;background:var(--white);color:var(--t1);resize:vertical;min-height:64px}
+.wf-commentary-wrap textarea:focus-visible{outline:none;border-color:var(--steel);box-shadow:var(--focus-ring)}
+.wf-task-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:6px}
+.wf-status-group{display:inline-flex;gap:0;border:1px solid var(--line);border-radius:var(--r-pill);overflow:hidden;background:var(--paper);padding:2px}
+.wf-status-btn{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.02em;padding:5px 12px;background:transparent;border:none;cursor:pointer;color:var(--t2);border-radius:var(--r-pill);min-height:28px}
+.wf-status-btn:hover{color:var(--t1)}
+.wf-status-btn:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.wf-status-btn.active{background:var(--ink);color:#fff}
+.wf-status-btn.active.in-progress{background:var(--steel)}
+.wf-status-btn.active.complete{background:var(--green)}
+.wf-task-updated{font-size:10.5px;color:var(--t3-cool);letter-spacing:.02em}
+.wf-foot{font-family:var(--serif);font-style:italic;font-size:11.5px;color:var(--t3-cool);margin:18px 0 0;line-height:1.55}
+.wf-empty{padding:18px;text-align:center;color:var(--t3-cool);font-style:italic;font-family:var(--serif);font-size:13px}
+@media(max-width:720px){
+  .wf-stage-head{grid-template-columns:30px 1fr 22px;row-gap:6px}
+  .wf-stage-progress{grid-column:2 / 4}
+  .wf-overall{width:100%;align-items:flex-start}
+}
+
 /* Purpose tiles (Step 1) */
 .purpose-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
 .purpose-tile{
@@ -2403,6 +2484,13 @@ const state = {
   lendingGroups:[],         // [{ id, name, kind, proposal_status, deal_ids:[], created_at, data }]
   activeGroup:null,         // group id when viewing a group's detail screen
   pipelineView:'deals',     // 'deals' | 'groups' — Pipeline tab toggle
+  // One-page deal workflow (MASTER program — workflow brief, Phase 1).
+  // Keyed by deal id → { current_stage, stages:{ stageId:{status,tasks[]} } }.
+  // Persisted under WORKFLOW_LS_KEY by save/loadWorkflows; mirrored onto the
+  // deal record (deal.workflow) so saveDeal round-trips it when backend live.
+  // Phase 1 = data model + UI. Field verification (Phase 2), access regimes
+  // (Phase 3), broker-tasks tab (Phase 4) ride on top in later commits.
+  workflows:{},
   // Access control / RBAC (MASTER program Phase 5 — owner-held).
   // DEMO-FIRST: this is an in-memory org+membership model persisted to
   // localStorage (ACCESS_LS_KEY), mirroring the DRAFT migration
@@ -5025,12 +5113,18 @@ function renderServiceability(el){
     <div class="calc-split">
       <div id="calcEditor"></div>
       <div class="calc-results" id="calcResults"></div>
-    </div>`;
+    </div>
+    ${state.activeDeal ? `<div id="dealWorkflow"></div>` : ''}`;
   if(state.svcTab==='manual'){ renderManualEditor(); renderManualResults(true); }
   else {
     renderCalcEditor();
     if(state.calcRevealed){ renderCalcResults(true); }
     else { runCalcReveal(); }
+  }
+  // One-page deal workflow (Phase 1) — Decision/Worksheet stays above; workflow lives below.
+  if(state.activeDeal){
+    const wfHost = document.getElementById('dealWorkflow');
+    if(wfHost) renderWorkflow(wfHost, state.activeDeal);
   }
   updateStatusStrip();
 }
@@ -7972,6 +8066,356 @@ function renderSettlement(el){
       <div class="stg-track">${steps}</div>
     </div>`;
 }
+
+/* ============================================================
+   ONE-PAGE DEAL WORKFLOW  (MASTER program — workflow brief, Phase 1)
+   ------------------------------------------------------------
+   Sits BELOW the existing Decision + Worksheet on the deal page.
+   Adds a stage-grouped task list that carries the file from intake
+   to settlement. Decision/Worksheet are untouched.
+
+   Phase 1 (this commit): data model + collapsible stage UI + tasks
+     with manual status + unlimited commentary + per-stage progress
+     rollup + overall file %. Audit-logged.
+
+   Deferred to subsequent phases:
+     · Phase 2: field-level 3-state verification with doc-type
+       evidence + "open verification document" → Docs tab.
+     · Phase 3: access regimes — broker hard-lock (lender stages
+       invisible) vs lender stage-ownership editing + soft-gate +
+       authorised override + send-back.
+     · Phase 4: broker-tasks tab (sanctioned cross-wall channel).
+     · Phase 5: voice / UX-QA / re-verify.
+
+   Persistence: localStorage `debtiq.workflows.v1` keyed by deal id,
+   AND mirrored onto deal.workflow so the existing saveDeal()
+   round-trips it on the live path. No /api/* contract change; no
+   schema applied. A reviewable migration is proposed if/when the
+   live path needs a dedicated column (ARCH-REVIEW at Phase 3).
+   ============================================================ */
+const WORKFLOW_LS_KEY = 'debtiq.workflows.v1';
+const WF_STAGES = [
+  { id:'broker',    label:'Broker',              owner_cap:'stage.broker.edit',
+    desc:'Intake from the client; package the file before submission.',
+    tasks:[
+      { title:'Capture applicants & ownership',
+        inputs:['applicants','ownership_pct'] },
+      { title:'Capture securities & valuations',
+        inputs:['securities','est_value'] },
+      { title:'Confirm deal purpose & type',
+        inputs:['purpose','deal_type'] },
+      { title:'Indicative serviceability run',
+        inputs:['indicative_amount','indicative_verdict'] }
+    ]},
+  { id:'preassess', label:'Pre-assessment',      owner_cap:'stage.preassess.edit',
+    desc:'First-pass validation by the lender — income, liabilities, valuation order.',
+    tasks:[
+      { title:'Income validation',
+        inputs:['evidence_received','assessed_income'] },
+      { title:'Liability validation',
+        inputs:['total_existing','hecs_handled'] },
+      { title:'Order valuation',
+        inputs:['valuer','order_ref','expected_date'] },
+      { title:'Initial servicing check',
+        inputs:['dsr','ndi'] }
+    ]},
+  { id:'assess',    label:'Assessment',          owner_cap:'stage.assess.edit',
+    desc:'Detailed credit assessment against policy.',
+    tasks:[
+      { title:'Detailed credit assessment',
+        inputs:['policy_lender','assessment_notes'] },
+      { title:'Policy checks (LVR · DTI · LMI)',
+        inputs:['lvr','dti','lmi_applicable'] },
+      { title:'HEM reconciliation',
+        inputs:['declared_monthly','hem_band','applied_floor'] },
+      { title:'Risk + mitigants',
+        inputs:['risk_rating','mitigants'] }
+    ]},
+  { id:'credit',    label:'Credit',              owner_cap:'stage.credit.edit',
+    desc:'Credit decision and conditions issued to the broker.',
+    tasks:[
+      { title:'Credit decision',
+        inputs:['outcome','decision_date'] },
+      { title:'Issue conditions',
+        inputs:['conditions'] },
+      { title:'Approval letter prepared',
+        inputs:['letter_ref'] }
+    ]},
+  { id:'fulfil',    label:'Fulfilment',          owner_cap:'stage.fulfil.edit',
+    desc:'Loan documents prepared, issued and signed.',
+    tasks:[
+      { title:'Loan documents prepared',
+        inputs:['doc_pack_ref'] },
+      { title:'Documents issued',
+        inputs:['issued_date','channel'] },
+      { title:'Documents signed & verified',
+        inputs:['signed_date','verifier'] }
+    ]},
+  { id:'docgen',    label:'Document generation', owner_cap:'stage.docgen.edit',
+    desc:'Generate disclosure suite + lender documents.',
+    tasks:[
+      { title:'Generate disclosure suite',
+        inputs:['credit_guide_v','quote_v','proposal_v'] },
+      { title:'Pre-contractual statement',
+        inputs:['precontract_v'] },
+      { title:'Settlement letter',
+        inputs:['settle_letter_v'] }
+    ]},
+  { id:'settle',    label:'Settlement',          owner_cap:'stage.settle.edit',
+    desc:'Coordinate to the conveyancing handoff (no trust money).',
+    tasks:[
+      { title:'ELNO workspace ready',
+        inputs:['elno','workspace_id'] },
+      { title:'Settlement booked',
+        inputs:['settle_date'] },
+      { title:'Discharge of vendor mortgage',
+        inputs:['outgoing_mortgagee','discharge_booked'] },
+      { title:'Funds cleared',
+        inputs:['large_deposit_flag','source_clearance'] },
+      { title:'Settled',
+        inputs:['settled_date'] }
+    ]}
+];
+const WF_STATUS_LABELS = {
+  not_started:'Not started',
+  in_progress:'In progress',
+  complete:'Complete'
+};
+
+function loadWorkflows(){
+  try{
+    const raw = localStorage.getItem(WORKFLOW_LS_KEY);
+    if(!raw) return;
+    const obj = JSON.parse(raw);
+    if(obj && typeof obj === 'object') state.workflows = obj;
+    // Mirror back onto each deal object so live saveDeal can round-trip.
+    Object.keys(state.workflows||{}).forEach(id=>{
+      const d = (typeof DEALS!=='undefined') ? DEALS.find(x=>x.id===id) : null;
+      if(d) d.workflow = state.workflows[id];
+    });
+  }catch(e){}
+}
+function saveWorkflows(){
+  try{ localStorage.setItem(WORKFLOW_LS_KEY, JSON.stringify(state.workflows||{})); }catch(e){}
+}
+function getOrInitWorkflow(dealId){
+  const id = dealId || state.activeDeal || '_unsaved';
+  state.workflows = state.workflows || {};
+  if(!state.workflows[id]){
+    const stages = {};
+    WF_STAGES.forEach(s=>{
+      stages[s.id] = {
+        status:'not_started',
+        started_at:null,
+        completed_at:null,
+        tasks: s.tasks.map((t,i)=>({
+          id: `t_${s.id}_${i+1}`,
+          title: t.title,
+          status:'not_started',
+          inputs: {},
+          input_keys: t.inputs || [],
+          commentary: '',
+          verify: [],                       // Phase 2 — field verification rows
+          updated_at: null,
+          updated_by: null
+        }))
+      };
+    });
+    state.workflows[id] = {
+      version: 1,
+      current_stage: 'broker',
+      stages,
+      created_at: new Date().toISOString()
+    };
+    // Mirror onto the deal object so live saveDeal sees it.
+    const d = (typeof DEALS!=='undefined') ? DEALS.find(x=>x.id===id) : null;
+    if(d) d.workflow = state.workflows[id];
+    saveWorkflows();
+  }
+  return state.workflows[id];
+}
+function wfStageProgress(stage){
+  const total = (stage.tasks||[]).length;
+  const done = (stage.tasks||[]).filter(t=>t.status==='complete').length;
+  const inProg = (stage.tasks||[]).filter(t=>t.status==='in_progress').length;
+  return { done, total, inProg, pct: total ? Math.round(done/total*100) : 0 };
+}
+function wfOverallProgress(wf){
+  let done=0, total=0;
+  Object.values(wf.stages||{}).forEach(s=>{
+    total += (s.tasks||[]).length;
+    done += (s.tasks||[]).filter(t=>t.status==='complete').length;
+  });
+  return { done, total, pct: total ? Math.round(done/total*100) : 0 };
+}
+function _wfRollupStage(stage){
+  const p = wfStageProgress(stage);
+  const now = new Date().toISOString();
+  if(p.pct === 100){
+    stage.status = 'complete';
+    if(!stage.completed_at) stage.completed_at = now;
+    if(!stage.started_at)   stage.started_at = now;
+  } else if(p.done > 0 || p.inProg > 0){
+    stage.status = 'in_progress';
+    if(!stage.started_at)   stage.started_at = now;
+    stage.completed_at = null;
+  } else {
+    stage.status = 'not_started';
+    stage.started_at = null;
+    stage.completed_at = null;
+  }
+}
+function _wfActor(){
+  // Single source of truth — falls back to the current member or just 'Broker'.
+  const m = (typeof currentMember==='function') ? currentMember() : null;
+  return { actor: (m && m.name) || (state.user && state.user.email) || 'Broker', role: (m && m.role) || 'broker' };
+}
+function wfSetTaskStatus(dealId, stageId, taskId, status){
+  if(!['not_started','in_progress','complete'].includes(status)) return;
+  const wf = getOrInitWorkflow(dealId);
+  const stage = wf.stages[stageId]; if(!stage) return;
+  const task = (stage.tasks||[]).find(t=>t.id===taskId); if(!task) return;
+  const prev = task.status;
+  task.status = status;
+  const a = _wfActor();
+  task.updated_at = new Date().toISOString();
+  task.updated_by = a.actor;
+  _wfRollupStage(stage);
+  saveWorkflows();
+  if(typeof auditLog==='function') auditLog('WF_TASK_STATUS', `${stageId}/${taskId} ${prev} → ${status}`, a.actor, a.role);
+  rerenderWorkflow(dealId);
+}
+function wfSetTaskCommentary(dealId, stageId, taskId, text){
+  const wf = getOrInitWorkflow(dealId);
+  const stage = wf.stages[stageId]; if(!stage) return;
+  const task = (stage.tasks||[]).find(t=>t.id===taskId); if(!task) return;
+  task.commentary = String(text||'');
+  task.updated_at = new Date().toISOString();
+  saveWorkflows();
+  // No re-render — textarea has focus.
+}
+function wfSetTaskInput(dealId, stageId, taskId, key, value){
+  const wf = getOrInitWorkflow(dealId);
+  const stage = wf.stages[stageId]; if(!stage) return;
+  const task = (stage.tasks||[]).find(t=>t.id===taskId); if(!task) return;
+  task.inputs[key] = value;
+  task.updated_at = new Date().toISOString();
+  saveWorkflows();
+}
+function wfToggleStage(stageId){
+  const el = document.querySelector(`.wf-stage[data-stage="${stageId}"]`);
+  if(el) el.classList.toggle('open');
+}
+function wfToggleTask(dealId, stageId, taskId){
+  const el = document.querySelector(`.wf-task[data-task="${taskId}"]`);
+  if(el) el.classList.toggle('open');
+}
+function rerenderWorkflow(dealId){
+  const host = document.getElementById('dealWorkflow');
+  if(host) renderWorkflow(host, dealId || state.activeDeal);
+}
+
+function _wfPrettyKey(k){
+  return String(k||'').replace(/_/g,' ').replace(/\b\w/g, c=>c.toUpperCase());
+}
+function renderWorkflow(host, dealId){
+  if(!host) return;
+  if(!dealId){
+    host.innerHTML = `<div class="wf-empty"><p>Open a deal to use its workflow.</p></div>`;
+    return;
+  }
+  const wf = getOrInitWorkflow(dealId);
+  const overall = wfOverallProgress(wf);
+  const stagesHtml = WF_STAGES.map(def=>{
+    const stage = wf.stages[def.id];
+    const p = wfStageProgress(stage);
+    const statusCls = stage.status === 'complete' ? 'complete'
+                    : stage.status === 'in_progress' ? 'in-progress' : 'idle';
+    const tasksHtml = (stage.tasks||[]).map(task => _wfRenderTask(dealId, def.id, task)).join('');
+    return `<div class="wf-stage ${statusCls}" data-stage="${escHtml(def.id)}">
+      <button class="wf-stage-head" type="button"
+              onclick="wfToggleStage('${escArg(def.id)}')"
+              aria-expanded="false"
+              aria-label="${escHtml(def.label)} stage — ${p.done} of ${p.total} tasks complete">
+        <span class="wf-stage-num">${WF_STAGES.indexOf(def)+1}</span>
+        <span class="wf-stage-title">
+          <span class="wf-stage-label">${escHtml(def.label)}</span>
+          <span class="wf-stage-desc">${escHtml(def.desc)}</span>
+        </span>
+        <span class="wf-stage-progress">
+          <span class="wf-stage-progress-text mono">${p.done}/${p.total}</span>
+          <span class="wf-stage-progress-bar"><span class="wf-stage-progress-fill" style="width:${p.pct}%"></span></span>
+        </span>
+        <span class="wf-stage-caret">▾</span>
+      </button>
+      <div class="wf-stage-body">
+        ${tasksHtml || '<p class="wf-empty">No tasks for this stage.</p>'}
+      </div>
+    </div>`;
+  }).join('');
+
+  host.innerHTML = `
+    <section class="wf-wrap" aria-label="Deal workflow">
+      <div class="wf-head">
+        <div class="wf-head-left">
+          <span class="wf-cap">Workflow</span>
+          <h2 class="wf-title">One-page deal workflow</h2>
+          <p class="wf-sub">Tracks this file from broker intake to settled. Each stage groups its tasks; expand to fill in inputs, commentary, and tick status by hand.</p>
+        </div>
+        <div class="wf-overall" role="status" aria-label="Overall file progress">
+          <div class="wf-overall-pct mono">${overall.pct}%</div>
+          <div class="wf-overall-bar"><div class="wf-overall-fill" style="width:${overall.pct}%"></div></div>
+          <div class="wf-overall-text mono">${overall.done}/${overall.total} tasks</div>
+        </div>
+      </div>
+      ${stagesHtml}
+      <p class="wf-foot">Phase 1 — manual status by design. Field verification + access regimes + broker-tasks tab arrive in subsequent phases. All status changes are written to the audit trail.</p>
+    </section>`;
+}
+function _wfRenderTask(dealId, stageId, task){
+  const status = task.status || 'not_started';
+  const statusCls = status.replace('_','-');
+  const inputsHtml = (task.input_keys||[]).map(k=>{
+    const v = (task.inputs && task.inputs[k] != null) ? task.inputs[k] : '';
+    return `<label class="wf-input">
+      <span class="wf-input-label">${escHtml(_wfPrettyKey(k))}</span>
+      <input type="text" value="${escHtml(String(v))}"
+             oninput="wfSetTaskInput('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}','${escArg(k)}', this.value)"
+             placeholder="—">
+    </label>`;
+  }).join('');
+  const updated = task.updated_at
+    ? `<span class="wf-task-updated mono">updated ${new Date(task.updated_at).toLocaleString('en-AU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}${task.updated_by?` · ${escHtml(task.updated_by)}`:''}</span>`
+    : '';
+  return `<div class="wf-task ${statusCls}" data-task="${escHtml(task.id)}">
+    <button class="wf-task-head" type="button"
+            onclick="wfToggleTask('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}')"
+            aria-expanded="false">
+      <span class="wf-task-status-dot" aria-hidden="true"></span>
+      <span class="wf-task-title">${escHtml(task.title)}</span>
+      <span class="wf-task-status-pill">${escHtml(WF_STATUS_LABELS[status]||status)}</span>
+      <span class="wf-task-caret">▾</span>
+    </button>
+    <div class="wf-task-body">
+      ${inputsHtml ? `<div class="wf-inputs">${inputsHtml}</div>` : ''}
+      <label class="wf-commentary-wrap">
+        <span class="wf-input-label">Commentary  <span class="wf-input-hint">unlimited</span></span>
+        <textarea rows="3" placeholder="Notes for this task — figures, decisions, anything the next person needs to know."
+                  oninput="wfSetTaskCommentary('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}', this.value)">${escHtml(task.commentary||'')}</textarea>
+      </label>
+      <div class="wf-task-foot">
+        <div class="wf-status-group" role="radiogroup" aria-label="Task status">
+          ${['not_started','in_progress','complete'].map(s=>`<button type="button"
+            class="wf-status-btn ${status===s?'active':''} ${s.replace('_','-')}"
+            role="radio" aria-checked="${status===s}"
+            onclick="wfSetTaskStatus('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}','${s}')">${escHtml(WF_STATUS_LABELS[s])}</button>`).join('')}
+        </div>
+        ${updated}
+      </div>
+    </div>
+  </div>`;
+}
+
 function loadCompliance(){
   try{ const o = JSON.parse(localStorage.getItem(COMPLIANCE_LS_KEY)||'null'); if(o && typeof o==='object') state.compliance = o; }catch(e){}
 }
@@ -10285,6 +10729,7 @@ function showDesignPreview(){
   loadAccessState();          // pull RBAC org/membership slice (Phase 5 — owner-held)
   loadCompliance();           // pull compliance-evidence slice (Phase 6)
   loadSettlement();           // pull settlement-coordination slice (Phase 7)
+  loadWorkflows();            // pull one-page workflow slice (workflow brief Phase 1)
   startSession();             // begin the session clock (timeout + re-auth tracking)
   await initBackend();
   renderLoginMode();

@@ -1,5 +1,57 @@
 # DebtIQ v6 — Changelog
 
+## Workflow brief — Phase 1: one-page deal workflow (data model + UI)
+
+Adds the staged task workflow on the deal page, **below** the existing
+Decision + Worksheet (which stay exactly as they are). Additive — no
+existing renderer, engine, RBAC, audit, or `/api/*` contract changed.
+
+- **Data model.** `state.workflows[dealId] = { version, current_stage,
+  stages:{ broker, preassess, assess, credit, fulfil, docgen, settle } }`.
+  Each stage carries `status` + `started_at` + `completed_at` + a
+  seeded `tasks[]`. Each task: `id, title, status (not_started |
+  in_progress | complete), inputs{}, input_keys[], commentary, verify[],
+  updated_at, updated_by`.
+- **Stage seeds** (with input-keys per task — typed values appear as
+  fields in the task body):
+  - Broker — applicants · securities · purpose · indicative serviceability
+  - Pre-assessment — income · liabilities · valuation · initial servicing
+  - Assessment — credit assessment · policy checks · HEM reconciliation · risk
+  - Credit — decision · conditions · approval letter
+  - Fulfilment — docs prepared · docs issued · docs signed
+  - Document generation — disclosure suite · pre-contractual · settle letter
+  - Settlement — ELNO workspace · booked · discharge · funds · settled
+- **Helpers** (globally callable):
+  `getOrInitWorkflow(dealId)`, `wfStageProgress(stage)`,
+  `wfOverallProgress(wf)`, `wfSetTaskStatus(dealId,stageId,taskId,status)`,
+  `wfSetTaskCommentary(...)`, `wfSetTaskInput(...,key,value)`,
+  `wfToggleStage(stageId)`, `wfToggleTask(...)`, `rerenderWorkflow(dealId)`.
+- **UI.** Sits below the calc-split on the Calculate page when a deal is
+  active. Header carries overall file % + a thin progress bar + tasks
+  done/total. Below: seven collapsible stage cards (collapsed by
+  default), each with a per-stage progress bar + done/total. Each task
+  expands inline: input fields (per stage seed) · unlimited commentary
+  textarea · manual three-state status picker. Stage rollup is
+  automatic: any task in_progress → stage in_progress; all complete →
+  stage complete. Focus rings + keyboard-friendly.
+- **Persistence.** localStorage `debtiq.workflows.v1`, keyed by deal
+  id; mirrored onto `deal.workflow` so the existing `saveDeal()` path
+  round-trips it in live mode without contract change. A reviewable
+  migration (dedicated column / table) is proposed at Phase 3 when
+  access regimes need it.
+- **Audit.** Every status change writes `WF_TASK_STATUS` with actor
+  (current member / signed-in email / 'Broker') + role to the existing
+  audit trail.
+- **Out of scope for Phase 1 — deferred to subsequent commits:**
+  Phase 2 field-level 3-state verification with doc-type evidence +
+  "open verification document" → Docs tab. Phase 3 access regimes —
+  broker hard-lock (lender stages invisible) vs lender stage-ownership
+  editing; sequential soft-gate + authorised override; broker-invisible
+  send-back. Phase 4 broker-tasks tab (raise → respond → close).
+  Phase 5 voice / UX-QA sweep.
+- Smoke: +11 Phase 1 checks (**395/395 passing**).
+
+
 ## MASTER program — Regulatory Source Manifest ingest + provenance layer
 
 Ingested the authority document (`docs/regulatory-source-manifest.md`) and
