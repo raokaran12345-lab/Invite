@@ -956,6 +956,44 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .wf-status-btn.active.complete{background:var(--green)}
 .wf-task-updated{font-size:10.5px;color:var(--t3-cool);letter-spacing:.02em}
 .wf-foot{font-family:var(--serif);font-style:italic;font-size:11.5px;color:var(--t3-cool);margin:18px 0 0;line-height:1.55}
+
+/* Phase 2 — field-level verification */
+.wf-input.has-verify{grid-column:1 / -1}
+.wf-verify{margin-top:6px;border:1px solid var(--line);border-radius:6px;background:var(--paper);overflow:hidden}
+.wf-verify.verified{border-color:rgba(11,107,79,.35);background:rgba(11,107,79,.04)}
+.wf-verify.discrepancy{border-color:rgba(169,38,38,.35);background:rgba(169,38,38,.04)}
+.wf-v-head{display:flex;align-items:center;gap:10px;padding:7px 12px;flex-wrap:wrap}
+.wf-v-badge{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:var(--r-pill);background:var(--ink-bg);color:var(--t3-cool)}
+.wf-v-badge.verified{background:var(--green-bg);color:var(--green)}
+.wf-v-badge.discrepancy{background:var(--red-bg);color:var(--red)}
+.wf-v-doctype{font-family:var(--serif);font-style:italic;font-size:12px;color:var(--t2)}
+.wf-v-openlink{margin-left:auto;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--steel);background:none;border:none;cursor:pointer;padding:0}
+.wf-v-openlink:hover{text-decoration:underline}
+.wf-v-openlink.muted{color:var(--t3-cool);cursor:not-allowed}
+.wf-v-toggle{background:none;border:1px solid var(--line);border-radius:5px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t3-cool);font-family:var(--mono);font-size:11px;transition:transform .15s}
+.wf-verify.open .wf-v-toggle{transform:rotate(180deg)}
+.wf-v-body{display:none;padding:8px 12px 12px;border-top:1px dashed var(--line);background:var(--white)}
+.wf-verify.open .wf-v-body{display:block;animation:fadeUp .18s ease}
+.wf-v-doc-row{margin-bottom:8px}
+.wf-v-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:8px}
+.wf-v-field{display:flex;flex-direction:column;gap:3px}
+.wf-v-field.wf-v-check{flex-direction:row;align-items:center;gap:6px;padding-top:18px}
+.wf-v-field input[type=text],.wf-v-field input[type=number],.wf-v-field input[type=date],.wf-v-field select{font-family:var(--mono);font-size:12px;padding:6px 9px;border:1px solid var(--line);border-radius:5px;background:var(--white);color:var(--t1)}
+.wf-v-field input:focus-visible,.wf-v-field select:focus-visible{outline:none;border-color:var(--steel);box-shadow:var(--focus-ring)}
+.wf-v-notes-wrap{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.wf-v-notes-wrap textarea{font-family:var(--ui);font-size:12px;padding:7px 10px;border:1px solid var(--line);border-radius:5px;background:var(--white);color:var(--t1);resize:vertical;min-height:48px}
+.wf-v-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.wf-v-state-group{display:inline-flex;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--paper);padding:2px}
+.wf-v-state-btn{font-family:var(--mono);font-size:10.5px;font-weight:700;padding:5px 11px;background:transparent;border:none;cursor:pointer;color:var(--t2);border-radius:var(--r-pill)}
+.wf-v-state-btn:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.wf-v-state-btn.active.unverified{background:var(--ink);color:#fff}
+.wf-v-state-btn.active.verified{background:var(--green);color:#fff}
+.wf-v-state-btn.active.discrepancy{background:var(--red);color:#fff}
+.wf-v-when{font-size:10.5px;color:var(--t3-cool);letter-spacing:.02em}
+
+/* Docs tab — focused row highlight on openVerificationDoc() */
+#docBody tr.focused{background:var(--steel-bg);outline:2px solid var(--steel);outline-offset:-2px;animation:wfFocusPulse 2.4s ease}
+@keyframes wfFocusPulse{0%{background:rgba(59,111,181,.25)} 100%{background:var(--steel-bg)}}
 .wf-empty{padding:18px;text-align:center;color:var(--t3-cool);font-style:italic;font-family:var(--serif);font-size:13px}
 @media(max-width:720px){
   .wf-stage-head{grid-template-columns:30px 1fr 22px;row-gap:6px}
@@ -5995,7 +6033,7 @@ function renderDocBody(){
   const statusCls = {Verified:'green', Processing:'neutral', Review:'amber'};
   const body = document.getElementById('docBody'); if(!body) return;
   body.innerHTML = DOCS.map((d,i)=>`
-    <tr>
+    <tr data-doc-name="${escHtml(d.name)}" ${state.focusedDocName===d.name?'class="focused"':''}>
       <td style="font-weight:600">${escHtml(d.name)}</td>
       <td>${escHtml(d.deal)}</td><td>${escHtml(d.type)}</td>
       <td><div class="conf-bar"><span style="width:${d.conf}%"></span></div> <span class="mono">${d.conf}%</span></td>
@@ -8210,86 +8248,209 @@ function renderSettlement(el){
    live path needs a dedicated column (ARCH-REVIEW at Phase 3).
    ============================================================ */
 const WORKFLOW_LS_KEY = 'debtiq.workflows.v1';
+// VERIFY_DOC_TYPES — schema of evidence to capture per document type.
+// Each verifiable workflow input declares the doc_type its evidence comes
+// from; the inline verify panel renders the matching fields.
+const VERIFY_DOC_TYPES = {
+  payslip: { label:'Payslip', fields:[
+    { key:'frequency',  label:'Pay frequency', type:'select', options:['Weekly','Fortnightly','Monthly'] },
+    { key:'pay_date',   label:'Pay date',      type:'date' },
+    { key:'base_amount',label:'Base amount',   type:'number' },
+    { key:'ytd',        label:'Year-to-date',  type:'number' }
+  ]},
+  bank_statement: { label:'Bank statement', fields:[
+    { key:'account',         label:'Account / BSB' },
+    { key:'period',          label:'Statement period' },
+    { key:'salary_credits',  label:'Salary credits (total)', type:'number' },
+    { key:'regular_debits',  label:'Regular debits (total)', type:'number' }
+  ]},
+  noa: { label:'Tax return / NOA', fields:[
+    { key:'fy',             label:'Financial year' },
+    { key:'taxable_income', label:'Taxable income', type:'number' }
+  ]},
+  id_document: { label:'ID document', fields:[
+    { key:'doc_type', label:'Type',    type:'select', options:['Passport','Driver licence','Medicare','Birth certificate'] },
+    { key:'expiry',   label:'Expiry',  type:'date' },
+    { key:'name_match', label:'Name matches application', type:'checkbox' }
+  ]},
+  contract: { label:'Contract of sale', fields:[
+    { key:'property', label:'Property address' },
+    { key:'price',    label:'Contract price', type:'number' }
+  ]},
+  valuation: { label:'Valuation', fields:[
+    { key:'valuer',       label:'Valuer' },
+    { key:'date',         label:'Date', type:'date' },
+    { key:'value',        label:'Reported value', type:'number' },
+    { key:'risk_rating',  label:'Risk rating' }
+  ]},
+  generic: { label:'Document', fields:[
+    { key:'reference', label:'Reference / period' },
+    { key:'value',     label:'Value' }
+  ]}
+};
+
 const WF_STAGES = [
   { id:'broker',    label:'Broker',              owner_cap:'stage.broker.edit',
     desc:'Intake from the client; package the file before submission.',
     tasks:[
       { title:'Capture applicants & ownership',
-        inputs:['applicants','ownership_pct'] },
+        inputs:[
+          {key:'applicants',     label:'Applicants'},
+          {key:'ownership_pct',  label:'Ownership %'},
+          {key:'identity_doc',   label:'Primary identity doc', verify:true, doc_type:'id_document'}
+        ] },
       { title:'Capture securities & valuations',
-        inputs:['securities','est_value'] },
+        inputs:[
+          {key:'securities',     label:'Securities'},
+          {key:'est_value',      label:'Estimated value', type:'number'},
+          {key:'contract',       label:'Contract of sale', verify:true, doc_type:'contract'}
+        ] },
       { title:'Confirm deal purpose & type',
-        inputs:['purpose','deal_type'] },
+        inputs:[
+          {key:'purpose',   label:'Purpose'},
+          {key:'deal_type', label:'Deal type'}
+        ] },
       { title:'Indicative serviceability run',
-        inputs:['indicative_amount','indicative_verdict'] }
+        inputs:[
+          {key:'indicative_amount',  label:'Indicative amount', type:'number'},
+          {key:'indicative_verdict', label:'Indicative verdict'}
+        ] }
     ]},
   { id:'preassess', label:'Pre-assessment',      owner_cap:'stage.preassess.edit',
     desc:'First-pass validation by the lender — income, liabilities, valuation order.',
     tasks:[
       { title:'Income validation',
-        inputs:['evidence_received','assessed_income'] },
+        inputs:[
+          {key:'payslip_evidence',  label:'Payslip',  verify:true, doc_type:'payslip'},
+          {key:'noa_evidence',      label:'NOA / tax return', verify:true, doc_type:'noa'},
+          {key:'assessed_income',   label:'Assessed income', type:'number'}
+        ] },
       { title:'Liability validation',
-        inputs:['total_existing','hecs_handled'] },
+        inputs:[
+          {key:'bank_statement', label:'Bank statement', verify:true, doc_type:'bank_statement'},
+          {key:'total_existing', label:'Existing debt total', type:'number'},
+          {key:'hecs_handled',   label:'HECS handled per lender'}
+        ] },
       { title:'Order valuation',
-        inputs:['valuer','order_ref','expected_date'] },
+        inputs:[
+          {key:'valuer',        label:'Valuer'},
+          {key:'order_ref',     label:'Order reference'},
+          {key:'expected_date', label:'Expected date', type:'date'}
+        ] },
       { title:'Initial servicing check',
-        inputs:['dsr','ndi'] }
+        inputs:[
+          {key:'dsr', label:'DSR'},
+          {key:'ndi', label:'NDI'}
+        ] }
     ]},
   { id:'assess',    label:'Assessment',          owner_cap:'stage.assess.edit',
     desc:'Detailed credit assessment against policy.',
     tasks:[
       { title:'Detailed credit assessment',
-        inputs:['policy_lender','assessment_notes'] },
+        inputs:[
+          {key:'policy_lender',     label:'Policy lender'},
+          {key:'assessment_notes',  label:'Assessment notes'}
+        ] },
       { title:'Policy checks (LVR · DTI · LMI)',
-        inputs:['lvr','dti','lmi_applicable'] },
+        inputs:[
+          {key:'lvr',             label:'LVR'},
+          {key:'dti',             label:'DTI'},
+          {key:'lmi_applicable',  label:'LMI applicable'}
+        ] },
       { title:'HEM reconciliation',
-        inputs:['declared_monthly','hem_band','applied_floor'] },
+        inputs:[
+          {key:'bank_evidence',     label:'Bank statement (expenses)', verify:true, doc_type:'bank_statement'},
+          {key:'declared_monthly',  label:'Declared monthly', type:'number'},
+          {key:'hem_band',          label:'HEM band'},
+          {key:'applied_floor',     label:'Applied floor', type:'number'}
+        ] },
       { title:'Risk + mitigants',
-        inputs:['risk_rating','mitigants'] }
+        inputs:[
+          {key:'risk_rating', label:'Risk rating'},
+          {key:'mitigants',   label:'Mitigants'}
+        ] }
     ]},
   { id:'credit',    label:'Credit',              owner_cap:'stage.credit.edit',
     desc:'Credit decision and conditions issued to the broker.',
     tasks:[
       { title:'Credit decision',
-        inputs:['outcome','decision_date'] },
+        inputs:[
+          {key:'outcome',        label:'Outcome'},
+          {key:'decision_date',  label:'Decision date', type:'date'}
+        ] },
       { title:'Issue conditions',
-        inputs:['conditions'] },
+        inputs:[
+          {key:'conditions', label:'Conditions'}
+        ] },
       { title:'Approval letter prepared',
-        inputs:['letter_ref'] }
+        inputs:[
+          {key:'letter_ref', label:'Letter reference'}
+        ] }
     ]},
   { id:'fulfil',    label:'Fulfilment',          owner_cap:'stage.fulfil.edit',
     desc:'Loan documents prepared, issued and signed.',
     tasks:[
       { title:'Loan documents prepared',
-        inputs:['doc_pack_ref'] },
+        inputs:[
+          {key:'doc_pack_ref', label:'Doc pack reference'}
+        ] },
       { title:'Documents issued',
-        inputs:['issued_date','channel'] },
+        inputs:[
+          {key:'issued_date', label:'Issued', type:'date'},
+          {key:'channel',     label:'Channel'}
+        ] },
       { title:'Documents signed & verified',
-        inputs:['signed_date','verifier'] }
+        inputs:[
+          {key:'signed_date', label:'Signed', type:'date'},
+          {key:'verifier',    label:'Verifier'},
+          {key:'signed_pack', label:'Signed pack', verify:true, doc_type:'generic'}
+        ] }
     ]},
   { id:'docgen',    label:'Document generation', owner_cap:'stage.docgen.edit',
     desc:'Generate disclosure suite + lender documents.',
     tasks:[
       { title:'Generate disclosure suite',
-        inputs:['credit_guide_v','quote_v','proposal_v'] },
+        inputs:[
+          {key:'credit_guide_v', label:'Credit Guide version'},
+          {key:'quote_v',        label:'Quote version'},
+          {key:'proposal_v',     label:'Proposal version'}
+        ] },
       { title:'Pre-contractual statement',
-        inputs:['precontract_v'] },
+        inputs:[
+          {key:'precontract_v', label:'Pre-contractual version'}
+        ] },
       { title:'Settlement letter',
-        inputs:['settle_letter_v'] }
+        inputs:[
+          {key:'settle_letter_v', label:'Settlement letter version'}
+        ] }
     ]},
   { id:'settle',    label:'Settlement',          owner_cap:'stage.settle.edit',
     desc:'Coordinate to the conveyancing handoff (no trust money).',
     tasks:[
       { title:'ELNO workspace ready',
-        inputs:['elno','workspace_id'] },
+        inputs:[
+          {key:'elno',         label:'ELNO'},
+          {key:'workspace_id', label:'Workspace ID'}
+        ] },
       { title:'Settlement booked',
-        inputs:['settle_date'] },
+        inputs:[
+          {key:'settle_date', label:'Settlement date', type:'date'}
+        ] },
       { title:'Discharge of vendor mortgage',
-        inputs:['outgoing_mortgagee','discharge_booked'] },
+        inputs:[
+          {key:'outgoing_mortgagee', label:'Outgoing mortgagee'},
+          {key:'discharge_booked',   label:'Discharge booked', type:'date'}
+        ] },
       { title:'Funds cleared',
-        inputs:['large_deposit_flag','source_clearance'] },
+        inputs:[
+          {key:'large_deposit_flag', label:'Large-deposit flag'},
+          {key:'source_evidence',    label:'Source-of-funds evidence', verify:true, doc_type:'bank_statement'},
+          {key:'source_clearance',   label:'Clearance confirmed'}
+        ] },
       { title:'Settled',
-        inputs:['settled_date'] }
+        inputs:[
+          {key:'settled_date', label:'Settled date', type:'date'}
+        ] }
     ]}
 ];
 const WF_STATUS_LABELS = {
@@ -8314,6 +8475,13 @@ function loadWorkflows(){
 function saveWorkflows(){
   try{ localStorage.setItem(WORKFLOW_LS_KEY, JSON.stringify(state.workflows||{})); }catch(e){}
 }
+function _wfNormaliseInputDefs(inputs){
+  // Accept either the legacy ['key1','key2'] form or the Phase-2 object form.
+  return (inputs||[]).map(x =>
+    typeof x === 'string'
+      ? { key:x, label:_wfPrettyKey(x) }
+      : { key:x.key, label:x.label || _wfPrettyKey(x.key), type:x.type, options:x.options, verify:!!x.verify, doc_type:x.doc_type||null });
+}
 function getOrInitWorkflow(dealId){
   const id = dealId || state.activeDeal || '_unsaved';
   state.workflows = state.workflows || {};
@@ -8324,29 +8492,70 @@ function getOrInitWorkflow(dealId){
         status:'not_started',
         started_at:null,
         completed_at:null,
-        tasks: s.tasks.map((t,i)=>({
-          id: `t_${s.id}_${i+1}`,
-          title: t.title,
-          status:'not_started',
-          inputs: {},
-          input_keys: t.inputs || [],
-          commentary: '',
-          verify: [],                       // Phase 2 — field verification rows
-          updated_at: null,
-          updated_by: null
-        }))
+        tasks: s.tasks.map((t,i)=>{
+          const inputDefs = _wfNormaliseInputDefs(t.inputs);
+          // Pre-seed verify[] entries — one row per verifiable input.
+          const verify = inputDefs.filter(d=>d.verify).map(d=>({
+            id: `v_${s.id}_${i+1}_${d.key}`,
+            key: d.key,
+            label: d.label,
+            doc_type: d.doc_type || 'generic',
+            state: 'unverified',         // 'unverified' | 'verified' | 'discrepancy'
+            doc_id: null,
+            captured: {},
+            notes: '',
+            verified_at: null,
+            verified_by: null
+          }));
+          return {
+            id: `t_${s.id}_${i+1}`,
+            title: t.title,
+            status:'not_started',
+            inputs: {},
+            input_defs: inputDefs,        // full per-input metadata (label/type/verify/doc_type)
+            commentary: '',
+            verify,
+            updated_at: null,
+            updated_by: null
+          };
+        })
       };
     });
     state.workflows[id] = {
-      version: 1,
+      version: 2,                          // bumped — Phase-2 schema
       current_stage: 'broker',
       stages,
       created_at: new Date().toISOString()
     };
-    // Mirror onto the deal object so live saveDeal sees it.
     const d = (typeof DEALS!=='undefined') ? DEALS.find(x=>x.id===id) : null;
     if(d) d.workflow = state.workflows[id];
     saveWorkflows();
+  } else {
+    // Hydrate older Phase-1 workflows — backfill verify[] from the new seed.
+    const wf = state.workflows[id];
+    if((wf.version||1) < 2){
+      WF_STAGES.forEach(s=>{
+        const stage = wf.stages[s.id]; if(!stage) return;
+        s.tasks.forEach((t,i)=>{
+          const task = stage.tasks[i]; if(!task) return;
+          const inputDefs = _wfNormaliseInputDefs(t.inputs);
+          task.input_defs = inputDefs;
+          if(!Array.isArray(task.verify)) task.verify = [];
+          inputDefs.filter(d=>d.verify).forEach(d=>{
+            if(!task.verify.some(v=>v.key===d.key)){
+              task.verify.push({
+                id: `v_${s.id}_${i+1}_${d.key}`,
+                key: d.key, label: d.label, doc_type: d.doc_type||'generic',
+                state:'unverified', doc_id:null, captured:{}, notes:'',
+                verified_at:null, verified_by:null
+              });
+            }
+          });
+        });
+      });
+      wf.version = 2;
+      saveWorkflows();
+    }
   }
   return state.workflows[id];
 }
@@ -8422,6 +8631,67 @@ function wfToggleStage(stageId){
   const el = document.querySelector(`.wf-stage[data-stage="${stageId}"]`);
   if(el) el.classList.toggle('open');
 }
+
+/* ---- Phase 2 — field-level verification ---- */
+function _wfFindTask(dealId, stageId, taskId){
+  const wf = state.workflows && state.workflows[dealId]; if(!wf) return null;
+  const st = wf.stages[stageId]; if(!st) return null;
+  return (st.tasks||[]).find(t=>t.id===taskId) || null;
+}
+function _wfVerifyEntry(task, key){
+  return (task && task.verify || []).find(v => v.key === key) || null;
+}
+function wfSetVerifyState(dealId, stageId, taskId, key, vstate){
+  if(!['unverified','verified','discrepancy'].includes(vstate)) return;
+  const t = _wfFindTask(dealId, stageId, taskId); if(!t) return;
+  const v = _wfVerifyEntry(t, key); if(!v) return;
+  const prev = v.state;
+  v.state = vstate;
+  const a = _wfActor();
+  if(vstate === 'verified'){ v.verified_at = new Date().toISOString(); v.verified_by = a.actor; }
+  else if(vstate === 'unverified'){ v.verified_at = null; v.verified_by = null; }
+  saveWorkflows();
+  if(typeof auditLog==='function') auditLog('WF_VERIFY_STATE', `${stageId}/${taskId}/${key} ${prev} → ${vstate}`, a.actor, a.role);
+  rerenderWorkflow(dealId);
+}
+function wfSetVerifyEvidence(dealId, stageId, taskId, key, fieldKey, value){
+  const t = _wfFindTask(dealId, stageId, taskId); if(!t) return;
+  const v = _wfVerifyEntry(t, key); if(!v) return;
+  v.captured = v.captured || {};
+  v.captured[fieldKey] = value;
+  saveWorkflows();
+}
+function wfSetVerifyDoc(dealId, stageId, taskId, key, docName){
+  const t = _wfFindTask(dealId, stageId, taskId); if(!t) return;
+  const v = _wfVerifyEntry(t, key); if(!v) return;
+  v.doc_id = docName || null;
+  saveWorkflows();
+  rerenderWorkflow(dealId);
+}
+function wfSetVerifyNotes(dealId, stageId, taskId, key, text){
+  const t = _wfFindTask(dealId, stageId, taskId); if(!t) return;
+  const v = _wfVerifyEntry(t, key); if(!v) return;
+  v.notes = String(text||'');
+  saveWorkflows();
+}
+function wfToggleVerifyPanel(taskId, key){
+  const el = document.querySelector(`.wf-verify[data-task="${taskId}"][data-key="${key}"]`);
+  if(el) el.classList.toggle('open');
+}
+/* Open the per-deal Docs tab and focus a specific document. */
+function openVerificationDoc(docName){
+  state.focusedDocName = docName || null;
+  if(typeof goTab === 'function') goTab('documents');
+  // After render, scroll the matching row into view.
+  setTimeout(()=>{
+    const row = document.querySelector(`#docBody tr[data-doc-name="${(docName||'').replace(/"/g,'\\"')}"]`);
+    if(row){
+      row.scrollIntoView({behavior:'smooth', block:'center'});
+      row.classList.add('focused');
+      setTimeout(()=> row.classList.remove('focused'), 2400);
+    }
+  }, 120);
+}
 function wfToggleTask(dealId, stageId, taskId){
   const el = document.querySelector(`.wf-task[data-task="${taskId}"]`);
   if(el) el.classList.toggle('open');
@@ -8488,17 +8758,97 @@ function renderWorkflow(host, dealId){
       <p class="wf-foot">Phase 1 — manual status by design. Field verification + access regimes + broker-tasks tab arrive in subsequent phases. All status changes are written to the audit trail.</p>
     </section>`;
 }
+function _wfRenderVerifyRow(dealId, stageId, task, d){
+  const v = _wfVerifyEntry(task, d.key);
+  if(!v) return '';
+  const docType = VERIFY_DOC_TYPES[v.doc_type] || VERIFY_DOC_TYPES.generic;
+  // Doc picker — restricts to this deal's docs.
+  const dealDocs = (typeof DOCS!=='undefined') ? DOCS.filter(x => x.deal === dealId) : [];
+  const docOpts = ['<option value="">— select document —</option>']
+    .concat(dealDocs.map(doc => `<option value="${escHtml(doc.name)}" ${v.doc_id===doc.name?'selected':''}>${escHtml(doc.name)} · ${escHtml(doc.type||'')}</option>`))
+    .join('');
+  const evidenceHtml = (docType.fields||[]).map(f=>{
+    const val = (v.captured && v.captured[f.key] != null) ? v.captured[f.key] : '';
+    if(f.type === 'select'){
+      return `<label class="wf-v-field">
+        <span class="wf-input-label">${escHtml(f.label)}</span>
+        <select onchange="wfSetVerifyEvidence('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}','${escArg(d.key)}','${escArg(f.key)}', this.value)">
+          <option value="">—</option>
+          ${(f.options||[]).map(o=>`<option value="${escHtml(o)}" ${val===o?'selected':''}>${escHtml(o)}</option>`).join('')}
+        </select>
+      </label>`;
+    }
+    if(f.type === 'checkbox'){
+      return `<label class="wf-v-field wf-v-check">
+        <input type="checkbox" ${val===true||val==='true'?'checked':''}
+               onchange="wfSetVerifyEvidence('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}','${escArg(d.key)}','${escArg(f.key)}', this.checked)">
+        <span>${escHtml(f.label)}</span>
+      </label>`;
+    }
+    const typ = f.type === 'number' ? 'number' : (f.type === 'date' ? 'date' : 'text');
+    return `<label class="wf-v-field">
+      <span class="wf-input-label">${escHtml(f.label)}</span>
+      <input type="${typ}" value="${escHtml(String(val))}"
+             oninput="wfSetVerifyEvidence('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}','${escArg(d.key)}','${escArg(f.key)}', this.value)">
+    </label>`;
+  }).join('');
+  const stateLabel = { unverified:'Unverified', verified:'Verified', discrepancy:'Discrepancy' }[v.state] || 'Unverified';
+  const verifiedNote = (v.state==='verified' && v.verified_at)
+    ? `<span class="wf-v-when mono">verified ${new Date(v.verified_at).toLocaleString('en-AU',{day:'2-digit',month:'short'})}${v.verified_by?` · ${escHtml(v.verified_by)}`:''}</span>` : '';
+  const openLink = v.doc_id
+    ? `<button type="button" class="wf-v-openlink" onclick="openVerificationDoc('${escArg(v.doc_id)}')">Open verification document ↗</button>`
+    : `<span class="wf-v-openlink muted" title="Link a document below to enable">Open verification document ↗</span>`;
+  return `<div class="wf-verify ${v.state}" data-task="${escHtml(task.id)}" data-key="${escHtml(d.key)}">
+    <div class="wf-v-head">
+      <span class="wf-v-badge ${v.state}">${escHtml(stateLabel)}</span>
+      <span class="wf-v-doctype">${escHtml(docType.label)}</span>
+      ${openLink}
+      <button type="button" class="wf-v-toggle" onclick="wfToggleVerifyPanel('${escArg(task.id)}','${escArg(d.key)}')" aria-label="Toggle evidence panel">▾</button>
+    </div>
+    <div class="wf-v-body">
+      <div class="wf-v-doc-row">
+        <label class="wf-v-field" style="flex:1">
+          <span class="wf-input-label">Linked document</span>
+          <select onchange="wfSetVerifyDoc('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}','${escArg(d.key)}', this.value)">
+            ${docOpts}
+          </select>
+        </label>
+      </div>
+      <div class="wf-v-grid">${evidenceHtml}</div>
+      <label class="wf-v-notes-wrap">
+        <span class="wf-input-label">Notes  <span class="wf-input-hint">discrepancies / context</span></span>
+        <textarea rows="2" placeholder="If the captured figure doesn't match the application, set state to Discrepancy and note why."
+                  oninput="wfSetVerifyNotes('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}','${escArg(d.key)}', this.value)">${escHtml(v.notes||'')}</textarea>
+      </label>
+      <div class="wf-v-actions">
+        <div class="wf-v-state-group" role="radiogroup" aria-label="Verification state">
+          ${['unverified','verified','discrepancy'].map(s=>`<button type="button" class="wf-v-state-btn ${s} ${v.state===s?'active':''}" role="radio" aria-checked="${v.state===s}" onclick="wfSetVerifyState('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}','${escArg(d.key)}','${s}')">${escHtml({unverified:'Unverified',verified:'Verified',discrepancy:'Discrepancy'}[s])}</button>`).join('')}
+        </div>
+        ${verifiedNote}
+      </div>
+    </div>
+  </div>`;
+}
+
 function _wfRenderTask(dealId, stageId, task){
   const status = task.status || 'not_started';
   const statusCls = status.replace('_','-');
-  const inputsHtml = (task.input_keys||[]).map(k=>{
-    const v = (task.inputs && task.inputs[k] != null) ? task.inputs[k] : '';
-    return `<label class="wf-input">
-      <span class="wf-input-label">${escHtml(_wfPrettyKey(k))}</span>
-      <input type="text" value="${escHtml(String(v))}"
-             oninput="wfSetTaskInput('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}','${escArg(k)}', this.value)"
-             placeholder="—">
-    </label>`;
+  // Phase 2 — read structured input definitions (label / type / verify / doc_type).
+  const defs = Array.isArray(task.input_defs) ? task.input_defs
+             : (Array.isArray(task.input_keys) ? task.input_keys.map(k=>({key:k,label:_wfPrettyKey(k)})) : []);
+  const inputsHtml = defs.map(d=>{
+    const v = (task.inputs && task.inputs[d.key] != null) ? task.inputs[d.key] : '';
+    const inputType = d.type === 'number' ? 'number' : (d.type === 'date' ? 'date' : 'text');
+    const verifyHtml = d.verify ? _wfRenderVerifyRow(dealId, stageId, task, d) : '';
+    return `<div class="wf-input ${d.verify?'has-verify':''}">
+      <label>
+        <span class="wf-input-label">${escHtml(d.label)}</span>
+        <input type="${inputType}" value="${escHtml(String(v))}"
+               oninput="wfSetTaskInput('${escArg(dealId)}','${escArg(stageId)}','${escArg(task.id)}','${escArg(d.key)}', this.value)"
+               placeholder="—">
+      </label>
+      ${verifyHtml}
+    </div>`;
   }).join('');
   const updated = task.updated_at
     ? `<span class="wf-task-updated mono">updated ${new Date(task.updated_at).toLocaleString('en-AU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}${task.updated_by?` · ${escHtml(task.updated_by)}`:''}</span>`
