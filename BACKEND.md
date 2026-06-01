@@ -118,7 +118,9 @@ npm i -g wrangler
 wrangler pages dev .          # serves index.html + functions at http://localhost:8788
 ```
 
-Create a `.dev.vars` file at the repo root for local secrets (gitignored):
+No `wrangler.toml` needed — the `.` argument tells wrangler the project
+root. Create a `.dev.vars` file at the repo root for local secrets
+(gitignored):
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...

@@ -1,5 +1,976 @@
 # DebtIQ v6 — Changelog
 
+## Workflow brief — Phase 4 (broker-tasks channel) + Phase 5 (finish/UX-QA)
+
+Closing the workflow brief. Phase 4 introduces the sanctioned cross-wall
+channel; Phase 5 is the UX-QA + audit-trail closure pass.
+
+### Phase 4 — broker-tasks channel
+
+The ONLY channel that crosses the broker/lender wall. Lender raises a
+task; broker responds with commentary + document attachments; lender
+closes. Lender-internal workflow stages stay hidden.
+
+- New caps: `brokertask.raise` (owner/admin/processor),
+  `brokertask.respond` (owner/admin/broker), `brokertask.close`
+  (owner/admin/processor).
+- `state.brokerTasks[dealId] = { tasks: [...] }`. Each task:
+  `{ id, title, detail, status:'open'|'responded'|'closed',
+     raised_by/role/at, commentary:[{at,by,role,text}],
+     attachments:[{doc_name,attached_at,attached_by}],
+     closed_at, closed_by }`.
+- Helpers: `btRaiseTask` / `btRespond` / `btAttachDoc` (links existing
+  per-deal docs — uploads still happen in the Docs tab) / `btClose` /
+  `btReopen` / `btCounts` / `btOpenRaisePrompt`. All RBAC-gated; every
+  raise / respond / attach / close / reopen hits `auditLog` as
+  `BROKERTASK_RAISED|RESPONDED|ATTACHED|CLOSED|REOPENED`.
+- UI: mounts under the workflow on the Calculate page (per-deal). Three
+  status pills (Open · Responded · Closed) with counts in the header;
+  task cards show conversation, attachments, and a reply form (textarea
+  + attach-doc picker) that only renders for users with the right cap.
+  Broker view uses different framing copy ("What the lender needs
+  from you") — never reveals lender-internal stage content.
+- localStorage `debtiq.brokerTasks.v1` keyed by deal id; hydrated on
+  boot via `loadBrokerTasks()`.
+
+### Phase 5 — finish / UX-QA
+
+- All workflow + broker-task interactives gain `:focus-visible` rings
+  (stage actions, status buttons, verify state group, verify toggle,
+  open-doc link, broker-tasks raise + attach).
+- Touch targets bumped — `wf-status-btn` ≥36px (was 28px),
+  `wf-v-state-btn` ≥32px.
+- Reduced-motion media query (`@media (prefers-reduced-motion: reduce)`)
+  disables transitions/animations on `.wf-stage`, `.wf-task`,
+  `.wf-verify`, `.bt-task`.
+- Demo + live both boot (smoke verifies end-to-end with no crashes).
+- Audit-trail coverage verified across every workflow phase:
+  `WF_TASK_STATUS · WF_VERIFY_STATE · STAGE_OVERRIDE · STAGE_SENT_BACK ·
+  BROKERTASK_RAISED · BROKERTASK_RESPONDED · BROKERTASK_ATTACHED ·
+  BROKERTASK_CLOSED · BROKERTASK_REOPENED · ASSET_ADDED · ASSET_REMOVED`.
+
+Smoke: +16 Phase 4–5 checks (**449/449 passing**).
+
+### Workflow brief complete
+
+| Phase | Status |
+|---|---|
+| 1 — Data model + one-page UI | ✅ shipped |
+| 2 — Field-level verification + Docs-tab link | ✅ shipped |
+| 3 — Access regimes (broker wall + lender ownership + soft-gate + override + send-back) | ✅ shipped |
+| 4 — Broker-tasks channel | ✅ shipped |
+| 5 — Finish / UX-QA | ✅ shipped |
+
+All five phases committed on `claude/debtiq-access-bDD0b`. No `/api/*`,
+auth, or `lenders.js` change. No migration applied — the existing
+`saveDeal()` path round-trips `deal.workflow` when live mode is on; the
+workflow / broker-tasks slices persist to localStorage in the meantime.
+A reviewable migration for dedicated tables is an `ARCH-REVIEW` step
+when membership wiring goes live (Phase 5 of MASTER).
+
+
+## Completing deferred items — MASTER Phase 2 (Assets) + Phase 9 (emoji sweep)
+
+Two items left explicitly deferred from the MASTER program — now closed.
+
+### Phase 2 — atomic deal-builder Step 6 Assets is no longer a stub
+- `ASSET_TYPES` (6 categories): Cash & savings · Superannuation · Other
+  property · Vehicle · Shares / managed funds · Other.
+- `assets:[]` added to every entity default; `newEntity()` seeds it.
+- New helpers `addAsset(ei)` / `removeAsset(ei,ai)` /
+  `updateAssetField(ei,ai,field,value)` — audit-logged.
+- `assetsBuilderHTML()` renders per-entity asset blocks (each included
+  entity gets its own grid of asset rows with type · description ·
+  value · notes · remove). Mirrors the existing Income/Liabilities
+  per-entity pattern.
+- Step 6 now collapsible like every other step (was `deferred`,
+  unclickable, "Coming soon"); status pill rolls up correctly.
+- Defensive shim in `setActiveDeal` — backfills `assets:[]` on entities
+  hydrated from demo intel or older saved deals.
+- Demo seed entity carries a starter asset (Everyday savings $48k) so
+  the new step has something to render.
+
+### Phase 9 — final inline status-emoji sweep
+- Every `icon: '✓'|'▲'|'⚠'|'✕'` literal in the deal-spine insight
+  emitters converted to `svgIcon('check'|'alert'|'x', 14)`.
+- Inline insight-row glyphs in `renderManualResults()` and the assessor
+  side-panel insights swept the same way (DSR · DTI · unverified ·
+  recommendation arrows). No raw emoji left in any `class="insight-row"`
+  emission site.
+
+Smoke: +8 new checks, two stale Step-6-deferred checks updated to
+assert the new behaviour. **403/403 passing.**
+
+
+## Workflow brief — Phase 1: one-page deal workflow (data model + UI)
+
+Adds the staged task workflow on the deal page, **below** the existing
+Decision + Worksheet (which stay exactly as they are). Additive — no
+existing renderer, engine, RBAC, audit, or `/api/*` contract changed.
+
+- **Data model.** `state.workflows[dealId] = { version, current_stage,
+  stages:{ broker, preassess, assess, credit, fulfil, docgen, settle } }`.
+  Each stage carries `status` + `started_at` + `completed_at` + a
+  seeded `tasks[]`. Each task: `id, title, status (not_started |
+  in_progress | complete), inputs{}, input_keys[], commentary, verify[],
+  updated_at, updated_by`.
+- **Stage seeds** (with input-keys per task — typed values appear as
+  fields in the task body):
+  - Broker — applicants · securities · purpose · indicative serviceability
+  - Pre-assessment — income · liabilities · valuation · initial servicing
+  - Assessment — credit assessment · policy checks · HEM reconciliation · risk
+  - Credit — decision · conditions · approval letter
+  - Fulfilment — docs prepared · docs issued · docs signed
+  - Document generation — disclosure suite · pre-contractual · settle letter
+  - Settlement — ELNO workspace · booked · discharge · funds · settled
+- **Helpers** (globally callable):
+  `getOrInitWorkflow(dealId)`, `wfStageProgress(stage)`,
+  `wfOverallProgress(wf)`, `wfSetTaskStatus(dealId,stageId,taskId,status)`,
+  `wfSetTaskCommentary(...)`, `wfSetTaskInput(...,key,value)`,
+  `wfToggleStage(stageId)`, `wfToggleTask(...)`, `rerenderWorkflow(dealId)`.
+- **UI.** Sits below the calc-split on the Calculate page when a deal is
+  active. Header carries overall file % + a thin progress bar + tasks
+  done/total. Below: seven collapsible stage cards (collapsed by
+  default), each with a per-stage progress bar + done/total. Each task
+  expands inline: input fields (per stage seed) · unlimited commentary
+  textarea · manual three-state status picker. Stage rollup is
+  automatic: any task in_progress → stage in_progress; all complete →
+  stage complete. Focus rings + keyboard-friendly.
+- **Persistence.** localStorage `debtiq.workflows.v1`, keyed by deal
+  id; mirrored onto `deal.workflow` so the existing `saveDeal()` path
+  round-trips it in live mode without contract change. A reviewable
+  migration (dedicated column / table) is proposed at Phase 3 when
+  access regimes need it.
+- **Audit.** Every status change writes `WF_TASK_STATUS` with actor
+  (current member / signed-in email / 'Broker') + role to the existing
+  audit trail.
+- **Out of scope for Phase 1 — deferred to subsequent commits:**
+  Phase 2 field-level 3-state verification with doc-type evidence +
+  "open verification document" → Docs tab. Phase 3 access regimes —
+  broker hard-lock (lender stages invisible) vs lender stage-ownership
+  editing; sequential soft-gate + authorised override; broker-invisible
+  send-back. Phase 4 broker-tasks tab (raise → respond → close).
+  Phase 5 voice / UX-QA sweep.
+- Smoke: +11 Phase 1 checks (**395/395 passing**).
+
+
+## MASTER program — Regulatory Source Manifest ingest + provenance layer
+
+Ingested the authority document (`docs/regulatory-source-manifest.md`) and
+honoured its core rule: **don't treat any threshold as authoritative until
+the operative clause is read from the official instrument.**
+
+- **Attempted source fetches** of every official URL (APRA APS 220 / APG 223,
+  ASIC RG 273 / RG 209 / INFO 146, OAIC APPs). **All returned HTTP 403** in
+  this environment — the regulators' sites block automated egress here, so the
+  agent could **not** verify clauses at source.
+- **`REG_SOURCES` provenance registry** (in `index.html`) — every engine /
+  compliance rule now cites its **instrument + sections-to-extract + official
+  URL + scope + a `verified` flag**, mapped exactly to the manifest's nine
+  instruments (buffer/HEM/shading → APG 223; DTI → APS 220 Att. C; BID →
+  RG 273; responsible lending → RG 209; disclosure → INFO 146; ADM/privacy →
+  Privacy Act + APPs; VOI → AML/CTF; settlement → ARNECC/ECNL; CDR).
+- **Everything is `verified:false`** (fetch blocked) → surfaced as
+  `LEGAL-REVIEW`. No manifest paraphrase was promoted to "confirmed"; the
+  Phase-4 thresholds (6× / 20% / +3%) are now explicitly tagged as encoded-
+  but-**not-yet-verified-at-source**.
+- **Serviceability worksheet** gains a **Regulatory provenance** section: a
+  table of each rule → instrument (clickable official link) → sections to
+  extract → what's encoded → `verified` / `LEGAL-REVIEW` badge, with an honest
+  "source verification pending (HTTP 403)" banner. The DTI footnote now cites
+  APS 220 Att. C via `regProvenance()`.
+- **`REVIEW-REGISTER.md`** updated with the 0/11 source-verification table and
+  the exact "extract clause → set verified" action for a network-permitted run.
+- Smoke: +7 provenance checks; worksheet-step assertion updated to 7 sections
+  (**380/380 passing**).
+
+> To complete verification: run the fetches from a network-permitted
+> environment (or open the URLs manually), extract the operative clauses, and
+> set each `REG_SOURCES[...].verified` to instrument + section + version date.
+
+
+## MASTER program — Phase 8 (CDR decision) + Phase 9 (finish & verify)
+
+Closing gates of the program.
+
+### Phase 8 — CDR / Open Banking (conditional)
+- **Decision: DebtIQ stays OUT of CDR scope; nothing built live.** The
+  data model is document-upload + OCR, not direct bank-feed ingestion, so
+  CDR accreditation isn't engaged today. `CDR.md` documents the
+  determination and the gating conditions (`LEGAL-REVIEW` accreditation +
+  `ARCH-REVIEW` isolated subsystem) if direct feeds are ever elected.
+
+### Phase 9 — Finish & verify
+- **UX-QA emoji → SVG.** Added `search / upload / check / alert / info /
+  x` to the SVG `ICONS` set and converted the standalone affordance emoji
+  — toast glyphs, the pipeline search icon, the OCR drop-zone, and the
+  dashboard + Verified KPI tiles. (Inline ratio status marks left for a
+  brand-guide-driven pass once the guide is committed.)
+- **Brand re-verify.** Zero functional violet; ink monogram confirmed at
+  every site; tokens documented PRIMITIVE → SEMANTIC → COMPONENT; numbers
+  mono + tabular.
+- **No un-gated changes.** `/api/*`, auth, and `lenders.js` are untouched
+  since the program start; both schema migrations (`0001`, `0002`) remain
+  **DRAFT / not applied**; every new capability is localStorage-only and
+  demo + live both boot.
+- **`REVIEW-REGISTER.md`** — the consolidated `LEGAL-REVIEW` (12 items) /
+  `ARCH-REVIEW` (11 items) register for counsel and the owner, plus the
+  Phase 9 verification snapshot.
+- Smoke: +4 Phase 9 checks (**373/373 passing**).
+
+### Program status
+Phases 0, 1-finish, 4, 5, 6, 7, 8, 9 delivered on this branch; Phases 2 & 3
+were already shipped (pending visual diff against the authority mockups).
+Phases anchored to the authority files (exact DTI thresholds §5, disclosure
+field content, ADM wording) are built against publicly-known frameworks and
+**flagged `LEGAL-REVIEW`** for verification once the compliance map / brand
+guide / mockups are committed.
+
+
+## MASTER program — Phase 7: settlement coordination layer
+
+DebtIQ now **coordinates** the post-approval path to the conveyancing
+handoff. It **does not settle and holds no trust money** — stated plainly
+in the UI.
+
+- **New Settlement tab** (broker shell), routed through `WS_RENDERERS` +
+  the tab maps, per-deal.
+- **Status tracker** across the required stages: formal approval → loan
+  docs issued → loan docs signed → settlement booked → **discharge of
+  vendor mortgage (key dependency)** → funds cleared → settled. Each
+  stage marks done/undo with a timestamp, gated by `settlement.action`
+  (Phase 5) and logged.
+- **Pre-condition gating:** loan-docs-signed is blocked until **VOI is
+  complete** (Phase 6 link); **settled** is blocked until the **discharge**
+  is booked; when a **large deposit** is flagged, settled is blocked until
+  source-of-funds **clearance** is confirmed.
+- **ELNO adapter — isolated, mock by default** (`ELNO_ADAPTER`, PEXA mock):
+  create-workspace + book-settlement return simulated results with **no
+  network and no credentials**. Real connectivity, subscriber eligibility,
+  and any trust-money flow are flagged `ARCH-REVIEW` / `LEGAL-REVIEW` and
+  left for a human-enabled step.
+- **Settlement risk flags:** VOI status + large-deposit/AML clearance
+  timing surfaced as risks; `AML → LEGAL-REVIEW` (reporting-entity status).
+- **Persistence:** `state.settlement` keyed by deal id, localStorage
+  (`debtiq.settlement.v1`), hydrated on boot. No backend contract change.
+- Smoke: +10 Phase 7 checks (**369/369 passing**).
+
+
+## MASTER program — Phase 6: compliance-evidence features
+
+Built the FEATURES that **evidence and enable** the compliance-map
+obligations — product scaffolding, **not** legal conclusions. The code
+never states the portal "is compliant", holds a licence, or is an
+AML/CDR entity.
+
+> **LEGAL-REVIEW (carried):** disclosure field content & wording, the
+> volume-bonus statement, IDR/EDR membership, ACL number, ADM notice
+> wording, VOI certified/original/NAATI rules, AML reporting-entity
+> status, sub-processor DPAs, and the NDB plan are for counsel.
+
+- **Disclosure-document spine.** `DISCLOSURE_DOCS` registry of six docs
+  (Credit Guide, Quote, Credit Proposal Disclosure, Preliminary
+  Assessment, Needs Analysis, Pre-contractual) with per-doc **required-
+  field lists**. `generateDisclosure()` validates fields, **versions**,
+  and **timestamps**; `signDisclosure()` captures a **signed copy**
+  (signer + method + time) and blocks signing until fields are complete.
+  Everything is attributed to the audit trail.
+- **BID & suitability (§3–4).** The existing R&O generator stays; added a
+  **living-expense reconciliation** (declared vs HEM floor) and framed
+  the extraction→verification→serviceability trail as suitability
+  evidence.
+- **VOI capture (§6).** Structured per category (primary photographic /
+  secondary government / financial), in-date checks, verified flag,
+  capture method. `voiComplete()` makes **VOI completeness a settlement
+  pre-condition** (consumed by Phase 7). AML flagged `LEGAL-REVIEW`.
+- **ADM disclosure (§9).** Plain-language automated-decision explanation
+  + version-stamped acknowledgement (`acknowledgeADM()`). Wording flagged
+  `LEGAL-REVIEW` (privacy-notice text due 10 Dec 2026).
+- **Privacy / retention (§9).** APP 5 collection notice (`recordAPP5()`),
+  retention period control (`setRetention()`), and a privileged,
+  re-auth'd, logged **PII deletion** action (`deleteClientPII()`). Least-
+  privilege + audit come from the Phase 5 access layer.
+- **UI.** A "Compliance & evidence" layer appended to the Compliance page
+  — disclosure spine cards (generate / re-generate / capture signed copy,
+  with missing-field + signed-by readouts), VOI matrix, suitability
+  reconciliation, ADM notice + acknowledgement, and privacy/retention
+  controls. Guarded re-render (`rerenderCompliance()`).
+- **Persistence.** `state.compliance` keyed by deal id, localStorage
+  (`debtiq.compliance.v1`), hydrated on boot. No backend contract change;
+  persisting to Supabase is flagged `ARCH-REVIEW`.
+- **`COMPLIANCE.md`** — disclosure register, **data-flow map**, **breach-
+  response runbook stub**, ADM explanation, and the full evidence map,
+  all with `LEGAL-REVIEW`/`ARCH-REVIEW` markers.
+- Smoke: +11 Phase 6 checks (**359/359 passing**).
+
+
+## MASTER program — Phase 4: serviceability engine, 2026 rules
+
+Updated the engine to the current APRA framing. Buffer **+3%**, the
+**HEM floor** `max(declared, band)`, and **per-lender income shading**
+were already in place; this phase reworks the **DTI** treatment from a
+generic 6×/9× "restricted threshold" into a **per-lender appetite
+FLAG**, never a hard block.
+
+> **LEGAL-REVIEW:** all DTI thresholds, the ~20% high-DTI bucket, and the
+> exemption set reflect the publicly-known APRA framework and are
+> **indicative pending the compliance map (§5)**. They are surfaced as
+> lender-appetite intelligence; the code never asserts compliance.
+
+- **`dtiPolicy(lender)`** — derives the high-DTI threshold (default 6×),
+  very-high band (9×), and the high-DTI **bucket %** per lender: ADIs
+  (`apra_regulated`) → 6× / ~20% of new lending; non-ADIs → flagged for
+  appetite with **no APRA bucket** (specialist book). Honours optional
+  `dti_high` / `dti_bucket_pct` overrides on a lender policy.
+- **`dealSegment(purpose)`** — owner-occupier vs investment separation.
+- **`dtiExempt(purpose)`** — **owner-occupier bridging** and
+  **new-build/construction** are exempt from the high-DTI bucket.
+- **`dtiAssessment(value, lender, purpose)`** — the canonical structured
+  result (`value, threshold, segment, adi, bucketPct, exempt, high,
+  veryHigh, flagged, countsToBucket`), ridden along on every
+  `computeServiceability()` result as `r.dtiAssess`.
+- **DTI never changes the verdict.** `verdict` is still driven by NDI +
+  DSR only — a high DTI flags appetite, it does not fail serviceability
+  (verified in the smoke suite).
+- **`dtiFlagText()`** — one appetite-framed sentence shared by the
+  worksheet, verdict insights, conditions, gap-finder and the submission
+  pack. No "exceeds restricted threshold" / "fail" language for the 6×
+  band; ≥9× recommends specialist/non-ADI with documented rationale.
+- **Serviceability worksheet** — the DTI row is now a **flag, not a
+  ceiling** (never renders `fail` on its own), shows the bucket/segment
+  working inline, and a footnote explains the appetite-flag treatment +
+  exemptions + the `LEGAL-REVIEW` caveat.
+- Re-framed every downstream surface: assessor decline-reasons (now a
+  medium appetite flag), deal conditions (`DTI01` — "High DTI — appetite
+  flag", with the exemption-aware text), deal-spine insights (shows
+  bucket consumption), the gap-finder, and the submission-pack policy
+  flags (now shown whenever flagged, independent of verdict).
+- Smoke: +8 Phase 4 checks (**348/348 passing**).
+
+
+## MASTER program — Phase 1-finish (brand foundation cleanup)
+
+Low-risk, no-backend interleave done while the authority files are
+pending. Confirmed most of Phase 1 was already shipped (tokens, fonts,
+ink-monogram logo at every site, violet colour fully retired,
+mono+tabular numbers global) and closed the genuine remnants:
+
+- **Violet remnants removed (honesty).** The colour was already gone
+  (`--brand-grad:var(--ink)`, no violet hex, no `--logo-grad`); the only
+  leftovers were the `.violet` **class names**. Renamed the functional
+  class and all references to `.neutral` (pill style, `STATUS_META`
+  AI-Processing/Submitted, the Processing status maps, the lender-policy
+  buffer pill, the AI-recommended pill, the intel tag map, and the
+  serviceability-commentary card tone). The lone surviving mention of
+  "violet" is a comment documenting that the palette has *none*.
+- **Token architecture made explicit.** Annotated the `:root` header to
+  name the three layers — PRIMITIVE (raw values, this block only) →
+  SEMANTIC (purpose aliases components reference) → COMPONENT (per-widget
+  vars) — so the "no raw hex in components" rule has a documented home.
+- **In-app styleguide entry.** The brand styleguide was reachable only
+  via `?styleguide=1`; added an **Open brand styleguide ↗** button in
+  Settings → Account (`openStyleguide()`, opens in a new tab so the
+  working session is kept) and updated the styleguide footer note.
+- **Verified** the ink monogram is identical across favicon, login,
+  broker cmd-bar, assessor cmd-bar, and the submission-pack masthead.
+- Smoke: +4 Phase 1-finish checks (**340/340 passing**).
+
+> Deferred to Phase 9 (UX-QA sweep): converting inline status **emoji**
+> (✓/✕/➜/⚠/🔍) to SVG — that's a UX-QA item, not part of Phase 1's
+> stated scope, and is best done against the brand guide once committed.
+
+
+## MASTER program — Phase 0 (audit) + Phase 5 (access control / RBAC)
+
+First two gates of the full-integration program. **Phase 0** was a
+read-only audit (no code change) delivered in chat: stack/state/
+routing/backend inventory, a dependency-ordered build plan, and a
+`LEGAL-REVIEW:`/`ARCH-REVIEW:` register. Key finding — the six
+authority files (compliance map, brand guide, the mockups) are **not
+in the repo**; phases anchored to them (4, 6, and the visual diffs of
+2/3) wait until they're committed. The live repo is well ahead of the
+prompt's assumed snapshot (brand tokens, fonts, violet-retirement,
+broker overhaul and lending-group model already shipped).
+
+Housekeeping: removed the stray, unrelated `Engagement Invite`
+wedding-invitation HTML from the repo root.
+
+### Phase 5 — Access control / RBAC (owner-held)
+
+Built the access model **structure-first and demo-first**: no real
+accounts, passwords, or secrets are created by the agent; no `/api/*`
+contract, auth flow, or live schema is changed. Both demo and live
+keep working.
+
+- **Roles** (highest→lowest): Owner → Admin → Broker → Processor →
+  Read-only. **Deny-by-default** capability map (`CAPABILITIES`) —
+  `can(cap)` is false unless the effective role explicitly holds it.
+- **State + persistence.** `state.access` (org, members, invitations,
+  append-only `authLog`, session) persisted to `localStorage`
+  (`debtiq.access.v1`), mirroring the new draft migration. Hydrated on
+  boot; session clock started on boot.
+- **Demo vs live.** Demo enforces the simulated/own member role (with a
+  "view as role" preview so deny-by-default is visible). Live mode,
+  until membership tables are wired (`ARCH-REVIEW`), keeps today's
+  per-user RLS behaviour so nothing breaks.
+- **Owner primacy.** Only an Owner can grant/revoke Owner; Owner can't
+  be granted by invite; **at least one active Owner must always exist**
+  (enforced in-app and by the `enforce_last_owner` trigger in the
+  migration). Admins manage everyone except Owners.
+- **Helpers:** `can`, `requirePermission` (toasts + logs denied
+  attempts), `effectiveRole`, `inviteMember`, `revokeInvite`,
+  `acceptInviteDemo`, `changeMemberRole`, `removeMember`, `isOwner`,
+  `ownerCount`, `authAudit`, session helpers (`startSession`,
+  `touchSession`, `checkSessionTimeout`, `requireReauth`,
+  `reauthFresh`), `canViewPII`, `maskPII`, `exportPII`,
+  `setSimulatedRole`.
+- **Invitation flow.** Owner/Admin issues a scoped, time-limited,
+  token-**hashed** invite; the invitee completes their own credential
+  setup via the normal sign-in path — DebtIQ never sets a password or
+  creates the account. Demo "simulate accept" + revoke included.
+- **Sessions.** Configurable idle timeout (default 30 min) + **re-auth
+  for sensitive actions** (role change, member removal, PII export,
+  settlement) cached 5 min; visible session info.
+- **PII controls.** Email/phone **masked** for roles without
+  `pii.view`; **PII export** is privileged (`pii.export`) + re-auth +
+  audit-logged, producing a downloadable JSON.
+- **Audit & privilege log.** Append-only; every auth/privilege event
+  recorded. Mirrors `auth_audit_log` (insert+select, no update/delete).
+- **UI.** New **Team & Access** settings tab — members table (inline
+  role editing where permitted; Owner rows protected), invite form +
+  pending list, sessions panel, PII export, a full **permission
+  matrix** reference, the audit log, and a secrets-posture note.
+  Keyboard + `:focus-visible` rings throughout.
+- **Enforcement wired** (additive, no-op when live-unwired) into
+  `startNewDeal` (deal.create), `submitDeal` (deal.submit),
+  `generateSubmissionPack` / `generateGroupPack` (pack.generate),
+  `openCreateGroupPrompt` (group.manage).
+- **Reviewable migration — NOT applied:**
+  `supabase/migrations/0002_access_control.sql` — `organisations`,
+  `memberships` (role enum), `invitations` (token-hashed),
+  `auth_audit_log` (append-only), `has_org_role()` helper,
+  `enforce_last_owner` trigger, additive nullable `deals.org_id`, RLS
+  on every table. Applying it is an `ARCH-REVIEW`/owner action.
+- **`SECURITY.md`** — secrets posture, the RBAC matrix, audit/session
+  model, PII controls, and a gated security baseline (recommended CSP/
+  `_headers`, CORS tightening, rate limiting) with the full
+  `LEGAL-REVIEW:`/`ARCH-REVIEW:` register.
+- **Smoke harness:** +19 Phase 5 checks (**336/336 passing**) — helper
+  exposure, deny-by-default, owner-all / readonly-none, view-as
+  simulation flips `can()`, PII masking, owner-only invite + no
+  owner-by-invite, last-owner protection, logged role change,
+  append-only log growth, persistence, access-pane render, and
+  readonly being blocked from `startNewDeal`.
+
+**Gate:** stopping here for review before Phase 6. Phases 1-finish, 4,
+6, 7 still pending; 4/6 need the authority files.
+
+
+## Lending Group brief — Phase 4: polish + voice + re-verify
+
+Final pass on the round-2 lending-group work. Small but deliberate
+quality fixes; full smoke re-verified end-to-end across the new
+Pipeline Deals/Groups round-trip.
+
+- **"Signal not a gate" hint on the group detail.** When a group has
+  any unresolved blockers, an amber inline callout surfaces above
+  the rollup: *"N pending items across the group — listed under
+  each deal below. You can still generate the pack; strict
+  stability is a quality signal, not a submission gate."* This
+  makes the user's locked decision (strict rules but still
+  submittable) explicit in the UI, so brokers see exactly what's
+  pending without thinking the system is blocking them.
+- **Group pack button stays enabled regardless of stability.** The
+  Generate-group-pack CTA never disables — confirmed by smoke.
+- **AU spelling sweep.** Searched the codebase for US/UK divergence
+  hotspots (organise/organize, finalise/finalize, analyse/analyze,
+  customise, optimise, colour/color, behaviour/behavior, favourite,
+  enrolment, licence/license). The only remaining `behavior` hits
+  are the DOM-API `scrollIntoView({behavior:'smooth'})` and CSS
+  `scroll-behavior:auto` — both must stay (browser API + CSS
+  keyword). "Credit licence (ACL)" already correct (noun = -ce).
+- **Brand voice review of the new Phase 2/3 surfaces.**
+  - Group empty state, proposal banner body, recut hint, fac-hint,
+    pack lede paragraph, and signal-not-gate body all use the
+    italic Georgia serif for soft copy (matches the existing
+    editorial voice for explanatory text).
+  - Stability pills, rollup labels, deal-row IDs, facility tags,
+    pack pills, and pack table headers all use Menlo/mono with
+    tabular-nums + uppercase letter-spacing (matches the existing
+    "data atom" type system).
+  - Group titles, page heads, deal-card names, and pack section H2s
+    use the serif at 500 weight with -.005em letter-spacing (matches
+    the existing display type).
+- **Keyboard + focus accessibility on every new control.**
+  - Pipeline toggle: role="tablist", aria-selected, focus-visible ring.
+  - Group cards + group deal cards: role="button", tabindex=0,
+    Enter/Space keydown handlers.
+  - Facility rows in group detail: tabindex=0, `M` keyboard shortcut
+    to open the move chooser (per the multiway re-cut decision).
+  - Facility editor P&I/IO toggle: role="tablist", aria-selected,
+    focus-visible ring.
+  - Security chips: aria-pressed=true|false per toggle state.
+- **Smoke harness final** — +4 Phase 4 checks (317/317 passing):
+  - signal-not-gate hint renders for unstable groups
+  - group pack button is never disabled
+  - Pipeline Groups view persists through tab round-trip
+  - Pipeline Deals view returns to the existing deal grid intact
+    (no regression in the Phase-1 dashboard render path)
+
+## Lending Group brief — Phase 3: facility editor + re-cut UI + group pack
+
+Second half of Part B. The model from Phase 2 is now interactive end
+to end: brokers edit facilities per deal, move them between deals in a
+group with three different interaction methods, and generate a single
+coordinated submission pack spanning the whole group.
+
+### Per-deal facility editor (B6)
+Replaces Step 7's single-loan inputs with a unified facility list.
+- **Model.** `state.calc.facilities[]` siblings `state.calc.newLoan`.
+  Primary (facility[0]) keeps living in `newLoan` so the ~30 legacy
+  callers (KPI strip, copilot, commentary, max-loan finder, AI
+  prompts) keep working. Extras live in `facilities[]`. The editor
+  treats them identically — broker sees one list.
+- **Helpers** (all globally callable): `allFacilities()`,
+  `primaryFacilityFromCalc()`, `addFacility()`, `removeFacility(id)`,
+  `splitFacility(id)`, `updateFacilityField(id, field, value)`,
+  `toggleFacilitySecurity(id, secId)`, `totalFacilityAmount()`,
+  `totalNewLoanMonthly(buffer)`.
+- **UI.** Living-expenses card (Adults + Dependants) on top; below it,
+  a Facilities card with one row per facility. Each row: P&I/IO
+  toggle · Amount · Rate · Term · IO yrs (when IO) · security chips
+  (multi-select for cross-collateralisation) · [Split] · [Remove]
+  (primary can't be removed). + Add facility button at the bottom.
+- **Serviceability multi-facility.** `computeServiceability()` now
+  sums payments across every facility. IO facilities assess at the
+  *higher* of IO-pay or post-IO P&I-revert over the residual term
+  (lender-standard treatment — avoids understating debt service).
+  LVR and DTI use `totalNewAmt` across facilities, not just primary.
+- **assessedRate** on the serviceability return still reflects the
+  primary's contract + buffer (the headline figure brokers recognise);
+  the per-facility breakdown lives in the new `r.facilities` array.
+
+### Re-cut UI (B5) — three interaction methods, per your "multiway 1,2,3"
+Brokers can move a facility from one deal to another within the same
+group three different ways — choose whatever's fastest in context.
+- **(1) Drag-and-drop.** Each facility row in group detail is
+  `draggable="true"`; deal cards accept drops via dragover/drop
+  handlers. Source row goes translucent (`.dragging`); target deal
+  gets a dashed steel-blue ring (`.drop-target`).
+- **(2) Move-control.** Each facility row has a "Move →" button
+  that opens a chooser listing the other deals in the group.
+- **(3) Keyboard alt.** Focus a facility row and press `M` to open
+  the same chooser. Row hint: *"drag a facility onto another deal
+  in this group · or use the Move button · or focus a row and
+  press M"*.
+- **`moveFacility(srcDeal, facId, tgtDeal)`** splices the facility
+  out of source, re-ids it under the target deal, pushes onto
+  target, then bumps the group's `proposal_status` to `'recut'`
+  (the proposal banner flips amber so the broker has a visual
+  marker the group is no longer the AI's proposed shape).
+- **Primary facility can't be detached** — it's the deal's anchor,
+  so a primary move means moving the whole deal (the brief calls
+  this out). Move on a primary toasts the explanation.
+
+### Group submission pack (B7) — cover + per-deal append + cross-deal summary
+- **Cover page.** Group id + name + broker + date + status badge
+  (proposed / confirmed / re-cut) + stability badge + a lede
+  paragraph in italic Georgia that frames the submission for the
+  assessor, followed by a rollup table (total lending, group LVR,
+  security value, securities count, serviceable deals, status).
+- **Deal index.** One row per deal with applicants, lender,
+  lending amount, security count, stability pill.
+- **Per-deal one-pagers** (one section per deal, page-break-before
+  in print): purpose, lender, applicants, totals, facilities table
+  (type/amount/rate/term/IO-yrs/secured-by), securities table,
+  pending-items callout when stability blockers exist.
+- **Cross-deal summary** at the end: every facility in one table
+  (with group total), every security in one table (with group
+  security value), and a final group-metrics block. Opens in a new
+  tab via the existing `openPackWindow()` helper; the new tab is
+  fully self-contained (Georgia / Menlo type, ASIC-pack look) and
+  prints to A4 with proper page breaks.
+
+### Hydration safety
+- `synthCalcForDeal(deal)` derives a minimal calc snapshot from the
+  deal blob + `DEMO_DEAL_INTEL` for seeded deals that haven't been
+  opened yet — so group rollup, stability and facility rows render
+  *something useful* even when `deal.calc` is undefined.
+- `dealFacilities`, `computeDealStability`, `computeGroupRollup`
+  all route through the synth fallback.
+
+### Smoke harness — +23 Phase 3 checks (313/313 passing)
+- Helper exposure · primary facility synthesis from newLoan ·
+  addFacility / updateFacilityField / splitFacility / removeFacility ·
+  toggleFacilitySecurity flip · computeServiceability sums across
+  facilities · `r.facilities` array · Step 7 facility editor render ·
+  group-detail re-cut row + Move button + recut hint · moveFacility
+  source/target round-trip + 'recut' status flip · group pack
+  DOCTYPE + title + cover + deal index + per-deal pages + cross-deal
+  summary + facilities/securities tables.
+
+## Lending Group brief — Phase 2: model + Pipeline Deals/Groups toggle
+
+First half of Part B. Introduces the **Lending Group → Deals →
+Facilities ↔ Securities** model in-memory + localStorage, and the
+Pipeline's new **Deals | Groups** toggle with full group-list +
+group-detail views. Facility editing per deal + the re-cut UI ship
+in Phase 3. The Supabase migration stays DRAFT (not applied).
+
+- **State + model.** `state.lendingGroups`, `state.activeGroup`,
+  `state.pipelineView`. Each group is a thin index over `DEALS` —
+  `{ id:'G-N', name, kind, proposal_status, deal_ids:[], data }`.
+  Deals stay in `DEALS[]`; group membership is a single id per deal
+  (per the user's "deals can move between groups freely" rule).
+- **localStorage persistence** under `debtiq.lendingGroups.v1` —
+  groups + the chosen pipeline view round-trip across reloads.
+  Hydrated on boot via `loadLendingGroups()`. No Supabase changes.
+- **Helpers** (all globally callable):
+  - `createGroup({ name, kind, deal_ids, proposal_status })`
+  - `addDealToGroup(dealId, groupId)` / `removeDealFromGroup(dealId)`
+  - `renameGroup(id, name)` / `deleteGroup(id)` /
+    `setGroupProposalStatus(id, 'proposed'|'confirmed'|'recut')`
+  - `groupOfDeal(dealId)` / `dealsInGroup(groupId)` /
+    `ungroupedDeals()`
+  - `dealFacilities(deal)` — derives a single implicit facility
+    from `deal.calc.newLoan` + every security on the deal. Phase 3
+    replaces the derivation with broker-edited facility rows.
+  - `computeDealStability(deal)` — strict rules: purpose set, ≥1
+    applicant with positive income, ≥1 security with value, ≥1
+    facility with amount, no unresolved document conflicts. Returns
+    `{ ready, blockers:[] }`. Per the user's "Strict but still
+    able to submit" pick, this is a *signal* not a *gate* — the
+    Generate-group-pack button never disables.
+  - `computeGroupStability(group)` rolls up per-deal stability with
+    a per-deal blocker list; `computeGroupRollup(group)` returns
+    total lending / group LVR / security value / serviceable count.
+- **Pipeline toggle (Deals | Groups).** Sits in the page-head;
+  state persists. Switching to Groups while a group is open
+  collapses the detail screen back to the list.
+- **Groups list view.** Group cards with `id · name · deal count ·
+  total lending · stability pill`. Expand inline to see each deal's
+  one-line summary + per-deal stability pill + "Open group view"
+  CTA. Below: an "Ungrouped deals" section listing deals with no
+  group assignment, each with a "Move to group →" button.
+- **Group detail view.** Header (id, name, stability + meta) +
+  proposal banner + group rollup bar (total lending, group LVR,
+  security value, serviceable deals) + per-deal expandable cards
+  showing applicants, purpose, facilities, securities, blockers,
+  and "Open deal-builder →" / "Remove from group" actions.
+- **Proposal banner (B4 — "proposed, not imposed").** Three states:
+  `proposed` (steel-blue, Confirm/Re-cut buttons) → `confirmed`
+  (green, Re-cut button) → `recut` (amber, Confirm-split button).
+  Banner copy explains the default split rule (one deal per
+  borrowing entity).
+- **Stability pill semantics.** Stable (green) when every deal in
+  the group is ready. Pending (amber, with tooltip listing the
+  specific blockers per deal) otherwise. Empty (muted) for a group
+  with zero deals.
+- **Create / move / delete** via the lightweight `window.prompt`
+  flows — keeps the surface small. Phase 3 replaces these with a
+  proper dialog as part of the re-cut UI work.
+- **Empty state** for "no groups yet" explains what a lending
+  group IS in editorial voice (family-style submissions, business
+  across entities, refi + new purchase) + a Create-group button.
+- **Generate group pack** wired to a minimal placeholder — toasts
+  the group totals; the full pack generator ships in Phase 3 by
+  re-using the existing `buildPackHTML` patterns.
+- **setActiveDeal hardened.** When loading a deal that predates
+  the Phase 3 purpose field, hydrate `state.calc.purpose` from
+  `wizDealTypeToPurpose(d.type)` so stability + the deal-spine
+  banner have something to render.
+- **Smoke harness** +25 Phase 2 checks (helpers exposed, default
+  state, toggle render, empty state, create/add/remove/delete,
+  groupOfDeal / ungroupedDeals, persistence round-trip, group
+  detail render, proposal banner state transitions, stability
+  blocker detection + resolution). **290/290 passing.**
+
+**Deferred to Phase 3 (queued, not half-shipped):**
+- Per-deal facility editing (add / remove / split / merge facility
+  rows within the atomic deal-builder).
+- Re-cut UI (drag-and-drop + Move-control + keyboard alt) for
+  moving facilities between deals.
+- Full group submission pack generator (replaces the toast).
+
+## Lending Group brief — Phase 0/1: audit + Part A polish (A2 + A9)
+
+Round-2 brief. Phase 0 was an audit-only pass with one new artefact:
+the **proposed Supabase migration** for the Lending Group model
+(`supabase/migrations/0001_lending_groups.sql`). The migration is
+DRAFT — uncommitted-by-default — and must be applied manually via the
+Supabase SQL editor. No live database change.
+
+Phase 1 picked up the two Part A items that the previous overhaul
+left half-done after the user's confirmation pass:
+
+- **A2 — broker shell spacing parity.** Broker command bar promoted to
+  `height:54px` and `padding:10px 18px` so it matches the assessor's
+  `.ac-cmd-bar` rhythm exactly. Hairline thickness, gap, vertical
+  separators all aligned. Broker chrome stays light paper; assessor
+  stays dark ink — by design (per user confirmation), to keep the
+  visual distinction between client work and lender review.
+  Added the `.cmd-sep` primitive that rhymes with assessor's
+  `.ac-cmd-sep`.
+- **A9 — progressive disclosure on Calculate.** Completed steps
+  auto-collapse to a one-line summary; broker can re-expand any step
+  at any time, and that explicit choice always wins over the auto
+  rule (the page never fights the broker).
+  - `isStepComplete(num)` — Step 1 = purpose set, Step 2 = at least
+    one included entity with at least one positive income, Step 3 =
+    at least one security with a value, Step 7 = loan amount + rate
+    both > 0. Step 6 is the deferred stub and never collapses.
+  - `isStepCollapsed(num)` — `state.calc.stepsManual[num]` wins; else
+    falls back to `isStepComplete(num)`.
+  - `toggleStepCollapse(num)` — toggles + persists user intent.
+  - `stepSummary(num)` — emits a calm one-liner (mono+tabular for
+    the numbers): "Refinance" / "2 applicants · 4 income, 1 liability
+    line" / "1 security · $1,000,000 total" / "$785,000 over 30 yrs
+    at 6.24%".
+  - `stepHeader(num, title, desc, badge, opts)` now accepts a
+    `{ collapsed, summary, clickable }` options bag. The head becomes
+    a `role="button"` with `aria-expanded`, full keyboard handling
+    (Enter + Space), and a small steel "Edit" pill on collapsed steps.
+    CSS gates body visibility via `.step-frame.collapsed`.
+- **Smoke** +8 Part A checks (command-bar height + padding, helper
+  exposure, Step 1 auto-collapse, summary line render, Step 6
+  deferred head is not interactive, user-toggle persists). **265/265
+  passing.**
+
+**Schema migration — for review only**
+`supabase/migrations/0001_lending_groups.sql` (NEW). Five new tables:
+`lending_groups`, `facilities`, `securities`, `facility_securities`
+(many-to-many), plus three additive columns on existing `deals`
+(`group_id`, `purpose`, `entity_kind`). Full RLS mirrors the existing
+`deals` policies; `public.touch_updated_at()` trigger reused. The
+existing `deals.data jsonb` blob is untouched so `loadDeals()` /
+`saveDeal()` continue to work byte-for-byte. Apply via the Supabase
+SQL editor when ready; the frontend will adopt the new shape during
+Phase 2 of this brief and gracefully fall back to the existing shape
+when the new tables don't exist.
+
+## Broker overhaul — Phase 4: voice & finish
+
+Calm copy, semantic tokens everywhere they belong, monospaced
+numbers, AU framing. Small but felt-everywhere.
+
+- **Calmer toasts.** "Deal D-XYZ submitted successfully!" →
+  "Deal D-XYZ submitted." "Welcome back, Jordan!" → "Welcome back."
+  Same for the broker + assessor variants.
+- **Decorative emoji removed** from AI Copilot insights:
+  📎 (no docs), 👥 (multi-applicant), 🏠 (multi-security),
+  📂 (missing docs), 📝 (extraction review), 🔔 (overdue) all
+  replaced with the calmer ⚠ / ▲ / ℹ glyph family already in use
+  for semantic state. Document-type icons (used in extraction
+  listings) intentionally kept — they're functional, not decoration.
+- **Marketing glyphs out** of lender comparison tables. The "★"
+  next to recommended lenders and "🏆" next to the best rate become
+  small editorial pills ("recommended" / "best") in the green
+  semantic colour. AI Pilot button drops its "▶" play arrow.
+- **noDealPrompt empty state** retired the 👤 / 🏠 / 📂 ghost emoji
+  in favour of the ink monogram SVG already used by the logo;
+  copy moved to serif italic for the brand voice.
+- **Raw hex literals scrubbed** from components — `#CBD2DC` (5
+  dashed-border instances in upload zones and the OCR test pane)
+  now `var(--line2)`; `#A7F3D0` (the green-on-ink JSON output)
+  now `var(--green-on-ink)`. Inline JS handlers updated to use
+  CSS variable references too (`this.style.borderColor='var(--line2)'`)
+  since the browser resolves them at paint time.
+- **Numbers wear mono + tabular**. `.lvr-badge` (the wizard's
+  large LVR/loan/security badge) was sized for impact but rendered
+  in Plus Jakarta; now `font-family:var(--mono)` +
+  `font-variant-numeric:tabular-nums` so the digits don't jiggle
+  as values change.
+- **Inline rule explainers.** Income and Liabilities subsection
+  headers in the calculator now carry a tiny italic note:
+  - Income: "variable types (overtime, bonus, commission, rental)
+    are shaded per lender policy. Hover the assessed value for the
+    rule."
+  - Liabilities: "credit cards stress to 3.8% of limit; HECS to 1%;
+    amortising debt at rate + buffer."
+- **AU spelling pass** confirmed clean (no `analyze`, `customize`,
+  `organization`, `behavior`, `optimize`, `prioritize` in
+  user-facing strings). `autocomplete="organization"` retained on
+  the login form — it's an HTML attribute name browsers expect in
+  US spelling.
+- **Smoke harness** +10 Phase 4 checks (raw-hex scrub, toast tone,
+  emoji removal in insights + tables + empty state, mono on LVR
+  badge, inline shading + liability explainers, monogram in
+  noDealPrompt). **257/257 passing.**
+
+## Broker overhaul — Phase 3: deal-as-spine + atomic stepped builder
+
+The deal is the spine, and Calculate is a view of it. Restructured
+the calculator into named, numbered steps so the architecture is
+visible, not just true. AI Pilot wears the same banner so the shared
+record is obvious from both sides.
+
+- **Deal-spine banner** — small editorial line at the top of both
+  Calculate and AI Pilot: deal ID + a one-line note that the two
+  pages share the same record + a CTA to jump between them. Hidden
+  when no deal is active.
+- **Step framework primitives.** `stepHeader(num, title, desc, badge)`
+  emits the numbered head with a serif title, italic intent line, and
+  a status badge (`ok` / `attn` / `note` / `muted`). `.step-frame`
+  wraps each atom as a clinical card on the editorial canvas.
+- **Step 1 — Purpose** (new). Four tile options
+  (Purchase / Refinance / Investment / Construction) in a radiogroup.
+  Persisted to `state.calc.purpose`; seeded on deal creation from
+  the wizard's `dealType` via `wizDealTypeToPurpose()` (Owner Occupier
+  / First Home / SMSF / Commercial → purchase; Investment → investment;
+  Refinance → refinance).
+- **Step 2 — Applicants & details.** Wraps the existing entity cards
+  in a labelled step frame; per-entity Income (Step 4) and
+  Liabilities (Step 5) remain nested inside each card with their
+  existing tables.
+- **Step 3 — Securities.** Wraps the existing `securitiesBuilderHTML()`
+  builder. Step badge reads "ok" when securities are listed,
+  "needs attention" when implicit-only.
+- **Step 6 — Assets.** Rendered as a deferred step frame — clear
+  "Coming soon" note pointing users to the Documents tab for now.
+  This is honest about scope: per-entity asset rows need a careful
+  state-model addition and are queued for a follow-up.
+- **Step 7 — Living expenses & loan structure.** The existing
+  loan-amount / rate / term / adults / dependants block, re-headed
+  with a description that names HEM and the rate buffer explicitly.
+- **Step 8 — Result.** Lives in the right pane (the existing
+  verdict hero + gauges). No structural change; the step framework
+  acknowledges this is the deliberate "calm output" half of the
+  calculator.
+- **AI Pilot copy** updated — the hero paragraph now explains that
+  Pilot writes into the same record the Calculator reads from
+  ("enter once, never re-key") and surfaces the spine banner.
+- **Architectural note: shared record.** `state.calc` was already the
+  single source of truth for both Calculate and AI Pilot —
+  `applyExtractedProfile()` writes directly into `state.calc.entities`,
+  `state.calc.newLoan` and friends. Phase 3 makes this *visible*
+  through the spine banner + step framework; no data flow was changed
+  (low regression risk on `mergeExtracted()`, `reconcile()`, lender
+  ranking, or the serviceability engine).
+- **Smoke harness** +17 Phase 3 checks (helper primitives, default
+  purpose, wizard → calc purpose mapping, step frames 1-7 present,
+  Step 6 deferred-state visible, Purpose tile activation reflects
+  state, AI Pilot spine banner + copy, banner hidden when no active
+  deal). **247/247 passing.**
+
+**Deferred from Phase 3** — flagged for follow-up rather than
+half-shipped:
+- Per-entity Assets data model + UI (Step 6 placeholder shows the
+  intended scope).
+- Multipart scenarios under one deal (split loans, scenario
+  comparison). Needs deal-level `scenarios:[]` array + a switcher
+  + scenario-aware deal save/restore — designed as its own pass.
+- Step-by-step progressive disclosure animation (the current
+  rendering shows all steps at once; happy-path collapse on
+  completion is a polish item, queued behind core flow validation).
+
+## Broker overhaul — Phase 2: consolidated right dock
+
+Replaced three separate right-side surfaces — the always-open AI
+copilot panel, the floating Policy & Rates drawer, and the bottom
+Live Timeline strip — with **one tabbed, collapsible right dock**.
+Closable. Persisted. Same mental model whichever tab you're on.
+
+- **New `#rightDock`** (`<aside>`) sits where `#copilotPanel` used to
+  be. Four tabs: **AI Copilot · Policy · Timeline · Conditions**.
+  Header carries the dock title, model metadata, the live AI dot,
+  and a collapse chevron.
+- **Collapse to rail.** Clicking the chevron collapses the dock to a
+  48px-wide vertical icon strip (`AI · PO · TL · CN`) and gives the
+  width back to the workspace. The rail's expand button opens it back
+  up. State persists per browser (`debtiq.dock.v1` localStorage).
+- **Tab switch from rail expands the dock** to the chosen tab —
+  calmer than a silent no-op when the user clicks into a collapsed
+  surface.
+- **Floating Policy & Rates drawer + `#pdHandle` retired** —
+  `togglePolicyDrawer()` is now a back-compat shim that routes
+  through `expandRightDock('policy')`. `renderPolicyDrawer()` no
+  longer needs its `policyDrawerOpen` guard and writes into the
+  dock's policy pane.
+- **Bottom Live Timeline strip retired.** `renderTimeline()` writes
+  vertical events into the Timeline pane (no more truncation; the
+  dock body scrolls). `toggleTimeline()` shim routes through
+  `expandRightDock('timeline')`. Dot colours upgraded for legibility
+  on the light dock background.
+- **Conditions tab** uses the existing `derivedConditions()` engine
+  via `panelConditions()` — outstanding/satisfied cards with the
+  same code chips. A small count badge sits on the Conditions tab
+  showing outstanding items; tab gains `.has-attention` styling when
+  > 0. Tab refreshes automatically on `setActiveDeal` /
+  `clearActiveDeal`; empty state when no deal is active.
+- **CSS housekeeping.** Removed orphaned styles for `#liveTimeline`,
+  `.tl-label`, `.pd-handle`, `#policyDrawer`, `.pd-head`, `.pd-title`,
+  `.pd-icon`, `.pd-btns`. Kept `.pd-ctx`, `.pd-row-*`, `.tl-event`,
+  `.tl-dot`, `.tl-time`, `.tl-text` since they're still used inside
+  the dock panes. Print + responsive selectors updated to reference
+  `#rightDock`.
+- **State + persistence.** New `state.rightDockOpen` /
+  `state.rightDockTab` keys hydrated from localStorage on boot
+  (separate key from broker preferences — preferences are a
+  considered choice, dock state is ephemeral session UI).
+- **Smoke harness.** +14 Phase 2 checks (dock structure, tab switch
+  + aria-selected, collapse/expand, rail render, conditions cards,
+  conditions empty state, persistence round-trip, legacy shims).
+  Two existing assertions about the retired drawer + timeline strip
+  rewritten to target the dock instead. **230/230 passing.**
+
+## Broker overhaul — Phase 1: shell · home routing · account · settings
+
+First phase of the broker-side architecture + UX pass driven by user
+critique. Frontend only — no `functions/`, no `supabase/`, no
+`lenders.js`, no `/api/*` contract changes. Demo and live modes both
+work identically afterwards.
+
+- **Three-layer token architecture.** Added a semantic layer
+  (`--surface-editorial`, `--surface-clinical`, `--text-primary`,
+  `--text-secondary`, `--accent-interactive`, `--status-pass`/-`caution`/
+  -`fail`, `--hairline`, `--focus-ring`) and a numeric spacing
+  (`--space-1`…`--space-9`) + type (`--fs-xs`…`--fs-5xl`) scale on top
+  of the existing brand primitives. Primitives unchanged; existing
+  compatibility aliases unchanged; new code references semantics.
+- **Density + reduced-motion classes** (`body.density-compact`,
+  `body.reduced-motion`) driven by Settings → Preferences. Compact
+  shrinks chrome heights and tightens card padding; reduced-motion
+  collapses transitions/animations across the board.
+- **Logo is a real home button** in both shells. Broker logo →
+  `goTab('pipeline')`; assessor logo → assessment queue (via
+  `setAssessView('queue')` if present, otherwise `initAssessorShell`).
+  Focusable, keyboard-operable, visible focus ring.
+- **Role toggle switches workspaces** (was: cosmetic class flip
+  that only hid the Assessment tab). `setRole('assessor')` now hides
+  `#app`, shows `#assessorApp`, and runs `initAssessorShell()`;
+  `setRole('broker')` does the reverse via `init()`. Idempotent —
+  no-op when already on the requested role.
+- **Avatar becomes the account menu trigger** in both shells. Click
+  opens **Account · Settings · Sign out**; Account opens Settings on
+  the Account tab; Settings opens Settings on the Preferences tab;
+  Sign out runs the existing `doSignOut()` (clears Supabase session +
+  reloads back to the branching login). Click-away and ESC dismiss.
+  ESC also closes the settings overlay (previously needed an X-click).
+- **Settings → Preferences** — new tab with five toggles, persisted
+  to `localStorage` under `debtiq.settings.v1` and re-hydrated on
+  every boot before the first render:
+  - **Density** (comfortable | compact)
+  - **Number format** (1,234,567 grouped | 1234567 plain) — read by
+    `fmtMoney` so it applies everywhere money is rendered
+  - **Reduce motion** — toggles `body.reduced-motion`
+  - **Default lender** — seeds `state.lender` on each new deal
+  - **Default assessment buffer** — seeds `state.manual.bufferPct`
+    on each new deal (existing deals keep what they were set up with;
+    consistent with the "seeds new deals only" note in the UI copy)
+- **Settings persistence helpers**: `loadSettings()` /
+  `saveSettings()` / `applySettings()` / `setSetting(key,value)`.
+  Boot calls `loadSettings()` + `applySettings()` before
+  `initBackend()` so density/reduced-motion are visible from frame 1.
+- **Lingering "Netlify" copy** in the AI settings pane updated to
+  "Cloudflare Pages" (post-migration cleanup).
+- **Smoke harness** extended with 21 Phase 1 checks (semantic
+  tokens, spacing/type scale, home button DOM, account menu DOM +
+  open/close + aria-expanded, Preferences pane fields, density and
+  reduced-motion class application, localStorage round-trip,
+  `fmtMoney` numberFormat both modes, `startNewDeal` seeding from
+  preferences, `setRole` workspace switch, `goHome` route, sign-out
+  wiring). **216/216 passing.**
+
 ## Round (platform migration) — Netlify → Cloudflare Pages + Pages Functions
 
 Moved every backend handler off Netlify Functions to Cloudflare Pages
