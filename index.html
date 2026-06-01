@@ -857,6 +857,32 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .acc-mini.is-disabled{opacity:.45;cursor:not-allowed}
 
 /* ============================================================
+   ASSETS BUILDER — Step 6 per-entity asset rows
+   ============================================================ */
+.assets-builder{display:flex;flex-direction:column;gap:14px}
+.asset-entity-block{border:1px solid var(--line);border-radius:8px;background:var(--surface-paper);padding:12px 14px}
+.asset-entity-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.aeh-name{font-family:var(--serif);font-style:italic;font-weight:500;font-size:14px;color:var(--t1)}
+.aeh-meta{font-size:11px;color:var(--t3-cool);letter-spacing:.02em}
+.asset-rows{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.asset-row{display:grid;grid-template-columns:160px 1fr 130px 1fr 32px;gap:8px;align-items:center}
+.asset-row select,.asset-row input{font-size:12.5px;padding:7px 9px;border:1px solid var(--line);border-radius:5px;background:var(--white);color:var(--t1);min-height:34px}
+.asset-row select{font-family:var(--ui)}
+.asset-row .ar-value{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.asset-row select:focus-visible,.asset-row input:focus-visible{outline:none;border-color:var(--steel);box-shadow:var(--focus-ring)}
+.asset-row .ar-x{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid var(--line);border-radius:5px;background:var(--white);color:var(--t3-cool);cursor:pointer}
+.asset-row .ar-x:hover{color:var(--red);border-color:var(--red)}
+.asset-row .ar-x:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.asset-empty{font-family:var(--serif);font-style:italic;font-size:12px;color:var(--t3-cool);padding:6px 0;margin:0}
+.asset-note{font-family:var(--serif);font-style:italic;font-size:11.5px;color:var(--t3-cool);line-height:1.5;margin:4px 0 0;padding-top:4px;border-top:1px dashed var(--line)}
+@media(max-width:640px){
+  .asset-row{grid-template-columns:1fr 1fr 32px;grid-template-rows:auto auto;row-gap:6px}
+  .asset-row .ar-type{grid-column:1 / 3}
+  .asset-row .ar-label{grid-column:1 / 3}
+  .asset-row .ar-x{grid-column:3;grid-row:1 / 3;height:auto}
+}
+
+/* ============================================================
    ONE-PAGE DEAL WORKFLOW (Phase 1)
    ============================================================ */
 .wf-wrap{margin-top:32px;padding-top:24px;border-top:2px solid var(--line)}
@@ -2329,6 +2355,17 @@ const LIAB_TYPES = {
   mortgage:'Mortgage', personal:'Personal Loan', car:'Car Loan',
   credit_card:'Credit Card', hecs:'HECS/Student', bnpl:'BNPL', other:'Other'
 };
+// Asset types — atomic deal-builder Step 6 (per-entity rows). Used for the
+// balance-sheet view; assets aren't used in serviceability stress, but they
+// inform lender assessment + the disclosure spine (asset position).
+const ASSET_TYPES = {
+  savings:        'Cash & savings',
+  super:          'Superannuation',
+  property_other: 'Other property',
+  vehicle:        'Vehicle',
+  shares:         'Shares / managed funds',
+  other:          'Other asset'
+};
 
 /* ---------- Finance engine ---------- */
 function PMT(principal, annualRate, years){
@@ -2440,7 +2477,8 @@ const state = {
       {id:'e_1', kind:'individual', name:'Primary Borrower', role:'borrower', abn:'', trustee_name:'',
        ownership_pct:100, included:true, open:true,
        incomes:[{type:'salary_ft', amount:142000, amount_y1:142000, amount_y2:138000, use_average:false, evidence_years:2}],
-       liabilities:[{type:'credit_card', balance:15000, rate:21.9, term:0}]}
+       liabilities:[{type:'credit_card', balance:15000, rate:21.9, term:0}],
+       assets:[{type:'savings', label:'Everyday savings', value:48000, notes:''}]}
     ],
     securities:[],         // multi-security model; falls back to wizData.propValue when empty
     dependants:0,
@@ -3632,8 +3670,9 @@ function newEntity(kind){
   return { id:'e_'+Math.random().toString(36).slice(2,8), kind:kind||'individual', name:'',
     role:'borrower', abn:'', trustee_name:'', ownership_pct:100, included:true, open:true,
     incomes:[{type:'salary_ft', amount:0, amount_y1:0, amount_y2:0, use_average:false, evidence_years:2}],
-    liabilities:[] };
+    liabilities:[], assets:[] };
 }
+function newAsset(){ return { type:'savings', label:'', value:0, notes:'' }; }
 function newSecurity(){
   return { id:'s_'+Math.random().toString(36).slice(2,8), address:'', suburb:'', state:'NSW', postcode:'',
     property_type:'House', purpose:'Owner Occupied', transaction:'Purchasing',
@@ -5241,10 +5280,22 @@ function renderCalcEditor(){
     <div class="step-frame-body">
       ${securitiesBuilderHTML()}
     </div></div>`;
-  /* ---- Step 6: Assets (deferred — entity-level asset rows are coming) ---- */
-  // Deferred step never collapses (the body IS the message).
-  const stepAssets = `<div class="step-frame deferred">${stepHeader('6','Assets',null,{label:'Coming soon',tone:'muted'},{clickable:false})}
-    <div class="step-frame-body">For now, attach asset evidence (statements, super, vehicles) on the <b>Documents</b> tab — AI Pilot extracts them into the deal record. Per-entity asset rows land in a follow-up.</div></div>`;
+  /* ---- Step 6: Assets — per-entity asset rows (MASTER Phase 2, completed). ---- */
+  // Assets are NOT used in serviceability stress (they don't generate income
+  // or debt service) — they inform balance-sheet position for the lender and
+  // the disclosure spine. Defaults to empty per entity; old deals without
+  // .assets[] hydrate as []. AI Pilot extraction also writes here.
+  const s6Collapsed = isStepCollapsed('6');
+  const includedEnts = state.calc.entities.filter(e => e.included !== false);
+  const totalAssetVal = includedEnts.reduce((sum,e)=>
+    sum + (Array.isArray(e.assets) ? e.assets.reduce((s,a)=>s+(parseFloat(a.value)||0),0) : 0), 0);
+  const totalAssetCount = includedEnts.reduce((s,e)=> s + (Array.isArray(e.assets)?e.assets.length:0), 0);
+  const stepAssets = `<div class="step-frame ${s6Collapsed?'collapsed':''}">${stepHeader('6','Assets',
+      totalAssetCount ? `${totalAssetCount} ${totalAssetCount===1?'asset':'assets'} listed — total ${fmtMoney(totalAssetVal)}.`
+                      : 'Cash, super, vehicles, shares — recorded per entity (informs lender assessment, not serviceability).',
+      {label: totalAssetCount?'ok':'optional', tone: totalAssetCount?'ok':'muted'},
+      {collapsed:s6Collapsed, summary:stepSummary('6')})}
+    <div class="step-frame-body">${assetsBuilderHTML()}</div></div>`;
   /* ---- Step 7: Living expenses + Loan structure header now collapse-aware ---- */
   const s7Collapsed = isStepCollapsed('7');
   const stepLoanWrapped = `<div class="step-frame ${s7Collapsed?'collapsed':''}">${stepHeader('7','Living expenses & loan structure','Household shape feeds HEM (a floor on declared expenses). Loan amount + rate + term close the picture.',{label:'Required',tone:'ok'}, {collapsed:s7Collapsed, summary:stepSummary('7')})}
@@ -5384,6 +5435,71 @@ function toggleSecurityTitle(i){
   if(document.getElementById('wizContent')) renderWizStep();
   const lp=document.getElementById('page-loan'); if(lp) renderLoanTab(lp);
 }
+/* ---- Step 6 helpers: per-entity asset rows (MASTER Phase 2 completion) ---- */
+function _ensureEntityAssets(ei){
+  const e = state.calc.entities[ei]; if(!e) return null;
+  if(!Array.isArray(e.assets)) e.assets = [];
+  return e;
+}
+function addAsset(ei){
+  const e = _ensureEntityAssets(ei); if(!e) return;
+  e.assets.push(newAsset());
+  auditLog('ASSET_ADDED', e.name||'entity', 'Broker','broker');
+  if(document.getElementById('calcEditor')){ renderCalcEditor(); }
+  updateStatusStrip();
+}
+function removeAsset(ei, ai){
+  const e = _ensureEntityAssets(ei); if(!e) return;
+  const r = e.assets.splice(ai,1)[0];
+  auditLog('ASSET_REMOVED', (r&&r.label)||(r&&ASSET_TYPES[r.type])||'asset', 'Broker','broker');
+  if(document.getElementById('calcEditor')){ renderCalcEditor(); }
+  updateStatusStrip();
+}
+function updateAssetField(ei, ai, field, val){
+  const e = _ensureEntityAssets(ei); if(!e || !e.assets[ai]) return;
+  e.assets[ai][field] = (field==='value') ? (parseFloat(val)||0) : val;
+  if(field==='value' || field==='type'){ updateStatusStrip(); }
+}
+function assetsBuilderHTML(){
+  const ents = state.calc.entities.filter(e => e.included !== false);
+  if(!ents.length){
+    return `<p style="color:var(--t3);font-size:12.5px">Add an applicant (Step 2) to record assets per entity.</p>`;
+  }
+  const blocks = state.calc.entities.map((ent, ei)=>{
+    if(ent.included === false) return '';
+    const assets = Array.isArray(ent.assets) ? ent.assets : [];
+    const total = assets.reduce((s,a)=>s+(parseFloat(a.value)||0), 0);
+    const rows = assets.map((a, ai)=>{
+      const typeOpts = Object.keys(ASSET_TYPES).map(k=>
+        `<option value="${k}" ${a.type===k?'selected':''}>${escHtml(ASSET_TYPES[k])}</option>`).join('');
+      return `<div class="asset-row" data-ai="${ai}">
+        <select class="ar-type" aria-label="Asset type" onchange="updateAssetField(${ei},${ai},'type',this.value)">${typeOpts}</select>
+        <input class="ar-label" type="text" placeholder="Description (e.g. ANZ savings, 2022 Mazda 3)"
+               value="${escHtml(String(a.label||''))}" oninput="updateAssetField(${ei},${ai},'label',this.value)">
+        <input class="ar-value mono" type="number" step="100" placeholder="Value"
+               value="${a.value||''}" oninput="updateAssetField(${ei},${ai},'value',this.value)" aria-label="Asset value">
+        <input class="ar-notes" type="text" placeholder="Notes (optional)"
+               value="${escHtml(String(a.notes||''))}" oninput="updateAssetField(${ei},${ai},'notes',this.value)">
+        <button type="button" class="ar-x" aria-label="Remove asset"
+                onclick="removeAsset(${ei},${ai})">${svgIcon('x',14)}</button>
+      </div>`;
+    }).join('');
+    return `<div class="asset-entity-block">
+      <div class="asset-entity-head">
+        <span class="aeh-name">${escHtml(ent.name||'Entity')}</span>
+        <span class="aeh-meta mono">${assets.length} ${assets.length===1?'asset':'assets'}${assets.length?` · ${fmtMoney(total)}`:''}</span>
+      </div>
+      <div class="asset-rows">
+        ${rows || '<p class="asset-empty">No assets recorded for this entity.</p>'}
+      </div>
+      <button type="button" class="add-row" onclick="addAsset(${ei})">+ Add asset</button>
+    </div>`;
+  }).join('');
+  return `<div class="assets-builder">${blocks}
+    <p class="asset-note">Assets feed the lender's balance-sheet view, not serviceability stress. Cash &amp; savings, super, other property, vehicles, shares — recorded per entity. AI Pilot extraction writes here when it identifies asset evidence in uploaded documents.</p>
+  </div>`;
+}
+
 function securitiesBuilderHTML(){
   state.calc.securities = state.calc.securities || [];
   const secs = state.calc.securities;
@@ -5563,7 +5679,7 @@ function renderCalcResults(animate){
     </div>
     <div class="card" style="padding:16px;margin-bottom:16px">
       <h4 style="font-size:13px;font-weight:700;margin-bottom:6px">${r.verdict==='PASS'?'Why it works':'What to change'}</h4>
-      ${serviceabilityInsights(r).map(x=>`<div class="insight-row"><span class="ic" style="color:var(--${x.tone})">${x.head?'•':x.tone==='green'?'✓':x.tone==='amber'?'➜':'✕'}</span>
+      ${serviceabilityInsights(r).map(x=>`<div class="insight-row"><span class="ic" style="color:var(--${x.tone});display:inline-flex;align-items:center;justify-content:center">${x.head?'<span aria-hidden="true">•</span>':svgIcon(x.tone==='green'?'check':x.tone==='amber'?'alert':'x',14)}</span>
         <span style="font-size:12.5px;font-weight:${x.head?'700':'500'};flex:1">${x.t}</span>
         ${x.apply?`<button class="mini-btn" style="flex-shrink:0" onclick="applyLever('${x.apply}')">Apply</button>`:''}</div>`).join('')}
     </div>
@@ -5758,9 +5874,9 @@ function renderManualResults(animate){
       ${flows.map(f=>`<div class="flow-row"><div class="fl"><span>${f.l}</span><span class="mono">${fmtMoney(f.v)}</span></div><div class="flow-bar"><span style="width:${Math.min(100,f.v/flowMax*100)}%;background:${f.c}"></span></div></div>`).join('')}
     </div>
     <div class="card" style="padding:14px 16px">
-      <div class="insight-row"><span class="ic" style="color:var(--${r.dsr<r.dsrMax?'green':'red'})">${r.dsr<r.dsrMax?'✓':'✕'}</span><span style="font-size:12.5px">DSR ${r.dsr.toFixed(1)}% vs ${r.dsrMax}% ceiling (${activePolicy()?(activePolicy().label):'market'}).</span></div>
-      <div class="insight-row"><span class="ic" style="color:var(--${r.dti<6?'green':r.dti<9?'amber':'red'})">${r.dti<6?'✓':r.dti<9?'➜':'✕'}</span><span style="font-size:12.5px">DTI ${r.dti.toFixed(1)}x — ${r.dti<6?'within standard appetite':r.dti<9?'high (>6x needs justification)':'very high (>9x generally declined)'}.</span></div>
-      <div class="insight-row"><span class="ic" style="color:var(--amber)">⚠</span><span style="font-size:12.5px">Figures are unverified — confirm with payslips, statements and a valuation before submission.</span></div>
+      <div class="insight-row"><span class="ic" style="color:var(--${r.dsr<r.dsrMax?'green':'red'});display:inline-flex;align-items:center">${svgIcon(r.dsr<r.dsrMax?'check':'x',14)}</span><span style="font-size:12.5px">DSR ${r.dsr.toFixed(1)}% vs ${r.dsrMax}% ceiling (${activePolicy()?(activePolicy().label):'market'}).</span></div>
+      <div class="insight-row"><span class="ic" style="color:var(--${r.dti<6?'green':r.dti<9?'amber':'red'});display:inline-flex;align-items:center">${svgIcon(r.dti<6?'check':'alert',14)}</span><span style="font-size:12.5px">DTI ${r.dti.toFixed(1)}x — ${r.dti<6?'within standard appetite':r.dti<9?'high (>6x needs justification)':'very high (>9x generally declined)'}.</span></div>
+      <div class="insight-row"><span class="ic" style="color:var(--amber);display:inline-flex;align-items:center">${svgIcon('alert',14)}</span><span style="font-size:12.5px">Figures are unverified — confirm with payslips, statements and a valuation before submission.</span></div>
     </div>`;
   playGauges(box);
 }
@@ -6697,7 +6813,7 @@ function renderIntel(el){
     </div>`;
 }
 function renderSuggestionList(list){
-  return list.map(s=>`<div class="insight-row"><span class="ic" style="color:var(--brand)">➜</span><span style="font-size:12.5px;font-weight:500">${s}</span></div>`).join('');
+  return list.map(s=>`<div class="insight-row"><span class="ic" style="color:var(--brand);display:inline-flex;align-items:center">${svgIcon('alert',14)}</span><span style="font-size:12.5px;font-weight:500">${s}</span></div>`).join('');
 }
 function refreshAISuggestions(){
   showLoader('Generating fresh suggestions…');
@@ -7390,7 +7506,7 @@ function renderPilotResults(){
     </div>
     <div class="card" style="padding:18px;margin-bottom:14px">
       <h4 style="font-size:13px;font-weight:700;margin-bottom:8px">Next-best levers</h4>
-      ${serviceabilityInsights(r).map(x=>`<div class="insight-row"><span class="ic" style="color:var(--${x.tone})">${x.tone==='green'?'✓':x.tone==='amber'?'➜':'✕'}</span><span style="font-size:12.5px;font-weight:500">${x.t}</span></div>`).join('')}
+      ${serviceabilityInsights(r).map(x=>`<div class="insight-row"><span class="ic" style="color:var(--${x.tone});display:inline-flex;align-items:center;justify-content:center">${svgIcon(x.tone==='green'?'check':x.tone==='amber'?'alert':'x',14)}</span><span style="font-size:12.5px;font-weight:500">${x.t}</span></div>`).join('')}
     </div>
     <div class="card" style="padding:18px;margin-bottom:14px">
       <h4 style="font-size:13px;font-weight:700;margin-bottom:6px">Auto-drafted overview</h4>
@@ -8796,6 +8912,9 @@ function setActiveDeal(dealId){
   }
   // Hydrate calc.purpose from the deal's type if the saved calc didn't carry one (Phase 3 deals predate the field).
   if(!state.calc.purpose) state.calc.purpose = wizDealTypeToPurpose(d.type);
+  // Backfill assets[] on every entity — pre-Phase-2-completion deals + demo intel
+  // were authored before the Assets step existed. Defensive: keep the field present.
+  (state.calc.entities||[]).forEach(e => { if(!Array.isArray(e.assets)) e.assets = []; });
   updateDealStrip();
   updateCopilot();
   // Refresh the dock — conditions count + active pane content for this deal.
@@ -8843,7 +8962,7 @@ function generateCopilotInsights(){
   const insights = [];
   insights.push({
     type: r.verdict==='PASS'?'success':r.verdict==='BORDERLINE'?'warning':'error',
-    icon: r.verdict==='PASS'?'✓':r.verdict==='BORDERLINE'?'▲':'✕',
+    icon: svgIcon(r.verdict==='PASS'?'check':r.verdict==='BORDERLINE'?'alert':'x',14),
     text: r.verdict==='PASS' ? `Services with ${fmtMoney(r.ndi)}/mo surplus`
         : r.verdict==='BORDERLINE' ? `Marginal — ${fmtMoney(Math.abs(r.ndi))}/mo ${r.ndi<0?'short':'surplus'}`
         : `Does not service — ${fmtMoney(-r.ndi)}/mo short`
@@ -8852,21 +8971,21 @@ function generateCopilotInsights(){
     const best = cheapestServiceableLender();
     if(best && best.l!==state.lender) insights.push({ type:'suggestion', icon:'ℹ', text:`${best.label} recommended — services this deal`, action:{ label:'Switch', fn:`useLender('${best.l}')` } });
   }
-  if((r.dtiAssess||{}).flagged) insights.push({ type:'warning', icon:'⚠', text:`DTI ${r.dti.toFixed(1)}x — high-DTI appetite flag${r.dtiAssess.countsToBucket?` (counts to ${r.dtiAssess.bucketPct}% bucket)`:''}` });
+  if((r.dtiAssess||{}).flagged) insights.push({ type:'warning', icon: svgIcon('alert',14), text:`DTI ${r.dti.toFixed(1)}x — high-DTI appetite flag${r.dtiAssess.countsToBucket?` (counts to ${r.dtiAssess.bucketPct}% bucket)`:''}` });
   const deal = DEALS.find(d=>d.id===state.activeDeal);
   const dealDocs = DOCS.filter(d=>d.deal===state.activeDeal);
-  if(deal && dealDocs.length===0) insights.push({ type:'error', icon:'⚠', text:'No documents uploaded', action:{ label:'Upload', fn:`goTab('documents')` } });
+  if(deal && dealDocs.length===0) insights.push({ type:'error', icon: svgIcon('alert',14), text:'No documents uploaded', action:{ label:'Upload', fn:`goTab('documents')` } });
   if(deal && dealDocs.length){
     const worst = worstForensicStatus(state.activeDeal);
-    if(worst==='REVIEW'){ const n = dealDocs.filter(d=>d.forensic && /REVIEW/i.test(d.forensic.status||'')).length; insights.push({ type:'urgent', icon:'⚠', text:`Document integrity: ${n} document(s) need review`, action:{ label:'Review', fn:`goTab('documents')` } }); }
-    else if(worst==='CAUTION') insights.push({ type:'warning', icon:'▲', text:'Document integrity: minor anomalies to verify', action:{ label:'Open', fn:`goTab('documents')` } });
-    else if(worst==='CLEAR') insights.push({ type:'success', icon:'✓', text:'All documents passed integrity scan' });
+    if(worst==='REVIEW'){ const n = dealDocs.filter(d=>d.forensic && /REVIEW/i.test(d.forensic.status||'')).length; insights.push({ type:'urgent', icon: svgIcon('alert',14), text:`Document integrity: ${n} document(s) need review`, action:{ label:'Review', fn:`goTab('documents')` } }); }
+    else if(worst==='CAUTION') insights.push({ type:'warning', icon: svgIcon('alert',14), text:'Document integrity: minor anomalies to verify', action:{ label:'Open', fn:`goTab('documents')` } });
+    else if(worst==='CLEAR') insights.push({ type:'success', icon: svgIcon('check',14), text:'All documents passed integrity scan' });
   }
   if(deal){
     const conflicts=((state.conflicts&&state.conflicts[state.activeDeal])||[]).filter(c=>!c.resolved).length;
     if(conflicts) insights.push({ type:'urgent', icon:'⚖', text:`${conflicts} document conflict(s) to resolve`, action:{ label:'Resolve', fn:`goTab('documents')` } });
     const need=dealDocs.filter(d=>d.extracted && Object.keys(d.extracted.fields||{}).length && !d.reviewed).length;
-    if(need) insights.push({ type:'warning', icon:'▲', text:`${need} extraction(s) need review`, action:{ label:'Review', fn:`goReview()` } });
+    if(need) insights.push({ type:'warning', icon: svgIcon('alert',14), text:`${need} extraction(s) need review`, action:{ label:'Review', fn:`goReview()` } });
     const missing=missingDocTypes(state.activeDeal);
     if(missing.length) insights.push({ type:'info', icon:'ℹ', text:`Missing: ${missing.map(t=>(DOC_TYPES[t]||{}).label||t).slice(0,3).join(', ')}`, action:{ label:'Docs', fn:`goTab('documents')` } });
     // Multi-entity / multi-security insights
@@ -8875,16 +8994,16 @@ function generateCopilotInsights(){
     if(nEnts>1) insights.push({ type:'info', icon:'ℹ', text:`${nEnts} applicants/entities on this file` });
     if(nSecs>1) insights.push({ type:'info', icon:'ℹ', text:`${nSecs} securities · LVR ${r.lvr.toFixed(1)}% across all` });
     const blankSec = (state.calc.securities||[]).find(s=>!(parseFloat(s.value)||0));
-    if(blankSec) insights.push({ type:'warning', icon:'⚠', text:'One or more securities has no value entered', action:{ label:'Loan', fn:`goTab('loan')` } });
+    if(blankSec) insights.push({ type:'warning', icon: svgIcon('alert',14), text:'One or more securities has no value entered', action:{ label:'Loan', fn:`goTab('loan')` } });
     const noIncomeEnt = state.calc.entities.filter(e=>e.included!==false && (!e.incomes||!e.incomes.length||e.incomes.every(i=>!(parseFloat(i.amount_y1||i.amount)||0))));
-    if(noIncomeEnt.length) insights.push({ type:'warning', icon:'⚠', text:`${noIncomeEnt.length} included entity/entities have no income`, action:{ label:'Calc', fn:`goTab('calculate')` } });
+    if(noIncomeEnt.length) insights.push({ type:'warning', icon: svgIcon('alert',14), text:`${noIncomeEnt.length} included entity/entities have no income`, action:{ label:'Calc', fn:`goTab('calculate')` } });
   }
   const hasSelfEmp = state.calc.entities.some(e=> e.incomes.some(i=> i.type==='self_emp'));
   if(hasSelfEmp && pol && pol.self_employed_min_years) insights.push({ type:'info', icon:'ℹ', text:`${pol.label}: ${pol.self_employed_min_years}yr self-employed docs required` });
-  if(r.lvr>90) insights.push({ type:'warning', icon:'⚠', text:`LVR ${r.lvr.toFixed(1)}% — LMI required` });
+  if(r.lvr>90) insights.push({ type:'warning', icon: svgIcon('alert',14), text:`LVR ${r.lvr.toFixed(1)}% — LMI required` });
   if(deal && deal.next_action_date){
     const days = Math.ceil((new Date(deal.next_action_date)-new Date())/864e5);
-    if(days<=1) insights.push({ type:'urgent', icon:'⚠', text: days<=0 ? `Overdue: ${esc(deal.next_action_note||'Follow up')}` : `Due tomorrow: ${esc(deal.next_action_note||'Follow up')}` });
+    if(days<=1) insights.push({ type:'urgent', icon: svgIcon('alert',14), text: days<=0 ? `Overdue: ${esc(deal.next_action_note||'Follow up')}` : `Due tomorrow: ${esc(deal.next_action_note||'Follow up')}` });
   }
   return insights;
 }

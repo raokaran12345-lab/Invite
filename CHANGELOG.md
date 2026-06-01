@@ -1,5 +1,38 @@
 # DebtIQ v6 — Changelog
 
+## Completing deferred items — MASTER Phase 2 (Assets) + Phase 9 (emoji sweep)
+
+Two items left explicitly deferred from the MASTER program — now closed.
+
+### Phase 2 — atomic deal-builder Step 6 Assets is no longer a stub
+- `ASSET_TYPES` (6 categories): Cash & savings · Superannuation · Other
+  property · Vehicle · Shares / managed funds · Other.
+- `assets:[]` added to every entity default; `newEntity()` seeds it.
+- New helpers `addAsset(ei)` / `removeAsset(ei,ai)` /
+  `updateAssetField(ei,ai,field,value)` — audit-logged.
+- `assetsBuilderHTML()` renders per-entity asset blocks (each included
+  entity gets its own grid of asset rows with type · description ·
+  value · notes · remove). Mirrors the existing Income/Liabilities
+  per-entity pattern.
+- Step 6 now collapsible like every other step (was `deferred`,
+  unclickable, "Coming soon"); status pill rolls up correctly.
+- Defensive shim in `setActiveDeal` — backfills `assets:[]` on entities
+  hydrated from demo intel or older saved deals.
+- Demo seed entity carries a starter asset (Everyday savings $48k) so
+  the new step has something to render.
+
+### Phase 9 — final inline status-emoji sweep
+- Every `icon: '✓'|'▲'|'⚠'|'✕'` literal in the deal-spine insight
+  emitters converted to `svgIcon('check'|'alert'|'x', 14)`.
+- Inline insight-row glyphs in `renderManualResults()` and the assessor
+  side-panel insights swept the same way (DSR · DTI · unverified ·
+  recommendation arrows). No raw emoji left in any `class="insight-row"`
+  emission site.
+
+Smoke: +8 new checks, two stale Step-6-deferred checks updated to
+assert the new behaviour. **403/403 passing.**
+
+
 ## Workflow brief — Phase 1: one-page deal workflow (data model + UI)
 
 Adds the staged task workflow on the deal page, **below** the existing
