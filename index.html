@@ -903,6 +903,11 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .wf-stage-head{display:grid;grid-template-columns:36px 1fr 220px 22px;gap:14px;align-items:center;width:100%;text-align:left;padding:14px 18px;background:transparent;border:none;cursor:pointer;font-family:inherit;color:inherit;border-bottom:1px solid transparent;transition:background .12s,border-color .12s}
 .wf-stage-head:hover{background:var(--ink-bg)}
 .wf-stage-head:focus-visible{outline:none;box-shadow:var(--focus-ring) inset}
+.wf-stage-action:focus-visible,.wf-status-btn:focus-visible,.wf-v-state-btn:focus-visible,.wf-v-toggle:focus-visible,.wf-v-openlink:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+.bt-attach-doc:focus-visible,.bt-raise:focus-visible{outline:none;box-shadow:var(--focus-ring)}
+@media(prefers-reduced-motion: reduce){
+  .wf-stage,.wf-task,.wf-verify,.bt-task{transition:none !important;animation:none !important}
+}
 .wf-stage.open .wf-stage-head{border-bottom-color:var(--line)}
 .wf-stage-num{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:var(--white);border:1.5px solid var(--line);font-family:var(--mono);font-size:12px;font-weight:700;color:var(--t3-cool)}
 .wf-stage.complete .wf-stage-num{background:var(--green);color:#fff;border-color:var(--green)}
@@ -948,7 +953,7 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .wf-commentary-wrap textarea:focus-visible{outline:none;border-color:var(--steel);box-shadow:var(--focus-ring)}
 .wf-task-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:6px}
 .wf-status-group{display:inline-flex;gap:0;border:1px solid var(--line);border-radius:var(--r-pill);overflow:hidden;background:var(--paper);padding:2px}
-.wf-status-btn{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.02em;padding:5px 12px;background:transparent;border:none;cursor:pointer;color:var(--t2);border-radius:var(--r-pill);min-height:28px}
+.wf-status-btn{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.02em;padding:8px 14px;background:transparent;border:none;cursor:pointer;color:var(--t2);border-radius:var(--r-pill);min-height:36px}
 .wf-status-btn:hover{color:var(--t1)}
 .wf-status-btn:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .wf-status-btn.active{background:var(--ink);color:#fff}
@@ -984,7 +989,7 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .wf-v-notes-wrap textarea{font-family:var(--ui);font-size:12px;padding:7px 10px;border:1px solid var(--line);border-radius:5px;background:var(--white);color:var(--t1);resize:vertical;min-height:48px}
 .wf-v-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .wf-v-state-group{display:inline-flex;border:1px solid var(--line);border-radius:var(--r-pill);background:var(--paper);padding:2px}
-.wf-v-state-btn{font-family:var(--mono);font-size:10.5px;font-weight:700;padding:5px 11px;background:transparent;border:none;cursor:pointer;color:var(--t2);border-radius:var(--r-pill)}
+.wf-v-state-btn{font-family:var(--mono);font-size:10.5px;font-weight:700;padding:7px 12px;background:transparent;border:none;cursor:pointer;color:var(--t2);border-radius:var(--r-pill);min-height:32px}
 .wf-v-state-btn:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .wf-v-state-btn.active.unverified{background:var(--ink);color:#fff}
 .wf-v-state-btn.active.verified{background:var(--green);color:#fff}
@@ -1011,6 +1016,53 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .wf-bb-cap{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--steel)}
 .wf-bb-status{font-size:13px;font-weight:600;color:var(--t1)}
 .wf-bb-note{font-size:12px;color:var(--t2);line-height:1.5;flex:1;min-width:240px}
+
+/* Phase 4 — broker-tasks channel (cross-wall) */
+.bt-wrap{margin-top:24px;padding-top:24px;border-top:2px solid var(--line)}
+.bt-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:12px;flex-wrap:wrap}
+.bt-cap{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--brass);margin-bottom:6px}
+.bt-title{font-family:var(--serif);font-style:italic;font-weight:500;font-size:20px;letter-spacing:-.005em;color:var(--t1);margin:0 0 4px}
+.bt-sub{font-size:12.5px;color:var(--t2);line-height:1.5;max-width:640px;margin:0}
+.bt-raise{align-self:flex-start}
+.bt-counts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.bt-chip{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:4px 10px;border-radius:var(--r-pill);background:var(--ink-bg);color:var(--t3-cool)}
+.bt-chip.open{background:var(--steel-bg);color:var(--steel)}
+.bt-chip.responded{background:var(--amber-bg);color:var(--amber)}
+.bt-chip.closed{background:var(--green-bg);color:var(--green)}
+.bt-tasks{display:flex;flex-direction:column;gap:12px}
+.bt-task{border:1px solid var(--line);border-radius:8px;background:var(--surface-clinical);padding:14px 16px}
+.bt-task.responded{border-color:rgba(176,141,79,.35);background:rgba(176,141,79,.04)}
+.bt-task.closed{border-color:rgba(11,107,79,.35);background:rgba(11,107,79,.04);opacity:.92}
+.bt-task-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.bt-task-status{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:var(--r-pill);background:var(--ink);color:#fff}
+.bt-task.open .bt-task-status{background:var(--steel)}
+.bt-task.responded .bt-task-status{background:var(--brass)}
+.bt-task.closed .bt-task-status{background:var(--green)}
+.bt-task-title{font-family:var(--serif);font-style:italic;font-weight:500;font-size:16px;color:var(--t1);margin:0;flex:1;min-width:200px}
+.bt-task-meta{font-size:10.5px;color:var(--t3-cool);letter-spacing:.02em}
+.bt-task-detail{font-size:13px;color:var(--t2);line-height:1.5;margin-bottom:10px;padding:8px 11px;background:var(--paper);border-radius:6px}
+.bt-section-cap{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3-warm);margin-bottom:4px}
+.bt-attachments{margin-bottom:10px}
+.bt-attach{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px dashed var(--line)}
+.bt-attach:last-child{border-bottom:none}
+.bt-attach-doc{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--steel);background:none;border:none;cursor:pointer;padding:0;text-align:left}
+.bt-attach-doc:hover{text-decoration:underline}
+.bt-attach-meta{font-size:10px;color:var(--t3-cool)}
+.bt-comments{margin-bottom:10px}
+.bt-comment{padding:8px 10px;background:var(--paper);border-left:3px solid var(--steel);border-radius:0 6px 6px 0;margin-bottom:6px}
+.bt-comment-head{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--t3-cool);margin-bottom:4px}
+.bt-comment-by{font-weight:600;color:var(--t1);font-size:12px}
+.bt-comment-role{font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+.bt-comment-at{margin-left:auto}
+.bt-comment-text{font-size:12.5px;color:var(--t1);line-height:1.5;white-space:pre-wrap}
+.bt-respond{border-top:1px dashed var(--line);padding-top:10px;margin-top:8px}
+.bt-respond textarea{width:100%;font-family:var(--ui);font-size:12.5px;padding:7px 10px;border:1px solid var(--line);border-radius:5px;background:var(--white);color:var(--t1);resize:vertical;min-height:48px}
+.bt-respond textarea:focus-visible{outline:none;border-color:var(--steel);box-shadow:var(--focus-ring)}
+.bt-respond-actions{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.bt-respond-actions select{font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:5px;background:var(--white);color:var(--t1);flex:1;min-width:160px}
+.bt-task-foot{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:8px}
+.bt-closed-note{font-size:10.5px;color:var(--t3-cool)}
+.bt-empty{text-align:center;color:var(--t3-cool);font-style:italic;font-family:var(--serif);font-size:13px;padding:24px}
 
 /* Docs tab — focused row highlight on openVerificationDoc() */
 #docBody tr.focused{background:var(--steel-bg);outline:2px solid var(--steel);outline-offset:-2px;animation:wfFocusPulse 2.4s ease}
@@ -2588,6 +2640,13 @@ const state = {
   // Phase 1 = data model + UI. Field verification (Phase 2), access regimes
   // (Phase 3), broker-tasks tab (Phase 4) ride on top in later commits.
   workflows:{},
+  // Broker-tasks channel (workflow brief Phase 4) — sanctioned cross-wall.
+  // Lender raises a task for the broker (request a doc, clarify a figure);
+  // broker responds with commentary + uploads. This is the ONLY channel that
+  // crosses the broker/lender wall — it never exposes lender-internal stage
+  // content. Keyed by deal id → { tasks:[ { id, title, detail, status,
+  // raised_by, raised_at, commentary[], attachments[], closed_at } ] }.
+  brokerTasks:{},
   // Access control / RBAC (MASTER program Phase 5 — owner-held).
   // DEMO-FIRST: this is an in-memory org+membership model persisted to
   // localStorage (ACCESS_LS_KEY), mirroring the DRAFT migration
@@ -3049,7 +3108,11 @@ const CAPABILITIES = {
   'stage.fulfil.edit'    : ['owner','admin','processor'],
   'stage.docgen.edit'    : ['owner','admin','processor'],
   'stage.settle.edit'    : ['owner','admin','broker'],
-  'workflow.override'    : ['owner','admin']
+  'workflow.override'    : ['owner','admin'],
+  // Broker-tasks (cross-wall channel, Phase 4)
+  'brokertask.raise'     : ['owner','admin','processor'],     // lender side raises
+  'brokertask.respond'   : ['owner','admin','broker'],         // broker side responds
+  'brokertask.close'     : ['owner','admin','processor']       // lender closes when satisfied
 };
 const SENSITIVE_CAPS = new Set(['member.role.change','member.remove','pii.export','settlement.action','workflow.override']);
 
@@ -5224,17 +5287,20 @@ function renderServiceability(el){
       <div id="calcEditor"></div>
       <div class="calc-results" id="calcResults"></div>
     </div>
-    ${state.activeDeal ? `<div id="dealWorkflow"></div>` : ''}`;
+    ${state.activeDeal ? `<div id="dealWorkflow"></div><div id="brokerTasksHost"></div>` : ''}`;
   if(state.svcTab==='manual'){ renderManualEditor(); renderManualResults(true); }
   else {
     renderCalcEditor();
     if(state.calcRevealed){ renderCalcResults(true); }
     else { runCalcReveal(); }
   }
-  // One-page deal workflow (Phase 1) — Decision/Worksheet stays above; workflow lives below.
+  // One-page deal workflow (Phase 1-3) + broker-tasks channel (Phase 4)
+  // — Decision/Worksheet stays above; workflow + cross-wall channel live below.
   if(state.activeDeal){
     const wfHost = document.getElementById('dealWorkflow');
     if(wfHost) renderWorkflow(wfHost, state.activeDeal);
+    const btHost = document.getElementById('brokerTasksHost');
+    if(btHost) renderBrokerTasks(btHost, state.activeDeal);
   }
   updateStatusStrip();
 }
@@ -9110,6 +9176,219 @@ function _wfRenderTask(dealId, stageId, task, readOnly){
   </div>`;
 }
 
+/* ============================================================
+   BROKER-TASKS CHANNEL  (workflow brief — Phase 4)
+   ------------------------------------------------------------
+   The only sanctioned cross-wall channel. Lender raises a task for
+   the broker (request a doc, clarify a figure); broker responds with
+   commentary + attached documents. Never exposes lender-internal
+   workflow stage content. Every raise / respond / close hits the
+   audit trail.
+   ============================================================ */
+const BROKERTASKS_LS_KEY = 'debtiq.brokerTasks.v1';
+
+function loadBrokerTasks(){
+  try{
+    const raw = localStorage.getItem(BROKERTASKS_LS_KEY);
+    if(!raw) return;
+    const obj = JSON.parse(raw);
+    if(obj && typeof obj === 'object') state.brokerTasks = obj;
+  }catch(e){}
+}
+function saveBrokerTasks(){
+  try{ localStorage.setItem(BROKERTASKS_LS_KEY, JSON.stringify(state.brokerTasks||{})); }catch(e){}
+}
+function getBrokerTaskBoard(dealId){
+  const id = dealId || state.activeDeal || '_unsaved';
+  state.brokerTasks = state.brokerTasks || {};
+  if(!state.brokerTasks[id]) state.brokerTasks[id] = { tasks: [] };
+  return state.brokerTasks[id];
+}
+function _btId(){ return 'bt_'+Math.random().toString(36).slice(2,9); }
+function btRaiseTask(dealId, title, detail){
+  if(!requirePermission('brokertask.raise','raise a broker task')) return null;
+  if(!title || !String(title).trim()){ toast('Give the task a title.', 'err'); return null; }
+  const board = getBrokerTaskBoard(dealId);
+  const a = _wfActor();
+  const task = {
+    id: _btId(),
+    title: String(title).trim(),
+    detail: String(detail||'').trim(),
+    status: 'open',                  // 'open' | 'responded' | 'closed'
+    raised_by: a.actor,
+    raised_role: a.role,
+    raised_at: new Date().toISOString(),
+    commentary: [],                  // [{ at, by, role, text }]
+    attachments: [],                 // [{ doc_name, attached_at, attached_by }]
+    closed_at: null,
+    closed_by: null
+  };
+  board.tasks.unshift(task);
+  saveBrokerTasks();
+  if(typeof auditLog==='function') auditLog('BROKERTASK_RAISED', `${dealId}: "${task.title}"`, a.actor, a.role);
+  toast('Task raised for the broker.', 'ok');
+  rerenderBrokerTasks(dealId);
+  return task;
+}
+function btRespond(dealId, taskId, text){
+  if(!requirePermission('brokertask.respond','respond to a broker task')) return;
+  const board = getBrokerTaskBoard(dealId);
+  const task = (board.tasks||[]).find(t => t.id === taskId); if(!task) return;
+  if(task.status === 'closed'){ toast('Task is closed.', 'err'); return; }
+  const a = _wfActor();
+  task.commentary.push({ at:new Date().toISOString(), by:a.actor, role:a.role, text:String(text||'').trim() });
+  if(task.status === 'open') task.status = 'responded';
+  saveBrokerTasks();
+  if(typeof auditLog==='function') auditLog('BROKERTASK_RESPONDED', `${dealId}/${taskId}`, a.actor, a.role);
+  rerenderBrokerTasks(dealId);
+}
+function btAttachDoc(dealId, taskId, docName){
+  // The broker attaches an existing per-deal document; uploads happen in the Docs tab.
+  if(!requirePermission('brokertask.respond','attach a document')) return;
+  if(!docName){ toast('Pick a document from the Docs tab first.', 'err'); return; }
+  const board = getBrokerTaskBoard(dealId);
+  const task = (board.tasks||[]).find(t => t.id === taskId); if(!task) return;
+  const a = _wfActor();
+  task.attachments.push({ doc_name: docName, attached_at: new Date().toISOString(), attached_by: a.actor });
+  if(task.status === 'open') task.status = 'responded';
+  saveBrokerTasks();
+  if(typeof auditLog==='function') auditLog('BROKERTASK_ATTACHED', `${dealId}/${taskId}: ${docName}`, a.actor, a.role);
+  rerenderBrokerTasks(dealId);
+}
+function btClose(dealId, taskId){
+  if(!requirePermission('brokertask.close','close a broker task')) return;
+  const board = getBrokerTaskBoard(dealId);
+  const task = (board.tasks||[]).find(t => t.id === taskId); if(!task) return;
+  if(task.status === 'closed'){ toast('Task already closed.', 'info'); return; }
+  const a = _wfActor();
+  task.status = 'closed';
+  task.closed_at = new Date().toISOString();
+  task.closed_by = a.actor;
+  saveBrokerTasks();
+  if(typeof auditLog==='function') auditLog('BROKERTASK_CLOSED', `${dealId}/${taskId}`, a.actor, a.role);
+  toast('Task closed.', 'ok');
+  rerenderBrokerTasks(dealId);
+}
+function btReopen(dealId, taskId){
+  if(!requirePermission('brokertask.raise','reopen a broker task')) return;
+  const board = getBrokerTaskBoard(dealId);
+  const task = (board.tasks||[]).find(t => t.id === taskId); if(!task) return;
+  task.status = 'open';
+  task.closed_at = null;
+  task.closed_by = null;
+  saveBrokerTasks();
+  const a = _wfActor();
+  if(typeof auditLog==='function') auditLog('BROKERTASK_REOPENED', `${dealId}/${taskId}`, a.actor, a.role);
+  rerenderBrokerTasks(dealId);
+}
+function btCounts(dealId){
+  const board = getBrokerTaskBoard(dealId);
+  const open = (board.tasks||[]).filter(t => t.status==='open').length;
+  const responded = (board.tasks||[]).filter(t => t.status==='responded').length;
+  const closed = (board.tasks||[]).filter(t => t.status==='closed').length;
+  return { open, responded, closed, total: (board.tasks||[]).length };
+}
+function rerenderBrokerTasks(dealId){
+  const host = document.getElementById('brokerTasksHost');
+  if(host) renderBrokerTasks(host, dealId || state.activeDeal);
+}
+function btOpenRaisePrompt(dealId){
+  if(!can('brokertask.raise')){ toast("Your role can't raise broker tasks.", 'err'); return; }
+  const title = (typeof window.prompt==='function') ? window.prompt('Title for the broker task (e.g. "Latest payslip required"):', '') : null;
+  if(title === null) return;
+  const detail = (typeof window.prompt==='function') ? window.prompt('What does the broker need to do? (optional)', '') : '';
+  if(detail === null) return;
+  btRaiseTask(dealId, title, detail);
+}
+
+function renderBrokerTasks(host, dealId){
+  if(!host) return;
+  if(!dealId){
+    host.innerHTML = `<div class="bt-empty"><p>Open a deal to use its broker-tasks channel.</p></div>`;
+    return;
+  }
+  const board = getBrokerTaskBoard(dealId);
+  const isBroker = wfIsBrokerView();
+  const counts = btCounts(dealId);
+  const dealDocs = (typeof DOCS!=='undefined') ? DOCS.filter(d => d.deal === dealId) : [];
+
+  const taskCard = (t) => {
+    const stateCls = t.status;
+    const commentaryHtml = (t.commentary||[]).map(c => `
+      <div class="bt-comment">
+        <div class="bt-comment-head">
+          <span class="bt-comment-by">${escHtml(c.by||'')}</span>
+          <span class="bt-comment-role mono">${escHtml(c.role||'')}</span>
+          <span class="bt-comment-at mono">${new Date(c.at).toLocaleString('en-AU',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
+        </div>
+        <div class="bt-comment-text">${escHtml(c.text||'')}</div>
+      </div>`).join('');
+    const attachmentsHtml = (t.attachments||[]).map(a => `
+      <div class="bt-attach">
+        <button type="button" class="bt-attach-doc" onclick="openVerificationDoc('${escArg(a.doc_name)}')">${escHtml(a.doc_name)} ↗</button>
+        <span class="mono bt-attach-meta">${escHtml(a.attached_by||'')} · ${new Date(a.attached_at).toLocaleString('en-AU',{day:'2-digit',month:'short'})}</span>
+      </div>`).join('');
+    const respondHtml = (t.status !== 'closed' && can('brokertask.respond')) ? `
+      <div class="bt-respond">
+        <textarea id="bt-reply-${escHtml(t.id)}" rows="2" placeholder="Reply to the lender — figures, what you've attached, anything they need to know."></textarea>
+        <div class="bt-respond-actions">
+          <select id="bt-attach-${escHtml(t.id)}">
+            <option value="">— attach a document —</option>
+            ${dealDocs.map(d => `<option value="${escHtml(d.name)}">${escHtml(d.name)}</option>`).join('')}
+          </select>
+          <button type="button" class="acc-mini" onclick="(function(){var s=document.getElementById('bt-attach-${escArg(t.id)}'); if(s&&s.value){btAttachDoc('${escArg(dealId)}','${escArg(t.id)}', s.value); s.value='';}})()">Attach</button>
+          <button type="button" class="acc-mini" onclick="(function(){var ta=document.getElementById('bt-reply-${escArg(t.id)}'); if(ta&&ta.value.trim()){btRespond('${escArg(dealId)}','${escArg(t.id)}', ta.value); ta.value='';}})()">Reply</button>
+        </div>
+      </div>` : '';
+    const closeHtml = (t.status !== 'closed' && can('brokertask.close')) ? `
+      <button type="button" class="acc-mini bt-close" onclick="btClose('${escArg(dealId)}','${escArg(t.id)}')">Mark closed</button>` :
+      ((t.status === 'closed' && can('brokertask.raise')) ? `<button type="button" class="acc-mini bt-reopen" onclick="btReopen('${escArg(dealId)}','${escArg(t.id)}')">Reopen</button>` : '');
+    const closedNote = t.status === 'closed' && t.closed_at
+      ? `<span class="bt-closed-note mono">closed ${new Date(t.closed_at).toLocaleString('en-AU',{day:'2-digit',month:'short'})}${t.closed_by?` · ${escHtml(t.closed_by)}`:''}</span>` : '';
+
+    return `<div class="bt-task ${stateCls}">
+      <div class="bt-task-head">
+        <span class="bt-task-status">${stateCls === 'open' ? 'Open' : stateCls === 'responded' ? 'Responded' : 'Closed'}</span>
+        <h4 class="bt-task-title">${escHtml(t.title)}</h4>
+        <span class="bt-task-meta mono">raised by ${escHtml(t.raised_by||'')} · ${new Date(t.raised_at).toLocaleString('en-AU',{day:'2-digit',month:'short'})}</span>
+      </div>
+      ${t.detail ? `<div class="bt-task-detail">${escHtml(t.detail)}</div>` : ''}
+      ${attachmentsHtml ? `<div class="bt-attachments"><div class="bt-section-cap">Attached documents</div>${attachmentsHtml}</div>` : ''}
+      ${commentaryHtml ? `<div class="bt-comments"><div class="bt-section-cap">Conversation</div>${commentaryHtml}</div>` : ''}
+      ${respondHtml}
+      <div class="bt-task-foot">${closeHtml}${closedNote}</div>
+    </div>`;
+  };
+
+  const tasksHtml = board.tasks.length
+    ? board.tasks.map(taskCard).join('')
+    : `<p class="bt-empty">No tasks raised yet for this deal.</p>`;
+
+  const raiseBtn = can('brokertask.raise')
+    ? `<button type="button" class="btn primary bt-raise" onclick="btOpenRaisePrompt('${escArg(dealId)}')">+ Raise broker task</button>`
+    : '';
+
+  host.innerHTML = `
+    <section class="bt-wrap" aria-label="Broker tasks">
+      <div class="bt-head">
+        <div>
+          <span class="bt-cap">Broker tasks</span>
+          <h2 class="bt-title">${isBroker ? 'What the lender needs from you' : 'Cross-wall channel to the broker'}</h2>
+          <p class="bt-sub">${isBroker
+            ? 'The only place lender requests show up. Respond here with commentary and documents — never lender-internal stages.'
+            : 'Raise a task to request a document or clarification. The broker sees ONLY these tasks, not the lender stages. Every raise / response / close is audit-logged.'}</p>
+        </div>
+        ${raiseBtn}
+      </div>
+      <div class="bt-counts">
+        <span class="bt-chip open mono">${counts.open} open</span>
+        <span class="bt-chip responded mono">${counts.responded} responded</span>
+        <span class="bt-chip closed mono">${counts.closed} closed</span>
+      </div>
+      <div class="bt-tasks">${tasksHtml}</div>
+    </section>`;
+}
+
 function loadCompliance(){
   try{ const o = JSON.parse(localStorage.getItem(COMPLIANCE_LS_KEY)||'null'); if(o && typeof o==='object') state.compliance = o; }catch(e){}
 }
@@ -11427,6 +11706,7 @@ function showDesignPreview(){
   loadCompliance();           // pull compliance-evidence slice (Phase 6)
   loadSettlement();           // pull settlement-coordination slice (Phase 7)
   loadWorkflows();            // pull one-page workflow slice (workflow brief Phase 1)
+  loadBrokerTasks();          // pull broker-tasks channel slice (workflow brief Phase 4)
   startSession();             // begin the session clock (timeout + re-auth tracking)
   await initBackend();
   renderLoginMode();

@@ -1,5 +1,74 @@
 # DebtIQ v6 — Changelog
 
+## Workflow brief — Phase 4 (broker-tasks channel) + Phase 5 (finish/UX-QA)
+
+Closing the workflow brief. Phase 4 introduces the sanctioned cross-wall
+channel; Phase 5 is the UX-QA + audit-trail closure pass.
+
+### Phase 4 — broker-tasks channel
+
+The ONLY channel that crosses the broker/lender wall. Lender raises a
+task; broker responds with commentary + document attachments; lender
+closes. Lender-internal workflow stages stay hidden.
+
+- New caps: `brokertask.raise` (owner/admin/processor),
+  `brokertask.respond` (owner/admin/broker), `brokertask.close`
+  (owner/admin/processor).
+- `state.brokerTasks[dealId] = { tasks: [...] }`. Each task:
+  `{ id, title, detail, status:'open'|'responded'|'closed',
+     raised_by/role/at, commentary:[{at,by,role,text}],
+     attachments:[{doc_name,attached_at,attached_by}],
+     closed_at, closed_by }`.
+- Helpers: `btRaiseTask` / `btRespond` / `btAttachDoc` (links existing
+  per-deal docs — uploads still happen in the Docs tab) / `btClose` /
+  `btReopen` / `btCounts` / `btOpenRaisePrompt`. All RBAC-gated; every
+  raise / respond / attach / close / reopen hits `auditLog` as
+  `BROKERTASK_RAISED|RESPONDED|ATTACHED|CLOSED|REOPENED`.
+- UI: mounts under the workflow on the Calculate page (per-deal). Three
+  status pills (Open · Responded · Closed) with counts in the header;
+  task cards show conversation, attachments, and a reply form (textarea
+  + attach-doc picker) that only renders for users with the right cap.
+  Broker view uses different framing copy ("What the lender needs
+  from you") — never reveals lender-internal stage content.
+- localStorage `debtiq.brokerTasks.v1` keyed by deal id; hydrated on
+  boot via `loadBrokerTasks()`.
+
+### Phase 5 — finish / UX-QA
+
+- All workflow + broker-task interactives gain `:focus-visible` rings
+  (stage actions, status buttons, verify state group, verify toggle,
+  open-doc link, broker-tasks raise + attach).
+- Touch targets bumped — `wf-status-btn` ≥36px (was 28px),
+  `wf-v-state-btn` ≥32px.
+- Reduced-motion media query (`@media (prefers-reduced-motion: reduce)`)
+  disables transitions/animations on `.wf-stage`, `.wf-task`,
+  `.wf-verify`, `.bt-task`.
+- Demo + live both boot (smoke verifies end-to-end with no crashes).
+- Audit-trail coverage verified across every workflow phase:
+  `WF_TASK_STATUS · WF_VERIFY_STATE · STAGE_OVERRIDE · STAGE_SENT_BACK ·
+  BROKERTASK_RAISED · BROKERTASK_RESPONDED · BROKERTASK_ATTACHED ·
+  BROKERTASK_CLOSED · BROKERTASK_REOPENED · ASSET_ADDED · ASSET_REMOVED`.
+
+Smoke: +16 Phase 4–5 checks (**449/449 passing**).
+
+### Workflow brief complete
+
+| Phase | Status |
+|---|---|
+| 1 — Data model + one-page UI | ✅ shipped |
+| 2 — Field-level verification + Docs-tab link | ✅ shipped |
+| 3 — Access regimes (broker wall + lender ownership + soft-gate + override + send-back) | ✅ shipped |
+| 4 — Broker-tasks channel | ✅ shipped |
+| 5 — Finish / UX-QA | ✅ shipped |
+
+All five phases committed on `claude/debtiq-access-bDD0b`. No `/api/*`,
+auth, or `lenders.js` change. No migration applied — the existing
+`saveDeal()` path round-trips `deal.workflow` when live mode is on; the
+workflow / broker-tasks slices persist to localStorage in the meantime.
+A reviewable migration for dedicated tables is an `ARCH-REVIEW` step
+when membership wiring goes live (Phase 5 of MASTER).
+
+
 ## Completing deferred items — MASTER Phase 2 (Assets) + Phase 9 (emoji sweep)
 
 Two items left explicitly deferred from the MASTER program — now closed.
