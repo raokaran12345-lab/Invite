@@ -1,0 +1,108 @@
+DEBTIQ — PRODUCT REQUIREMENTS
+Last updated: 2026-06-01
+
+FUNCTIONAL REQUIREMENTS (delivered unless marked)
+
+1. DEAL LIFECYCLE
+- New deal wizard captures lender, deal type, property value, applicant.
+- Atomic deal-builder is the single source of truth (Calculate + AI Pilot
+  share the same deal record).
+- Deal status flow: BROKER_REVIEW → DOCS_PENDING → SUBMITTED → AI_PROCESSING
+  → APPROVED. MORE_INFO can branch back at any stage.
+
+2. LENDING GROUPS
+- A group spans N deals; each deal has its own entities, securities,
+  facilities, compliance, settlement, workflow.
+- Facility↔Security is many-to-many. Cross-coll first-class. Facilities
+  can span deal boundaries within a group.
+- Broker confirms / re-cuts DebtIQ's proposed split (drag + Move ctrl +
+  keyboard). Re-cut recomputes both deals' stability and the group rollup.
+- Group submission pack: cover + per-deal append + cross-deal summary.
+
+3. SERVICEABILITY ENGINE (APRA 2026 framing)
+- Buffer +3% over actual rate, per-lender.
+- HEM = max(declared, band).
+- Per-lender income shading.
+- Multi-facility sum (IO uses max(IO-pay, post-IO P&I)).
+- Verdict: PASS if NDI>0 AND DSR<dsrMax; BORDERLINE if close; FAIL else.
+- DTI is per-lender appetite FLAG (not a block). OO/investor split.
+  Bridging + new-build/construction exempt from high-DTI bucket.
+
+4. ACCESS CONTROL
+- Roles: Owner → Admin → Broker → Processor → Read-only. Deny-by-default.
+- Owner primacy: only Owner can grant/revoke Owner; ≥1 Owner always;
+  no Owner-by-invite.
+- Invitations are token-HASHED. Invitee completes own credentials via
+  normal sign-in path. Build agent never creates accounts.
+- Session timeout (default 30m). Re-auth for sensitive actions
+  (member.role.change, member.remove, pii.export, settlement.action,
+  workflow.override). Re-auth cached 5 minutes.
+- PII masked for roles without pii.view. Export is privileged + logged.
+
+5. COMPLIANCE EVIDENCE
+- Disclosure spine generates 6 docs with field validation, versioning,
+  timestamps, signed-copy capture: Credit Guide · Quote · Credit Proposal
+  Disclosure · Preliminary Assessment · Needs Analysis · Pre-contractual.
+- BID R&O narrative (RG 273) → audit trail with conflict-priority framing.
+- VOI: structured tiers A/B/C. Primary photographic in-date = completes
+  VOI = settlement pre-condition.
+- ADM disclosure: version-stamped acknowledgement.
+- APP 5 collection notice recorded at every doc upload.
+- Retention policy + privileged-deletion path (re-auth + logged).
+
+6. SETTLEMENT COORDINATION
+- 7 ordered stages: formal approval → loan docs issued → signed →
+  settlement booked → DISCHARGE of vendor mortgage (key dependency) →
+  funds cleared → settled.
+- Pre-condition gates: VOI complete → docs signed; discharge done →
+  settled; large-deposit flag → funds clearance → settled.
+- ELNO adapter (PEXA/Sympli) is ISOLATED + MOCK BY DEFAULT. Real
+  connectivity is ARCH/LEGAL-REVIEW.
+- Coordinate-only. No trust money. Stated plainly in the UI.
+
+7. ONE-PAGE DEAL WORKFLOW
+- Sits below the Decision + Worksheet on the deal page (untouched above).
+- 7 stages: Broker · Pre-assessment · Assessment · Credit · Fulfilment ·
+  Document generation · Settlement.
+- Each stage collapsible; tasks have structured inputs + unlimited
+  commentary + manual 3-state status. Stage rollup automatic; overall
+  file % in header.
+- Field-level verification: 3-state badge (Unverified/Verified/
+  Discrepancy) on verifiable inputs. Doc-type-specific evidence form
+  (payslip / bank statement / NOA / ID / contract / valuation / generic).
+- "Open verification document" → switches to per-deal Docs tab and
+  highlights the row (steel ring, fades over 2.4s).
+- Access regimes: broker hard-lock (lender stages NOT VISIBLE to broker
+  pre- AND post-submit); post-submit broker is view-only. Lender sees the
+  whole file but edits only stages they hold the cap for. Sequential
+  soft-gate. workflow.override bypasses with logged reason. SEND-BACK
+  reopens target → source stages; lender-internal; invisible to broker;
+  audit-logged.
+
+8. BROKER-TASKS CHANNEL
+- Only sanctioned cross-wall channel.
+- Lender raises task (request a doc, clarify a figure) → broker responds
+  with commentary + document attachments (links existing per-deal docs)
+  → lender closes when satisfied.
+- Statuses: open · responded · closed. Reopen allowed.
+- RBAC: brokertask.raise/respond/close. Every action audit-logged.
+
+NON-FUNCTIONAL REQUIREMENTS
+
+- Demo mode works fully offline (no Supabase, no Anthropic).
+- Live mode auto-detected via /api/config.
+- No backend contract change without a reviewable PR.
+- Brand tokens only: paper/ink/steel/brass/green/amber/red. Plus Jakarta
+  Sans + DM Mono + Newsreader. No raw hex in components.
+- Numbers mono + tabular globally.
+- WCAG AA: :focus-visible rings on every interactive, ≥36px targets on
+  status buttons, keyboard navigation, escape routes, reduced-motion.
+- AU spelling and framing throughout.
+
+EXPLICIT NON-REQUIREMENTS / OUT OF SCOPE
+- DebtIQ does not settle and does not hold trust money.
+- DebtIQ is not an AML reporting entity (LEGAL-REVIEW).
+- DebtIQ is not CDR-accredited and is not in CDR scope (document-upload
+  model).
+- The code never asserts the portal "is compliant".
+</content>

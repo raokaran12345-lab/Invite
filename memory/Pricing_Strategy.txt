@@ -1,0 +1,30 @@
+DEBTIQ — PRICING STRATEGY
+Last updated: 2026-06-01
+
+STATUS: NO INFORMATION CAPTURED YET
+
+The owner has not yet shared a pricing strategy for DebtIQ itself (the
+SaaS / per-seat / per-deal monetisation model).
+
+REFERENCE FACT FROM THE BUILD (NOT THE PORTAL'S PRICING)
+The disclosure spine surfaces placeholder broker-commission language in
+the Credit Guide field stubs:
+  "Upfront 0.55–0.70% + trail 0.15–0.20% p.a."
+This is a LEGAL-REVIEW placeholder for the broker's lender-paid commission
+range to be disclosed to the borrower — not DebtIQ's own pricing.
+
+WHAT TO ADD WHEN AVAILABLE
+- Pricing model: per-broker / per-deal / per-lender / volume-based / freemium?
+- Tier names, seat caps, feature gating per tier (RBAC roles align well
+  with seat tiers — Owner/Admin/Broker/Processor/Read-only).
+- Live-mode vs demo-mode gating.
+- Discounts (annual, multi-seat, aggregator partnerships).
+- Currency and tax (AU GST).
+- Migration plan for grandfathered pricing.
+
+WHAT THE BUILD ALREADY SUPPORTS THAT'S RELEVANT TO PRICING
+- Per-broker preferences (state.settings).
+- Per-org membership model (DRAFT migration 0002).
+- Audit log of who did what (basis for usage billing).
+- Pack-generation events (basis for per-pack metering).
+</content>

@@ -1,0 +1,124 @@
+DEBTIQ — MEETING NOTES & BRIEFS RECEIVED
+Last updated: 2026-06-01
+
+This file captures the formal briefs and documents the owner has shared,
+in order received. The full brief text is preserved in the conversation
+transcript; this file is the index + key takeaways.
+
+──────────────────────────────────────────────────────────────────
+BRIEF #1 · LENDING GROUP BUILD-OUT (round 2)
+Received: ~2026-05-30
+──────────────────────────────────────────────────────────────────
+PURPOSE: Introduce the Lending Group ▸ Deals ▸ Facilities ↔ Securities
+model on top of the existing deal page.
+PHASES:
+  0/1 — audit + Part A polish (A2 spacing, A9 step auto-collapse)
+  2   — model + Pipeline Deals/Groups toggle
+  3   — facility editor + re-cut UI + group pack
+  4   — polish + voice + re-verify
+DELIVERED: all four phases. 290/290 → 369/369 progression.
+
+──────────────────────────────────────────────────────────────────
+BRIEF #2 · MASTER INTEGRATION PROGRAM
+Received: 2026-05-31
+──────────────────────────────────────────────────────────────────
+PURPOSE: Integrate the full DebtIQ vision into the live portal. Multi-
+phase, gated, regulated-platform discipline.
+PHASES:
+  0 — Audit & plan [GATE]
+  1 — Foundation: tokens, brand, logo [GATE]
+  2 — Broker platform overhaul [GATE]
+  3 — Lending Group model [GATE]
+  4 — Serviceability engine: 2026 rules [GATE]
+  5 — Security & access control (owner-held) [GATE]
+  6 — Compliance-evidence features [GATE]
+  7 — Settlement coordination layer [GATE]
+  8 — CDR / Open Banking (conditional) [GATE]
+  9 — Finish & verify [GATE]
+KEY GUARDRAILS:
+  - Read before write (audit first).
+  - Backend & data: propose-and-gate. No silent /api/* changes.
+  - Compliance ≠ legal conclusions. Build evidence, don't assert.
+  - No silent third-party integrations.
+  - Phased + gated. Stop after each phase.
+  - Brand + UX-QA discipline throughout.
+  - Ask, don't fabricate.
+  - Access & secrets owner-held. Agent never creates accounts/secrets.
+AUTHORITY FILES REFERENCED (NEVER SUPPLIED):
+  - debtiq-australian-compliance-map.md
+  - debtiq-brand-guide.html
+  - debtiq-assessor-console.html
+  - debtiq-broker-workspace.html
+  - debtiq-lending-group.html
+  - debtiq-serviceability-worksheet.html
+  - debtiq-submission-pack.html
+  - debtiq-login-branching.html
+DELIVERED: Phases 0, 1-finish, 4, 5, 6, 7, 8, 9. Phases 2 + 3 noted as
+"already shipped, pending visual diff" (blocked on missing mockup files).
+Phase 2 Assets step + Phase 9 inline-emoji sweep later closed (the
+"deferred items" commit).
+
+──────────────────────────────────────────────────────────────────
+BRIEF #3 · REGULATORY SOURCE MANIFEST
+Received: 2026-05-31
+──────────────────────────────────────────────────────────────────
+PURPOSE: Pointer document to the official Australian regulatory
+instruments governing DebtIQ. HARD RULE: extract operative clauses from
+the official text, never from this manifest's paraphrase.
+INSTRUMENTS:
+  1. APRA APS 220 Attachment C — DTI mechanics. STANDARD.
+  2. APRA APG 223 — buffer / HEM / shading. GUIDE (CC BY 3.0).
+  3. ASIC RG 273 — BID (broker). GUIDE.
+  4. ASIC RG 209 — responsible lending. GUIDE.
+  5. ASIC INFO 146 — disclosure obligations. GUIDE.
+  6. Privacy Act + APPs + 2024 amdt — ADM + APP 5 + NDB. LAW.
+  7. AML/CTF Act + 2024 reforms — VOI, reporting entity. LAW.
+  8. ARNECC MOR & MPR; ECNL — e-settlement. LAW.
+  9. CDR (ACCC/OAIC). LAW.
+DELIVERED: REG_SOURCES provenance layer wired to engine + worksheet.
+Source-verification: 5 verified + 3 partial + 3 pending (APS 220 Att C,
+RG 209, AML/CTF). Verification happened in three batches as the owner
+supplied PDFs / HTML pages.
+
+──────────────────────────────────────────────────────────────────
+BRIEF #4 · ONE-PAGE DEAL WORKFLOW
+Received: 2026-06-01
+──────────────────────────────────────────────────────────────────
+PURPOSE: Add a staged task workflow to the existing deal page. 7 stages.
+Field-level verification. Critical: split access at submission — broker
+hard-lock vs lender stage-ownership.
+PHASES:
+  1 — Workflow data model + one-page UI
+  2 — Field-level verification + Docs-tab link
+  3 — Access regimes (broker hard-lock + lender ownership + soft-gate
+      + override + send-back)
+  4 — Broker-tasks tab (only cross-wall channel)
+  5 — Finish (audit, brand voice, UX-QA, demo + live)
+AUTHORITY FILE REFERENCED (NEVER SUPPLIED):
+  - debtiq-deal-workflow.html
+DELIVERED: all 5 phases. 395/395 → 449/449 progression.
+
+──────────────────────────────────────────────────────────────────
+OWNER DIRECTIVES OUTSIDE FORMAL BRIEFS
+──────────────────────────────────────────────────────────────────
+2026-06-01: "Complete all the stages and whatever is pending and do not
+automatically start deploying the site. Ask me before doing it."
+  → Honoured: paused at gate; explicit deploy confirmation requested.
+
+2026-06-01: "If nothing is pending then only go and deploy."
+  → Conditional pre-authorisation; agent verified state and merged
+    PR #5 → main.
+
+2026-06-01: "I want my github files to be extremely safe and no one
+should have access to it. I allow you to control it."
+  → Agent declined account-level control (guardrail 8). Audited repo:
+    only owner has access; no secrets in code; main not protected;
+    recommended owner-side hardening (repo visibility, 2FA, branch
+    protection).
+
+2026-06-01: "Keep one main branch which has all the data and delete the
+data/branches which has no use."
+  → Agent confirmed all branches' commits are reachable from main.
+    Could not delete branches from this environment (HTTP 403);
+    instructed owner to delete via GitHub UI.
+</content>

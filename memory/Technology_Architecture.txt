@@ -1,0 +1,111 @@
+DEBTIQ — TECHNOLOGY ARCHITECTURE
+Last updated: 2026-06-01
+
+STACK
+- Single-page web app, single HTML file (~700 KB · ~10,300 lines).
+- No build pipeline, no module system, no bundler, no TypeScript.
+- Inline <style> + inline <script>. External CDN: Google Fonts,
+  @supabase/supabase-js v2, pdfjs-dist 3.11.
+- Cloudflare Pages (static + Functions). Auto-deploys from main.
+- Optional Supabase backend (Postgres + Auth with email/magic-link + RLS).
+- Anthropic Claude API via server-side proxy.
+
+FILE LAYOUT
+- index.html — everything UI + state + engine (the spine).
+- lenders.js — per-lender policy DB (buffer · dsr_max · income_shading ·
+  max_lvr_* · genuine_savings · channel · checklist · etc.).
+- functions/api/_lib.js — CORS + requireSupabaseSession helpers.
+- functions/api/config.js — public SUPABASE_URL / SUPABASE_ANON_KEY.
+- functions/api/claude.js — Anthropic proxy, session-gated.
+- functions/api/extract.js — Claude vision OCR (PDF/image), session-gated.
+- functions/api/classify.js — doc type classifier, session-gated.
+- functions/api/forensics.js — 3-layer tamper signal (metadata + visual
+  + cross-doc), session-gated.
+- supabase/schema.sql — applied: deals table + RLS by user_id.
+- supabase/migrations/0001_lending_groups.sql — DRAFT (not applied).
+- supabase/migrations/0002_access_control.sql — DRAFT (not applied).
+- docs/architecture-map.md — connect-the-dots reference.
+- docs/regulatory-source-manifest.md — instrument pointer document.
+
+STATE MODEL (in-memory, browser)
+Single global `state` object. Slices:
+- state.calc — active deal's calc snapshot (entities, securities, newLoan,
+  facilities, purpose, adults, dependants, declaredExpensesMonthly).
+- DEALS[] — all deals (per-user). Each carries .calc, .workflow, .intel,
+  .activity, .conditions.
+- DOCS[] — all uploaded documents (per-deal).
+- state.lendingGroups[] — groups index, deal_ids[] per group.
+- state.access — org, members, invitations, authLog, session, simulateRole.
+- state.compliance[dealId] — disclosures[], voi, adm, app5, retention.
+- state.settlement[dealId] — stages, workspaceId, bookedDate, largeDeposit.
+- state.workflows[dealId] — version, current_stage, stages{...tasks}.
+- state.brokerTasks[dealId] — { tasks: [...] }.
+- state.auditTrail[] — 200-entry FIFO (role-attributed).
+- state.settings — broker prefs.
+- state.user / state.backend — set when Supabase config is detected.
+- state.role — 'broker' | 'assessor' (UI workspace toggle).
+
+PERSISTENCE
+- Demo: localStorage keyed debtiq.<slice>.v1 (settings, dock,
+  lendingGroups, access, compliance, settlement, workflows, brokerTasks).
+- Live: Supabase deals table (data jsonb, RLS by user_id) holds the deal
+  blob. Other slices not yet persisted to Supabase (ARCH-REVIEW).
+- The workflow + broker-tasks mirror onto deal.workflow / deal.brokerTasks
+  so saveDeal() picks them up on the live path.
+
+SERVICEABILITY ENGINE (computeServiceability)
+Inputs: state.calc + active lender policy (lenders.js).
+Pipeline:
+  1. Income build: per entity loop, weight × per-lender shading. Self-emp
+     gets addbacks minus business_loan_repayments.
+  2. Existing debt: per liability, assessLiability with buffer. Credit-
+     card limit × 3.8% / 12. HECS exclusion per lender.
+  3. New debt: allFacilities() sum. IO uses max(IO-pay, post-IO P&I revert).
+  4. HEM floor: max(declared, band by income + household).
+  5. Ratios: DSR, NDI, LVR, DTI.
+  6. Verdict: PASS/BORDERLINE/FAIL from NDI + DSR only.
+  7. DTI assessment (separate): per-lender appetite flag with OO/investor
+     segment + bridging/new-build exemption. Never feeds verdict.
+
+REGULATORY PROVENANCE (REG_SOURCES)
+- 11 rules carry instrument + sections + official URL + verified flag.
+- 5 verified at source (buffer · HEM · income shading · BID · disclosure).
+- 3 partial (privacy/ADM · settlement/ELNO · CDR).
+- 3 fully pending (APS 220 Att C · RG 209 · AML/CTF + VOI).
+
+DEMO vs LIVE DETECTION
+- initBackend() fetches /api/config.
+- If Supabase values come back → sbClient initialised, state.backend=true.
+- Otherwise demo: in-memory + localStorage.
+- aiLive() = state.backend && state.user.
+
+DEPLOYMENT
+- main branch → Cloudflare Pages production for 4 Pages projects
+  (debtiq, debtiq1, debtiq2, invite).
+- Feature branches → CF Pages previews.
+- GitHub Actions: deploy workflow runs on push to main.
+- Env vars (ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY) configured
+  in Cloudflare Pages project, NEVER in the repo.
+
+KNOWN ARCHITECTURE GAPS (not addressed; for the production phase)
+- No real test framework. Smoke harness is jsdom-based and lives outside
+  the repo (/tmp/diqtest/smoke.js).
+- No TypeScript. No build pipeline. No tree-shaking.
+- No component model. CSS is one large stylesheet.
+- No CSP / _headers file (ARCH-REVIEW; recommended in SECURITY.md).
+- CORS '*' on /api/* (ARCH-REVIEW; tighten to deployed origins).
+- No rate limiting on auth or AI proxy (ARCH-REVIEW).
+- No e2e browser tests (Playwright recommended).
+- Migrations 0001 + 0002 DRAFT — applying them is an owner action.
+- No structured logging / observability.
+- Audit trail is in-memory only; mirrors to auth_audit_log in 0002.
+
+SECURITY POSTURE
+- Anthropic key server-only (Cloudflare Pages env). Never in browser.
+- Supabase anon key is public-by-design; RLS protects data.
+- /api/* require valid Supabase JWT (except /api/config).
+- .gitignore excludes .dev.vars, .wrangler/, node_modules/.
+- No hard-coded secrets in code (verified via scan).
+- Only one repo collaborator (the owner, admin).
+- main branch not protected — ARCH-REVIEW for branch protection rules.
+</content>

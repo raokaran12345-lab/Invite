@@ -1,0 +1,50 @@
+DEBTIQ — BUSINESS MODEL
+Last updated: 2026-06-01
+
+STATUS: PARTIAL — inferred from the build; not formally documented by owner.
+
+INFERRED BUSINESS MODEL
+- B2B SaaS for AU mortgage brokers and (separately) lenders' assessment
+  teams.
+- Two distinct workspaces: broker (deal authoring + submission) and
+  lender / assessor (decisioning).
+- Coordinates the full deal lifecycle from intake to settlement, but
+  HANDS OFF at the conveyancing boundary — does not settle, holds no
+  trust money.
+
+USER ROLES (from the RBAC model — likely seat tiers)
+- Owner: brokerage / lender principal. Super-admin.
+- Admin: manages team and settings.
+- Broker: front-office deal authoring (broker side).
+- Processor: operational ops (pre-assessment + fulfilment + doc gen).
+- Read-only: auditor / observer / external reviewer.
+
+REVENUE LEVERS (inferred — not confirmed)
+- Per-seat (matched to RBAC roles).
+- Per-deal submitted (audit log captures every deal.submit event).
+- Per-pack (submission packs + group packs are discrete deliverables).
+- Per-org (lending groups create natural aggregator/brokerage scoping).
+
+CUSTOMER OBLIGATIONS THE BUILD ENABLES (NOT THE OWNER'S OBLIGATIONS)
+- Broker's responsible-lending evidence trail.
+- Broker's Best Interests Duty (BID) artefact.
+- Broker's disclosure document spine.
+- Lender's assessment audit trail with attributed actions.
+
+DEBTIQ'S OWN OBLIGATIONS — to confirm with counsel
+- LEGAL-REVIEW: ACL / licensing status.
+- LEGAL-REVIEW: AML reporting-entity status (DebtIQ does NOT assert it
+  is one).
+- LEGAL-REVIEW: ADM disclosure wording for the borrower (due 10 Dec 2026
+  per the manifest's framing — confirm at source).
+- LEGAL-REVIEW: sub-processor DPAs (Anthropic, Supabase, Cloudflare).
+- LEGAL-REVIEW: NDB plan (stub in COMPLIANCE.md).
+- LEGAL-REVIEW: real ELNO connectivity + subscriber eligibility.
+- LEGAL-REVIEW: CDR position (currently document-upload model keeps
+  DebtIQ outside CDR scope; direct bank feeds = gating accreditation).
+
+EXPLICIT POSITIONING
+- "Builds the product features that ENABLE and EVIDENCE compliance —
+  not legal conclusions."
+- Code never asserts "is compliant" anywhere.
+</content>

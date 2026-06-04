@@ -1,0 +1,54 @@
+DEBTIQ — EXECUTIVE SUMMARY
+Last updated: 2026-06-01
+
+WHAT IT IS
+A broker↔lender mortgage portal for the Australian market that takes a deal
+from intake through to the conveyancing handoff. Built as a single-page web
+app with optional Supabase backend and Anthropic-powered AI assistance.
+
+CURRENT STATUS
+- Production: merged to main at commit 1162262 on 2026-06-01.
+- 449/449 smoke tests passing.
+- Hosted on Cloudflare Pages (auto-deploys from main).
+- Demo mode works offline; live mode requires Supabase + Anthropic env vars.
+
+WHAT'S IN IT (HEADLINE FEATURES)
+- Pipeline + Lending Group views (groups span multiple deals).
+- Atomic deal-builder: Purpose → Applicants → Securities → Income →
+  Liabilities → Assets → Living expenses & facilities → Verdict.
+- Multi-facility per deal with cross-collateralisation (m-m to securities).
+- Serviceability engine: APRA +3% buffer, HEM floor, per-lender shading.
+- DTI as a per-lender APPETITE FLAG (never a hard block); OO/investor split;
+  bridging + new-build/construction exempt.
+- Owner-held RBAC (Owner→Admin→Broker→Processor→Read-only) with append-only
+  audit log, invitations (token-hashed), session timeout + re-auth.
+- Compliance-evidence: disclosure spine (6 docs, versioned + signed-copy),
+  BID, VOI capture, ADM disclosure, APP 5 notice, retention controls.
+- Settlement coordination: 7-stage tracker (discharge of vendor mortgage as
+  the key dependency); mock-by-default ELNO adapter. No trust money.
+- One-page deal workflow: 7 stages, tasks with structured inputs + 3-state
+  field verification with doc-type evidence + Docs-tab link.
+- Workflow access regimes: broker hard-lock (lender stages invisible),
+  per-stage edit caps, sequential soft-gate, workflow.override, broker-
+  invisible send-back.
+- Broker-tasks tab: the only sanctioned cross-wall channel.
+
+REGULATORY PROVENANCE
+- 5 verified at source (APG 223 buffer/HEM/shading; RG 273 BID; INFO 146
+  disclosure spine).
+- 3 partial (Privacy/ADM; ARNECC/Sympli; CDR).
+- 3 pending docs (APS 220 Att. C for DTI; RG 209 operative text;
+  AML/CTF + VOI standard).
+
+GUARDRAILS HONOURED
+- No /api/*, auth, or lenders.js changes without gated PR.
+- Both schema migrations (0001 lending groups, 0002 access control) remain
+  DRAFT, not applied.
+- No real accounts or secrets created by the build agent.
+- Code never asserts the portal "is compliant".
+
+HONEST ASSESSMENT
+High-fidelity demo with the right model. Implementation is single-file
+(~700KB index.html), localStorage-heavy, no real test framework or build
+pipeline. Not production-grade for real borrower data without further work
+(see Technology_Architecture.txt §gaps).

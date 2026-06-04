@@ -1,0 +1,98 @@
+DEBTIQ — DECISION LOG
+Last updated: 2026-06-01
+
+Format: DATE · TOPIC · DECISION · RATIONALE
+
+2026-05-30 · LENDING GROUP — group seeding
+DECISION: Existing deals start UNGROUPED; broker creates groups and adds
+deals to them; entities can move freely (e.g. divorce → split).
+RATIONALE: Membership is dynamic in reality. No retroactive assignment.
+
+2026-05-30 · LENDING GROUP — re-cut interaction
+DECISION: Multi-way — drag-and-drop AND Move-control AND keyboard alt.
+RATIONALE: Different brokers prefer different inputs; multi-way is the
+most accessible.
+
+2026-05-30 · LENDING GROUP — stability semantics
+DECISION: Strict rules (purpose set ∧ ≥1 income ∧ ≥1 security ∧ ≥1
+facility ∧ no unresolved conflicts) BUT still able to submit.
+RATIONALE: Stability is a SIGNAL not a GATE. Brokers may need to submit
+with known gaps that the lender will handle.
+
+2026-05-30 · LENDING GROUP — Pipeline routing
+DECISION: Pipeline toggle (Deals | Groups) at the top.
+RATIONALE: Two views of the same dataset; not two screens.
+
+2026-05-30 · LENDING GROUP — facility editor placement
+DECISION: Replace Step 7 with a unified facility list.
+RATIONALE: Multi-facility is a real broker need (splits, IO bands).
+Visually one table; primary facility remains state.calc.newLoan for
+backwards compatibility.
+
+2026-05-30 · LENDING GROUP — group pack format
+DECISION: Cover + per-deal append + cross-deal summary table.
+RATIONALE: Reuses existing per-deal pack content; verifiable per-deal
+against lender requirements.
+
+2026-05-31 · MASTER PHASE 4 — DTI treatment
+DECISION: DTI is a per-lender APPETITE FLAG, NEVER a hard block.
+OO/investor split; OO-bridging + new-build/construction exempt from the
+high-DTI bucket. ADIs use ~20% bucket; non-ADIs flagged without bucket.
+RATIONALE: Matches APRA framing in the manifest. NDI + DSR drive the
+verdict; DTI is appetite intelligence.
+
+2026-05-31 · MASTER PHASE 5 — RBAC posture
+DECISION: Owner-held. No real accounts or secrets created by the agent.
+Demo enforces simulated role; live preserves today's per-user RLS until
+membership tables are wired (ARCH-REVIEW).
+RATIONALE: Guardrail 8. Agent must never become the weakest link.
+
+2026-05-31 · MIGRATIONS — apply policy
+DECISION: 0001 (lending groups) and 0002 (access control) ship as DRAFT.
+NOT applied by the agent.
+RATIONALE: Schema changes are owner actions. Applying is reviewable.
+
+2026-05-31 · REGULATORY VERIFICATION — methodology
+DECISION: Extract operative clauses from supplied official PDFs/pages
+(zlib stream extraction for PDFs since poppler unavailable). Flip
+REG_SOURCES[...].verified only when the clause is read at source.
+Mark partial when only premise is confirmed from an overview page.
+RATIONALE: Manifest's hard rule — no threshold authoritative until
+read from the official instrument. 5 verified + 3 partial + 3 pending.
+
+2026-06-01 · WORKFLOW BRIEF PHASE 3 — broker wall
+DECISION: Broker view shows ONLY the Broker stage (lender stages
+invisible) pre- AND post-submit. Post-submit: broker becomes view-only
+on the Broker stage too. A read-only "Where the file is" banner reveals
+only the current lender stage label.
+RATIONALE: Lender-internal information must never be exposed outward.
+
+2026-06-01 · WORKFLOW BRIEF PHASE 3 — soft-gate + override + send-back
+DECISION: Sequential soft-gate (a stage unlocks when prior complete).
+workflow.override (Owner/Admin) bypasses with logged reason. Send-back
+reopens the target stage through the source stage; lender-internal;
+NEVER visible to broker; audit-logged.
+RATIONALE: Real lender workflows have non-linear backtracking. Must be
+auditable but never break the wall.
+
+2026-06-01 · BROKER-TASKS — only cross-wall channel
+DECISION: Sanctioned channel for lender requests to broker.
+brokertask.raise (lender side) / respond (broker side) / close (lender
+side). Off-platform messaging (calls / Teams / Slack / email) is not in
+scope.
+RATIONALE: One channel keeps the wall integrity intact.
+
+2026-06-01 · DEPLOY — production cutover
+DECISION: Merged PR #5 → main at commit 1162262. Cloudflare Pages
+auto-builds production. 449/449 smoke green.
+RATIONALE: Owner explicitly authorised the deploy on the condition that
+"nothing is pending on the agent's side". External-input items
+(LEGAL-REVIEW, ARCH-REVIEW, supplied PDFs) are separately tracked.
+
+2026-06-01 · BRANCH CLEANUP — preserve via tags + UI deletion
+DECISION: Two stale Claude branches recommended for deletion via
+GitHub UI (agent lacks delete permission). Data is in main's merge
+history; tags are optional belt-and-braces.
+RATIONALE: Agent lacks delete-branch capability in this environment;
+also branch deletion is irreversible and should be an owner action.
+</content>

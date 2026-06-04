@@ -1,0 +1,88 @@
+DEBTIQ — AI WORKING MEMORY
+Last updated: 2026-06-01
+(Most recent + relevant. Older context is in the other files.)
+
+CURRENT STATE
+- Production main at commit 1162262 (DebtIQ MASTER + Workflow brief merged).
+- 449/449 smoke green.
+- Deployed via Cloudflare Pages (4 Pages projects).
+- Owner has set up TWO ambient instructions this session:
+  (a) every response must end with TOKEN USAGE REPORT;
+  (b) every response must maintain this memory/ folder + end with
+      MEMORY UPDATE SUMMARY + KNOWLEDGE BASE HEALTH.
+
+OPEN OWNER ACTIONS (gentle nudges; not blocking)
+- Delete two stale Claude branches via GitHub UI:
+  - claude/debtiq-access-bDD0b
+  - claude/debtiq-v6-build-tLZHa
+  All commits preserved in main's history (verified via merge-base).
+- Decide on Cloudflare bot PR #3 (close or merge).
+- Make repo private if currently public (owner-only action).
+- Enable branch protection on main.
+- Enable 2FA on the GitHub account (if not already).
+- Apply migrations 0001 + 0002 to Supabase when ready (owner action).
+
+EXTERNALLY BLOCKED (waiting on owner-supplied inputs)
+1. APS 220 Attachment C PDF — to verify DTI rule at source. This is the
+   one fully-unverified serviceability rule and the highest-value gap.
+2. RG 209 operative text PDF — to verify responsible-lending detail.
+3. AML/CTF + VOI standard — to verify VOI requirements.
+4. The eight debtiq-*.html mockup files referenced in the MASTER brief
+   (broker workspace, lending group, assessor console, submission pack,
+   login branching, serviceability worksheet, brand guide, deal workflow)
+   — never supplied. Visual diffs against these are deferred.
+
+EXTERNALLY BLOCKED (counsel decisions)
+- ACL / licensing status
+- AML reporting-entity status
+- ADM disclosure wording (privacy notice, due 10 Dec 2026)
+- Trust-money handling (confirm DebtIQ never holds it)
+- PEXA / Sympli subscriber eligibility
+- CDR position (currently out-of-scope; document why or pursue)
+- Sub-processor DPAs (Anthropic, Supabase, Cloudflare)
+- Disclosure field content + IDR/EDR (AFCA) membership numbers
+- VOI certified / original / NAATI rules
+- NDB plan
+
+NEXT-SESSION PRIORITIES (when owner returns)
+PRIMARY (productisation path, if going to real users):
+  - Break index.html into modules; add Vite + TypeScript.
+  - Add Playwright e2e tests for the happy paths.
+  - Add CSP / _headers and tighten CORS.
+  - Add rate limiting on /api/* (Cloudflare WAF).
+  - Apply migrations 0001 + 0002; wire RBAC + workflow + broker-tasks
+    to Supabase.
+  - Mirror in-memory audit trail to auth_audit_log.
+SECONDARY (regulatory + business completeness):
+  - Verify the 3 remaining instruments at source.
+  - Visual diff vs mockups when supplied.
+  - Pricing strategy capture.
+  - Competitor intelligence capture.
+
+GUARDRAIL REMINDERS FOR FUTURE SESSIONS
+- No silent /api/*, auth, or lenders.js changes.
+- Both migrations stay DRAFT until owner applies.
+- No real accounts or secrets created by the agent.
+- Never claim "is compliant" anywhere.
+- Phased + gated work. Pause for review unless told otherwise.
+- Token report + memory update at end of every response.
+
+CONVERSATION-LEVEL FACTS (not codified elsewhere)
+- Owner GitHub login: raokaran12345-lab. Sole admin/collaborator.
+- Owner email captured in context: raokaran12345@gmail.com.
+- Today's date used: 2026-06-04 (per session env). Most commits dated
+  2026-05-30 to 2026-06-01.
+- Network egress from the build environment is RESTRICTED — fetches to
+  regulator domains (apra.gov.au, asic.gov.au, oaic.gov.au,
+  legislation.gov.au) return HTTP 403 / 000. Only internal allowlisted
+  endpoints (git remote, Anthropic API) reachable. Owner-supplied PDFs
+  are how regulatory text gets verified.
+- Smoke harness lives at /tmp/diqtest/smoke.js (outside the repo by
+  design).
+
+CLOSED LOOPS (don't re-open)
+- Deploy: done. Don't redeploy without owner go-ahead.
+- Branch deletion: agent cannot do it. Owner action in UI.
+- TOKEN USAGE REPORT format: established in the previous instruction.
+- MEMORY UPDATE SUMMARY format: established in this instruction.
+</content>

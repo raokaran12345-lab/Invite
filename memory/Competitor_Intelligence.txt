@@ -1,0 +1,26 @@
+DEBTIQ — COMPETITOR INTELLIGENCE
+Last updated: 2026-06-01
+
+STATUS: NO INFORMATION CAPTURED YET
+
+The owner has not yet shared competitor analysis, market research, or
+positioning documents. This file is a placeholder.
+
+WHAT TO ADD WHEN AVAILABLE
+- Direct competitor list (other AU broker portals, lender CRMs, ELNO
+  integrations) with feature comparison.
+- Market positioning (e.g. broker-first vs lender-first; ADI vs non-bank).
+- Pricing of competing offerings (referenced in Pricing_Strategy.txt).
+- Differentiators DebtIQ exploits (cross-coll first-class · per-lender
+  appetite intelligence · owner-held RBAC · sanctioned cross-wall channel
+  · provenance-cited engine rules).
+- Threats (bank in-house tooling, established aggregators, ELNO platforms
+  expanding upstream).
+
+ADJACENT PLAYERS REFERENCED IN THE BUILD (not competitors, integrations)
+- PEXA / Sympli — ELNOs for e-settlement. Sympli ELNO premise was
+  partial-verified from their marketing page.
+- Cloudflare Pages — hosting.
+- Supabase — auth + Postgres + RLS.
+- Anthropic Claude — AI assistance via server proxy.
+</content>

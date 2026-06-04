@@ -1,0 +1,112 @@
+DEBTIQ — CHANGE LOG (CODE + KNOWLEDGE BASE)
+Last updated: 2026-06-01
+
+This file records modifications to the code AND to this knowledge base.
+Code changes are summarised; full per-commit detail lives in CHANGELOG.md
+at the repo root.
+
+──────────────────────────────────────────────────────────────────
+KNOWLEDGE BASE CHANGES
+──────────────────────────────────────────────────────────────────
+2026-06-01 — INITIAL SEED
+Created memory/ folder with 10 files:
+  Executive_Summary.txt
+  Product_Requirements.txt
+  Technology_Architecture.txt
+  Competitor_Intelligence.txt           (placeholder — no info yet)
+  Pricing_Strategy.txt                  (placeholder — no info yet)
+  Business_Model.txt                    (partial — inferred)
+  Decision_Log.txt
+  Meeting_Notes.txt
+  Change_Log.txt
+  AI_Working_Memory.txt
+Source: cumulative reconstruction from the full session conversation
+(briefs #1–#4, deploy decision, branch-cleanup decision).
+
+──────────────────────────────────────────────────────────────────
+CODE CHANGES — main branch (post-merge)
+──────────────────────────────────────────────────────────────────
+Production main is at commit 1162262 (DebtIQ MASTER + Workflow brief
+merged 2026-06-01). The complete per-commit history is in CHANGELOG.md.
+
+PHASE-LEVEL ROLLUP (delivery order):
+
+LENDING GROUP BRIEF
+- Phase 0/1: audit + Part A polish (A2 spacing, A9 step auto-collapse)
+- Phase 2: lending-group model + Pipeline Deals/Groups toggle
+- Phase 3: facility editor + re-cut UI + group submission pack
+- Phase 4: polish + voice + re-verify
+
+MASTER PROGRAM
+- Phase 0: audit (read-only). Removed stray "Engagement Invite" file.
+- Phase 1-finish: violet → neutral class rename; token layering;
+  in-app /styleguide entry.
+- Phase 4: serviceability 2026 — DTI as per-lender appetite flag;
+  OO/investor split; bridging + new-build exempt.
+- Phase 5: RBAC owner-held; capabilities matrix; deny-by-default;
+  invitations; audit log; session timeout + re-auth; PII masking;
+  privileged + logged PII export; SECURITY.md;
+  supabase/migrations/0002_access_control.sql (DRAFT, not applied).
+- Phase 6: compliance-evidence — 6-doc disclosure spine; BID generator;
+  VOI capture; ADM ack; APP 5 notice; retention controls;
+  COMPLIANCE.md.
+- Phase 7: settlement coordination — 7-stage tracker (discharge as key
+  dep); mock-by-default ELNO adapter; large-deposit risk flag.
+- Phase 8: CDR — documented out-of-scope decision (CDR.md). Nothing
+  built live.
+- Phase 9: finish & verify — emoji → SVG (initial pass); brand
+  re-verify; REVIEW-REGISTER.md (12 LEGAL-REVIEW + 11 ARCH-REVIEW).
+
+REGULATORY PROVENANCE
+- REG_SOURCES registry seeded (11 rules).
+- Verification batch 1: APG 223 + RG 273 PDFs → 4 rules verified.
+- Verification batch 2: INFO 146 + OAIC pages → +1 verified, +1 partial.
+- Verification batch 3: CDR + Sympli pages → +2 partial.
+- Final: 5 verified · 3 partial · 3 pending.
+
+DEFERRED-ITEMS CLOSURE
+- MASTER Phase 2 Assets step — implemented per-entity asset rows
+  (6 categories), audit-logged.
+- MASTER Phase 9 emoji sweep — converted all icon:'✓'|'▲'|'⚠'|'✕'
+  literals + insight-row glyphs to svgIcon().
+
+WORKFLOW BRIEF
+- Phase 1: data model + one-page UI (7 stages, manual status, progress
+  rollup).
+- Phase 2: field-level 3-state verification + doc-type evidence +
+  "Open verification document" → per-deal Docs tab + focused-row
+  highlight.
+- Phase 3: access regimes — broker hard-lock + per-stage edit caps +
+  sequential soft-gate + workflow.override + broker-invisible send-back.
+- Phase 4: broker-tasks cross-wall channel (raise/respond/attach/close/
+  reopen, all RBAC-gated + audit-logged).
+- Phase 5: focus rings + ≥36px targets + reduced-motion + audit
+  coverage.
+
+DOCS
+- docs/architecture-map.md created (connect-the-dots reference).
+- docs/regulatory-source-manifest.md created (manifest pointer + fetch-
+  status note).
+
+SMOKE HARNESS
+- /tmp/diqtest/smoke.js progression:
+  290/290 (lending group P2 complete) →
+  340/340 (MASTER P1-finish) →
+  348/348 (MASTER P4 DTI) →
+  359/359 (MASTER P6 compliance) →
+  369/369 (MASTER P7 settlement) →
+  380/380 (provenance) →
+  383/383 (5 verified) →
+  395/395 (workflow P1) →
+  403/403 (deferred items closed) →
+  415/415 (workflow P2) →
+  433/433 (workflow P3) →
+  444/444 (workflow P4) →
+  449/449 (workflow P5).
+- All passing at deploy time.
+
+DEPLOY
+- PR #5 merged to main at commit 1162262 on 2026-06-01.
+- Cloudflare Pages auto-deploy triggered for projects debtiq · debtiq1
+  · debtiq2 · invite. All checks green pre-merge.
+</content>
