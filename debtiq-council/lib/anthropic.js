@@ -5,6 +5,7 @@
    reply. The rest of the council never touches the SDK directly.
    ============================================================ */
 import Anthropic from '@anthropic-ai/sdk';
+import { isOffline, offlineResponse } from './offline.js';
 
 let _client = null;
 
@@ -56,6 +57,12 @@ export async function ask({
   temperature = 0.7,
   retries = 4,
 }) {
+  // Offline mode: no key / no network — generate a local, clearly-labelled
+  // reply through the identical return contract so the whole loop runs.
+  if (isOffline()) {
+    return offlineResponse(system || '', prompt || '');
+  }
+
   let attempt = 0;
   // 2s, 4s, 8s, 16s — matches the project's network-retry policy.
   for (;;) {

@@ -11,7 +11,8 @@
 import 'dotenv/config';
 
 import { BRIEF, MEMBERS, CHAIR, SENTINEL, MATURITY_BANDS, TUNABLES } from './config.js';
-import { ask, askJson } from './lib/anthropic.js';
+import { askJson } from './lib/anthropic.js';
+import { isOffline } from './lib/offline.js';
 import { pushAlert } from './lib/notify.js';
 import {
   ensureDirs,
@@ -45,6 +46,8 @@ function parseArgs(argv) {
     } else if (k === 'interval') cfg.interval = Math.max(5, parseInt(v, 10) || cfg.interval);
     else if (k === 'model') cfg.model = v || cfg.model;
     else if (k === 'severity') cfg.severity = parseInt(v, 10) || cfg.severity;
+    else if (k === 'mock' || k === 'offline') process.env.COUNCIL_OFFLINE = '1';
+    else if (k === 'live') process.env.COUNCIL_OFFLINE = '0';
     else if (k === 'help' || k === 'h') {
       printHelp();
       process.exit(0);
@@ -65,9 +68,14 @@ function printHelp() {
   node council.js --rounds=5           up to five rounds (stops early if stalled)
   node council.js                      continuous (interval from .env)
   node council.js --interval=600 --model=claude-opus-4-8
+  node council.js --once --mock        run with NO key (simulated, labelled)
 
 Drop real-world data (.md/.txt/.json/.csv) into ./evidence to let the
-maturity score climb past ${TUNABLES.MATURITY_CAP_NO_EVIDENCE}.`);
+maturity score climb past ${TUNABLES.MATURITY_CAP_NO_EVIDENCE}.
+
+With no ANTHROPIC_API_KEY set, the council runs in offline mode (deterministic,
+clearly-labelled [SIMULATED] output) so you can see the full loop. Set a key
+(or pass --live) for real model deliberation through the same code path.`);
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -478,9 +486,21 @@ async function main() {
   await ensureDirs();
   const memory = await loadMemory();
 
-  console.log(`DebtIQ Council 🏛  — mode: ${cfg.mode}`);
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.error('\n✗ ANTHROPIC_API_KEY is not set. Copy .env.example → .env and add your key.');
+  const offline = isOffline();
+  console.log(
+    `DebtIQ Council 🏛  — mode: ${cfg.mode} · ${offline ? 'OFFLINE (simulated)' : `live · ${cfg.model}`}`
+  );
+  if (offline) {
+    console.log(
+      '⚠  No ANTHROPIC_API_KEY → offline mode: output is deterministic and [SIMULATED],\n' +
+        '   not real model analysis. Set a key (or pass --live) for genuine deliberation.'
+    );
+  } else if (!process.env.ANTHROPIC_API_KEY) {
+    // --live (or COUNCIL_OFFLINE=0) forced live, but there is no key.
+    console.error(
+      '\n✗ Live mode requires ANTHROPIC_API_KEY. Set it in .env, or drop --live to run\n' +
+        '  in offline/simulated mode.'
+    );
     process.exit(1);
   }
 

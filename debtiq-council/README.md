@@ -29,7 +29,19 @@ node council.js --once        # one round, then exit (start here)
 node council.js --rounds=5    # five rounds
 node council.js               # continuous, no intervention (interval from .env)
 node council.js --interval=600 --model=claude-opus-4-8
+node council.js --once --mock # run with NO key — see the full loop (simulated)
 ```
+
+### Try it with no API key (offline/simulated)
+
+Don’t have a key handy, or just want to watch the machinery run? With no
+`ANTHROPIC_API_KEY` set, the council automatically runs in **offline mode**: the
+entire loop executes — problem-finding, the maturity governor, the red-flag
+sentinel, persistence, evidence reaction and stall detection — using
+deterministic, clearly-labelled `[SIMULATED]` output. **No model is called and no
+network is used.** It is *not* real analysis; it exists so you can verify the
+engine end-to-end and see exactly what the artifacts look like. Set a real key
+(or pass `--live`) and the identical code path produces genuine deliberation.
 
 ## Getting notified
 
