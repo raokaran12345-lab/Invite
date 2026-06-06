@@ -7093,12 +7093,45 @@ function renderMarkets(el){
    PAGE: BILLING
    ============================================================ */
 function billingPlan(){ try{ return localStorage.getItem('debtiq_billing_plan') || 'Professional'; }catch(e){ return 'Professional'; } }
+// Demo path — saves locally, never charges.
 function setBillingPlan(name){
   try{ localStorage.setItem('debtiq_billing_plan', name); }catch(e){}
   auditLog('BILLING_PLAN_SELECTED', 'Plan set to '+name+' (demo — no charge)', 'Owner','owner');
   toast(name+' selected — demo only, no card was charged. Connect a billing provider to subscribe.', 'info');
-  const host = document.getElementById('settingsBilling') || document.getElementById('app');
   if(document.getElementById('settingsBilling')) renderBilling(document.getElementById('settingsBilling'));
+}
+// Dispatcher — live tries a real Stripe Checkout session via /api/checkout; if the
+// backend reports payments aren't configured (or we're in demo), fall back to the
+// local-only plan selection. No fake charges either way.
+async function choosePlan(name){
+  if(!aiLive()){ setBillingPlan(name); return; }
+  try{
+    let token=''; try{ const { data } = await sbClient.auth.getSession(); token = data && data.session && data.session.access_token; }catch(e){}
+    showLoader('Opening secure checkout…');
+    const res = await fetch('/api/checkout', { method:'POST', headers:{ 'content-type':'application/json', ...(token?{Authorization:'Bearer '+token}:{}) }, body: JSON.stringify({ plan:name }) });
+    const data = await res.json(); hideLoader();
+    if(data && data.configured && data.url){ auditLog('BILLING_CHECKOUT_STARTED', name, 'Owner','owner'); window.location.href = data.url; return; }
+    // Not configured server-side → honest local fallback.
+    toast((data && data.message) || 'Payments not connected — saved locally only.', 'info');
+    setBillingPlan(name);
+  }catch(e){ hideLoader(); toast('Checkout unavailable — saved locally only.', 'info'); setBillingPlan(name); }
+}
+// After a Stripe Checkout redirect back to ?billing=success&plan=X, persist the
+// chosen plan and clean the URL. (A production setup would also confirm via a
+// Stripe webhook server-side; this is the client-side acknowledgement.)
+function handleBillingReturn(){
+  try{
+    const q = new URLSearchParams(location.search||'');
+    const status = q.get('billing'); if(!status) return;
+    if(status==='success'){
+      const plan = q.get('plan'); if(plan){ try{ localStorage.setItem('debtiq_billing_plan', plan); }catch(e){} }
+      auditLog('BILLING_CHECKOUT_SUCCESS', plan||'', 'Owner','owner');
+      toast('Subscription active'+(plan?(' — '+plan):'')+'. Thank you.', 'ok');
+    } else if(status==='cancelled'){
+      toast('Checkout cancelled — no charge made.', 'info');
+    }
+    if(history.replaceState) history.replaceState(null,'', location.pathname);
+  }catch(e){}
 }
 function renderBilling(el){
   // Real, local usage — no fabricated meters. Deals/documents come from live app state;
@@ -7129,7 +7162,7 @@ function renderBilling(el){
           <div style="font-weight:700;font-size:17px">${pl.n}</div>
           <div class="price">${m().sym}${pl.p}<small>/mo</small></div>
           <ul>${pl.f.map(x=>`<li>✓ ${x}</li>`).join('')}</ul>
-          <button class="btn ${active?'':'primary'}" style="width:100%;${active?'background:rgba(255,255,255,.2);color:#fff;border:none':''}" onclick="${active?`toast('Current plan','info')`:`setBillingPlan('${pl.n}')`}">${active?'Current Plan':'Choose '+pl.n}</button>
+          <button class="btn ${active?'':'primary'}" style="width:100%;${active?'background:rgba(255,255,255,.2);color:#fff;border:none':''}" onclick="${active?`toast('Current plan','info')`:`choosePlan('${pl.n}')`}">${active?'Current Plan':'Choose '+pl.n}</button>
         </div>`; }).join('')}
     </div>`;
 }
@@ -10797,6 +10830,7 @@ async function enterApp(){
   if(aiLive()){ await loadDeals(); await wireLiveMembership(); }
   toast(state.user ? ('Welcome, '+(state.user.email||'broker')+'.') : 'Welcome back.', 'ok');
   init();
+  handleBillingReturn();
 }
 document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
 
