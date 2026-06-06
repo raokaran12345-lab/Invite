@@ -5100,15 +5100,23 @@ function renderWizStep(){
 }
 function wizUpload(i, name, entityIdx=0){
   const z = document.getElementById('wizUp'+i); if(!z || z.classList.contains('done')) return;
-  z.innerHTML = '⟳ Reading '+name+'…';
+  const live = aiLive();
+  z.innerHTML = '⟳ '+(live?'Reading ':'Loading sample for ')+name+'…';
   setTimeout(()=>{
-    z.classList.add('done'); z.innerHTML = '✓ '+name+' — extracted';
-    DOCS.unshift({name:name.replace(/[^a-z0-9]+/gi,'_')+'.pdf', deal:'NEW', type:name, conf:96, status:'Verified', size:'—', date:TODAY_STR});
-    logEvent('Document uploaded: '+name);
+    z.classList.add('done');
+    // Demo: a sample figure is loaded but nothing was actually read — mark the doc as
+    // needing review, not "Verified", so the status never overstates what happened.
+    z.innerHTML = (live?'✓ ':'◦ ')+name+(live?' — extracted':' — sample loaded (verify)');
+    DOCS.unshift({name:name.replace(/[^a-z0-9]+/gi,'_')+'.pdf', deal:'NEW', type:name, conf:live?96:0, status:live?'Verified':'Review', size:'—', date:TODAY_STR});
+    logEvent((live?'Document uploaded: ':'Demo sample loaded: ')+name);
     wizExtract(name, entityIdx);
   }, 1100);
 }
-// Simulated OCR extraction into the shared calc state — varies by document keyword + entity.
+// DEMO-only filename keyword fill. This is NOT real extraction — it loads a labelled
+// SAMPLE figure (tagged unverified) so the wizard flow is demonstrable without a
+// backend. Real OCR runs via extractFiles()/mergeExtracted() when aiLive() and an
+// actual file is present (panelUpload). Honest copy + unverified provenance ensure a
+// broker is never misled into trusting a fabricated number.
 function wizExtract(name, entityIdx=0){
   const idx = entityIdx || 0;
   if(!state.calc.entities[idx]){
@@ -5116,10 +5124,11 @@ function wizExtract(name, entityIdx=0){
   }
   const ent = state.calc.entities[idx];
   const n = name.toLowerCase(); let added='';
-  if(/payslip/.test(n) && !ent.incomes.some(x=>x._payslip)){ ent.incomes.push({type:'salary_ft', amount:142000, amount_y1:142000, amount_y2:138000, use_average:false, evidence_years:2, _payslip:true}); added='salary'; }
-  else if(/tax/.test(n) && !ent.incomes.some(x=>x._tax)){ ent.incomes.push({type:'self_emp', amount:90000, amount_y1:90000, amount_y2:84000, use_average:false, evidence_years:2, _tax:true}); added='self-employed income'; }
-  else if(/(liabilit|statement)/.test(n) && !ent.liabilities.some(x=>x._stmt)){ ent.liabilities.push({type:'credit_card', balance:15000, rate:21.9, term:0, _stmt:true}); added='a credit-card liability'; }
-  if(added) toast('Extracted '+added+' into the calculator', 'ok');
+  const prov = (field) => ({ doc:name, field, source_text:'sample (demo) — not read from your file', confidence:0, verified:false });
+  if(/payslip/.test(n) && !ent.incomes.some(x=>x._payslip)){ ent.incomes.push({type:'salary_ft', amount:142000, amount_y1:142000, amount_y2:138000, use_average:false, evidence_years:2, _payslip:true, _sample:true, _prov:prov('gross_period')}); added='a sample salary'; }
+  else if(/tax/.test(n) && !ent.incomes.some(x=>x._tax)){ ent.incomes.push({type:'self_emp', amount:90000, amount_y1:90000, amount_y2:84000, use_average:false, evidence_years:2, _tax:true, _sample:true, _prov:prov('self_emp')}); added='a sample self-employed income'; }
+  else if(/(liabilit|statement)/.test(n) && !ent.liabilities.some(x=>x._stmt)){ ent.liabilities.push({type:'credit_card', balance:15000, rate:21.9, term:0, _stmt:true, _sample:true, _prov:prov('credit_card_limit')}); added='a sample credit-card liability'; }
+  if(added) toast('Demo: loaded '+added+' (unverified) — confirm against the document before submitting', 'info');
   if(state.page==='serviceability') updateStatusStrip();
 }
 function submitDeal(){
@@ -7562,14 +7571,15 @@ const PILOT_STEPS = [
 let pilotStatus = [0,0,0,0];   // 0 pending · 1 running · 2 done
 let pilotState = 'idle';       // idle · running · done
 let pilotResult = null;
+let pilotUsedSample = false;   // true when the run shows the demo SAMPLE, not real data
 
 function renderAIPilot(el){
   el.innerHTML = `
     ${dealSpineBanner()}
     <div class="market-hero ai-hero">
-      <div class="caption" style="color:rgba(255,255,255,.55)">Autopilot · ${state.anthropicKey?'live':'demo'}</div>
-      <h2 class="serif" style="font-weight:500;font-size:30px;letter-spacing:-.005em;margin-top:6px">AI Pilot ${state.anthropicKey?'':'<span class="ai-demo-chip">DEMO</span>'}</h2>
-      <p class="serif-italic" style="margin-top:6px;opacity:.92;max-width:640px">End-to-end — extract documents, assess serviceability, match a lender, draft the submission. Everything Pilot finds writes into the same deal record the Calculator reads from — enter once, never re-key.${state.anthropicKey?'':' <span class="serif" style="font-style:normal;font-weight:500;color:rgba(255,255,255,.92)">Add a backend API key to enable live document processing.</span>'}</p>
+      <div class="caption" style="color:rgba(255,255,255,.55)">Autopilot · ${aiLive()?'live':'demo'}</div>
+      <h2 class="serif" style="font-weight:500;font-size:30px;letter-spacing:-.005em;margin-top:6px">AI Pilot ${aiLive()?'':'<span class="ai-demo-chip">DEMO</span>'}</h2>
+      <p class="serif-italic" style="margin-top:6px;opacity:.92;max-width:640px">End-to-end — reads this deal's extracted documents, assesses serviceability, matches a lender, drafts the submission. Everything Pilot uses comes from the same deal record the Calculator reads from — enter once, never re-key.${aiLive()?'':' <span class="serif" style="font-style:normal;font-weight:500;color:rgba(255,255,255,.92)">Demo mode shows a clearly-labelled sample — deploy the backend and sign in for real document processing.</span>'}</p>
       <button class="btn" id="pilotBtn" style="margin-top:18px;background:#fff;color:var(--ink);font-weight:700;border:none" onclick="runAIPilot()">${pilotState==='done'?'Re-run AI Pilot':'Run AI Pilot'}</button>
     </div>
     <div id="pilotSteps" style="max-width:760px"></div>
@@ -7599,22 +7609,39 @@ function runPilotStep(i){
   if(i===1) applyExtractedProfile();   // the "zero re-keying" moment: write into shared calc state
   setTimeout(()=>{ pilotStatus[i] = 2; renderPilotSteps(); runPilotStep(i+1); }, 1050);
 }
-// Mock OCR result — populates the SAME state the calculator/compare/commentary read from.
+// Consolidate the deal's data into the SAME state the calculator/compare/commentary
+// read from. HONEST behaviour — Pilot never fabricates a paying user's figures:
+//  • Live (backend + signed in): use the REAL figures already extracted from this
+//    deal's documents (uploaded + OCR'd in the Documents tab). If none exist yet,
+//    prompt the broker to upload — do not invent a profile.
+//  • Demo (no backend): load a clearly-labelled SAMPLE profile, tagged unverified,
+//    so the end-to-end flow is demonstrable but never mistaken for real extraction.
 function applyExtractedProfile(){
-  if(!state.anthropicKey){
-    toast('Demo mode — connect your Anthropic API key in Settings → AI to enable live document processing', 'info');
+  const hasReal = (state.calc.entities||[]).some(e =>
+    (e.incomes||[]).some(i => (parseFloat(i.amount_y1)||parseFloat(i.amount)||0) > 0));
+  if(aiLive()){
+    pilotUsedSample = false;
+    if(!hasReal){
+      toast('No extracted documents on this deal yet — upload payslips/statements in the Documents tab so Pilot can read them. Pilot will not invent figures.', 'info');
+    }
+    // When real extractions exist, they are already in state.calc — use them as-is.
+    updateStatusStrip();
     return;
   }
+  // Demo SAMPLE — explicitly labelled, unverified provenance so every figure shows
+  // as "sample (demo)" and needs broker confirmation before it is trusted.
+  pilotUsedSample = true;
+  const sampleProv = (field, src) => ({ doc:'SAMPLE (demo)', field, source_text:'sample (demo) — not extracted from a real document', confidence:0, verified:false });
   state.calc.entities = [
-    {name:'Sarah Mitchell (extracted)', open:true,
+    {name:'Sarah Mitchell (SAMPLE)', open:true, _sample:true,
      incomes:[
-       {type:'salary_ft', amount:142000, amount_y1:142000, amount_y2:138000, use_average:false, evidence_years:2},
-       {type:'overtime', amount:9500, amount_y1:9500, amount_y2:8800, use_average:false, evidence_years:2}
+       {type:'salary_ft', amount:142000, amount_y1:142000, amount_y2:138000, use_average:false, evidence_years:2, _sample:true, _prov:sampleProv('gross_period')},
+       {type:'overtime', amount:9500, amount_y1:9500, amount_y2:8800, use_average:false, evidence_years:2, _sample:true, _prov:sampleProv('overtime')}
      ],
-     liabilities:[{type:'credit_card', balance:15000, rate:21.9, term:0},{type:'car', balance:18500, rate:8.9, term:5}]},
-    {name:'Tom Mitchell (extracted)', open:false,
-     incomes:[{type:'salary_ft', amount:96000, amount_y1:96000, amount_y2:92000, use_average:false, evidence_years:2}],
-     liabilities:[{type:'hecs', balance:22000, rate:0, term:0}]}
+     liabilities:[{type:'credit_card', balance:15000, rate:21.9, term:0, _sample:true, _prov:sampleProv('credit_card_limit')},{type:'car', balance:18500, rate:8.9, term:5, _sample:true, _prov:sampleProv('car_loan')}]},
+    {name:'Tom Mitchell (SAMPLE)', open:false, _sample:true,
+     incomes:[{type:'salary_ft', amount:96000, amount_y1:96000, amount_y2:92000, use_average:false, evidence_years:2, _sample:true, _prov:sampleProv('gross_period')}],
+     liabilities:[{type:'hecs', balance:22000, rate:0, term:0, _sample:true, _prov:sampleProv('hecs')}]}
   ];
   state.calc.dependants = 2;
   state.calc.newLoan = {amount:785000, rate:6.24, term:30};
@@ -7658,9 +7685,9 @@ function renderPilotResults(){
       <button class="btn" onclick="navigate('compare')">View lender ranking →</button>
       <button class="btn" onclick="navigate('commentary')">Open commentary →</button>
     </div>
-    ${state.anthropicKey ? '' : `<div style="font-size:11px;color:var(--t3);margin-top:10px;padding:10px 13px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;">
-      ⚠ Demo data shown — results above use a sample profile. Connect your API key in Settings → AI to process this deal's actual documents.
-    </div>`}`;
+    ${pilotUsedSample ? `<div style="font-size:11px;color:var(--t3);margin-top:10px;padding:10px 13px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;">
+      ⚠ Sample data — the figures above are a clearly-labelled demo profile, not extracted from any real document, and every line is marked unverified. Deploy the backend and sign in to process this deal's actual documents.
+    </div>` : ''}`;
 }
 
 /* ============================================================
