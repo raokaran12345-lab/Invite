@@ -1,0 +1,13 @@
+node_modules/
+.env
+.dev.vars
+
+# Runtime memory — created by the loop, never committed.
+state/
+
+# Real-world evidence you drop in is private; keep the folder, ignore contents.
+evidence/*
+!evidence/.gitkeep
+!evidence/README.md
+
+.DS_Store
