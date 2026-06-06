@@ -30,6 +30,21 @@ Business model (HYPOTHESES — not yet validated):
   aggregators.
 - Value prop = hours saved per deal + a defensible compliance audit trail.
 
+Competitive framing / strategic hypothesis (NOT yet validated — the council
+should pressure-test it):
+- DebtIQ should probably NOT compete as a loan-lodgement portal like ApplyOnline
+  (NextGen) — that is entrenched, deeply lender-integrated and aggregator-locked,
+  and is near-unwinnable head-on.
+- The beatable target is a broker point tool like Quickli (serviceability /
+  borrowing-capacity SaaS, per-broker pricing). DebtIQ's production-grade assets
+  — a multi-lender serviceability engine, a lender-policy library, and document
+  forensics + compliance automation — are a potential wedge Quickli does not lead
+  with. Open question: is that wedge enough to win brokers and command a price,
+  and is the serviceability-tool market the right beachhead before any portal
+  ambitions?
+- Geography is also unvalidated: built for Australia (NCCP/APRA), but if AU
+  distribution is gated, where else could the same engine win (NZ, UK, Canada)?
+
 Regulatory surface (Australia): NCCP Act + ASIC RG 209 / RG 273 (Best Interests
 Duty), Privacy Act / APPs (incl. the Dec-2026 automated-decision-making
 disclosure), the Consumer Data Right, and AML/CTF questions. DebtIQ positions
@@ -50,8 +65,8 @@ Known unknowns the founder has NOT yet proven:
 
 /* ── The deliberating advisors ───────────────────────────────
    Each member independently hunts for the ONE problem most likely
-   to sink the business through their lens. Keep this to ~6 — cost
-   per round is roughly (members + 3) model calls. */
+   to sink the business through their lens. Cost per round is roughly
+   (members + 3) model calls, so keep the roster tight. */
 export const MEMBERS = [
   {
     id: 'reg',
@@ -108,6 +123,24 @@ feature, not a company.`,
 nods politely and never changes their workflow: it does not fit how deals
 actually flow, it adds a step, it is not trusted with the client relationship,
 or the pain it solves is not the pain that keeps brokers up at night.`,
+  },
+  {
+    id: 'money',
+    name: 'The Rainmaker',
+    role: 'Revenue & monetization',
+    lens: `Your ONLY question is: how does this make money for the founder, and
+faster? You relentlessly ask — who pays, how much, how often, and why now?
+What is the single cheapest path to the FIRST paid dollar, then to recurring
+revenue? You attack pricing (per-deal vs per-seat vs per-broker), packaging,
+willingness-to-pay, and the wedge that wins the deal. You think hard about the
+right BATTLE: DebtIQ should not try to be a lodgement portal like ApplyOnline
+(entrenched, lender-integrated, aggregator-locked — unwinnable head-on); the
+beatable target is a point tool like Quickli — broker serviceability /
+borrowing-capacity SaaS — where DebtIQ's real assets (a strong multi-lender
+serviceability engine + lender-policy library + document forensics/compliance
+automation Quickli does not lead with) could win and command a price. You hunt
+for the reason the business never makes money — and for the one move that makes
+it start. Kill anything that does not lead to revenue.`,
   },
 ];
 

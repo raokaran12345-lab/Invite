@@ -1,7 +1,8 @@
 # DebtIQ Council 🏛
 
 An **autonomous** AI advisory council for DebtIQ. It runs deliberation rounds with
-no human in the loop — six advisors each hunt for the one problem most likely to
+no human in the loop — seven advisors (including a Rainmaker who only asks how it
+makes money) each hunt for the one problem most likely to
 sink the business, the Chair forces a focus and scores maturity, and a risk
 sentinel **notifies you the moment a red flag crosses your threshold.**
 

@@ -80,6 +80,15 @@ const MEMBER_PROBLEMS = {
       'Observed workflow sessions with 5 real brokers: does DebtIQ remove steps in their actual process, or add them?',
     confidence: 0.7,
   },
+  'The Rainmaker': {
+    problem:
+      'There is still no proven path to the first paid dollar: no priced offer, no broker who has said yes at a number, and the strategy is spread across a hard-to-win portal play instead of the beatable Quickli-style serviceability wedge.',
+    why_fatal:
+      'A product with no buyer at a known price is a hobby, not a business. Competing as an ApplyOnline-style lodgement portal is near-unwinnable; without a sharp, priced serviceability+forensics wedge aimed where Quickli is weak, DebtIQ never starts making money and the build burns runway.',
+    evidence_needed:
+      'A priced pilot offer tested on 10 brokers: how many say yes, at what monthly price, and explicitly for serviceability/forensics vs a portal — plus Quickli’s real price point to undercut or out-value.',
+    confidence: 0.8,
+  },
 };
 
 function memberName(system) {
