@@ -7152,7 +7152,7 @@ function accessPane(){
 
   // Banner: live-unwired note OR demo "view as role" preview.
   const modeBanner = liveUnwired
-    ? `<div class="acc-note amber"><b>Live mode.</b> You're signed in, but role enforcement isn't wired to Supabase yet — access currently follows the existing per-user row-level security. Enabling enforcement needs the <span class="mono">0002_access_control</span> migration + membership wiring (<span class="mono">ARCH-REVIEW</span>). The model below is fully interactive in demo mode.</div>`
+    ? `<div class="acc-note amber"><b>Live mode.</b> Role enforcement turns on automatically the moment the <span class="mono">0002_access_control</span> tables are applied and you hold an active <span class="mono">membership</span> row — the app reads your real role on sign-in. Until then access follows the existing per-user row-level security (your deal data is already protected either way). See <span class="mono">supabase/APPLY.md</span> to apply it.</div>`
     : `<div class="acc-note steel"><b>Demo org.</b> This in-memory model mirrors the draft <span class="mono">0002_access_control</span> migration; nothing is sent to a backend and no real accounts or secrets are created.</div>`;
 
   // "View as role" — demo only (lets you see deny-by-default in action).
@@ -10652,12 +10652,54 @@ async function loadDeals(){
     DEALS = (data||[]).map(r=>mkDeal(r.data));   // backfill schema defaults via mkDeal
   }catch(e){ toast('Could not load saved deals', 'err'); }
 }
+/* Live RBAC wiring (Phase 5 → live). When signed in against a backend that has the
+   0002_access_control tables applied AND the user holds an active membership, pull
+   their REAL org role so can()/requirePermission() enforce it instead of the demo
+   slice. FAILS SAFE by design: any error (tables not yet applied, no membership,
+   network) leaves _membershipWired falsy, so behaviour is exactly today's — UI
+   full-access, with deal data already protected by the deals RLS. It never locks
+   anyone out (no membership row → stay legacy), and never silently downgrades. */
+async function wireLiveMembership(){
+  if(!(state.backend && sbClient && state.user)) return;
+  try{
+    const uid = state.user.id;
+    // 1. My active membership (RLS lets a member read their own org's rows).
+    const { data: mine, error: e1 } = await sbClient
+      .from('memberships').select('org_id, role, status')
+      .eq('user_id', uid).eq('status','active').limit(1);
+    if(e1 || !mine || !mine.length) return;        // table absent or not a member → legacy
+    const myOrg = mine[0].org_id, myRole = mine[0].role;
+    // 2. Org roster (best-effort; display names live in auth.users and aren't exposed
+    //    to the anon client, so co-members show an id stub until a profiles view exists).
+    let roster = [];
+    try{
+      const { data: members } = await sbClient
+        .from('memberships').select('user_id, role, status').eq('org_id', myOrg);
+      roster = (members||[]).map(mm=>({
+        id: mm.user_id,
+        name: mm.user_id===uid ? ((state.user.user_metadata&&state.user.user_metadata.name)||state.user.email||'You') : ('Member '+String(mm.user_id).slice(0,8)),
+        email: mm.user_id===uid ? (state.user.email||'') : '',
+        role: mm.role, status: mm.status
+      }));
+    }catch(_){ /* roster optional */ }
+    if(!roster.some(m=>m.id===uid)) roster.push({ id:uid, name:state.user.email||'You', email:state.user.email||'', role:myRole, status:'active' });
+    state.access.members = roster;
+    state.access.currentUserId = uid;
+    state.access.orgId = myOrg;
+    state.access._membershipWired = true;          // enforcement now active with the real role
+    authAudit('RBAC_WIRED', 'Live membership loaded — role '+myRole, null);
+  }catch(e){ /* fail safe — leave legacy behaviour untouched */ }
+}
 async function saveDeal(d){
   if(!(state.backend && sbClient && state.user)) return;
   try{
     // Snapshot the live calc onto the deal when saving the active one so financials persist.
     if(state.activeDeal===d.id){ d.calc = JSON.parse(JSON.stringify(state.calc)); }
-    await sbClient.from('deals').upsert({ id:d.id, user_id:state.user.id, data:d });
+    // Tag with org_id ONLY when membership is wired (implies 0002 applied, so the
+    // column exists). Otherwise omit it so the upsert works against the base schema.
+    const row = { id:d.id, user_id:state.user.id, data:d };
+    if(state.access && state.access._membershipWired && state.access.orgId) row.org_id = state.access.orgId;
+    await sbClient.from('deals').upsert(row);
   }
   catch(e){ /* non-fatal in demo */ }
 }
@@ -10746,13 +10788,13 @@ async function enterApp(){
     // Lender / Assessor workspace — separate shell (Pass 2 will populate).
     const a = document.getElementById('assessorApp');
     if(a) a.style.display='flex';
-    if(aiLive()) await loadDeals();
+    if(aiLive()){ await loadDeals(); await wireLiveMembership(); }
     initAssessorShell();
     toast(state.user ? ('Welcome, '+(state.user.email||'assessor')+'.') : 'Welcome, Assessor.', 'ok');
     return;
   }
   document.getElementById('app').style.display='flex';
-  if(aiLive()) await loadDeals();
+  if(aiLive()){ await loadDeals(); await wireLiveMembership(); }
   toast(state.user ? ('Welcome, '+(state.user.email||'broker')+'.') : 'Welcome back.', 'ok');
   init();
 }

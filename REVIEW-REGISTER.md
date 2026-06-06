@@ -33,7 +33,7 @@ portal "is compliant", holds a licence, or is an AML/CDR/ELNO entity.
 | # | Item | Raised in | Notes |
 |---|---|---|---|
 | A1 | **Apply migration `0001_lending_groups.sql`** | Lending-group brief | DRAFT, not applied. |
-| A2 | **Apply migration `0002_access_control.sql`** + wire membership/role reads | Phase 5 | Turns RBAC enforcement on in live mode. DRAFT, not applied. |
+| A2 | **Apply migration `0002_access_control.sql`** to turn RBAC enforcement on | Phase 5 | Client wiring DELIVERED — `wireLiveMembership()` reads the real role on sign-in; enforcement engages automatically once the tables are applied + an active `membership` row exists (fail-safe to legacy otherwise, no lockouts). Owner action remaining: apply the migration (see `supabase/APPLY.md`). |
 | A3 | **Secret-store wiring** beyond Cloudflare Pages env vars | Phase 5 | Owner action; code reads env refs only. |
 | A4 | **Owner-account provisioning + real auth** | Phase 5 | Owner action; agent creates no accounts/secrets. |
 | A5 | **Security headers / CSP** (`_headers`) | Phase 5 | Recommended config in SECURITY.md; not committed live (CDN inline-script caveat). |
