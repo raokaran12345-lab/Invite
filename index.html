@@ -7025,21 +7025,27 @@ function renderPhoneBody(){
 function simUpload(i, name){
   if(portalDone.has(i)) return;
   const z = document.getElementById('dz'+i);
-  if(z) z.innerHTML = '⟳ Uploading…';
+  if(z) z.innerHTML = '⟳ Simulating…';
   setTimeout(()=>{
     portalDone.add(i);
     const dealId = state.activeDeal || (DEALS[0] && DEALS[0].id) || 'NEW';
+    // Demo simulation — no real file is received, so the doc is marked needs-review
+    // (not 'Verified'). A live portal would receive the file and run real OCR/forensics.
     DOCS.unshift({ name:(name||('Document '+(i+1))).replace(/[^a-z0-9]+/gi,'_')+'_portal.pdf',
-      deal:dealId, type:name||'Client upload', conf:94, status:'Processing', size:'—', date:TODAY_STR });
-    logEvent('Client portal upload: '+(name||'document'));
-    // Simulate verification shortly after
-    setTimeout(()=>{ const d=DOCS.find(x=>x.name.endsWith('_portal.pdf')&&x.status==='Processing'); if(d){d.status='Verified';d.conf=96;} }, 1500);
+      deal:dealId, type:name||'Client upload', conf:0, status:'Review', size:'—', date:TODAY_STR });
+    logEvent('Client portal (demo) simulated upload: '+(name||'document'));
     renderPhoneBody();
-  }, 1800);
+  }, 1200);
 }
 function generateLink(){
+  if(aiLive()){
+    // A live portal link must be issued + tracked server-side; that endpoint is a
+    // deliberate boundary, not yet wired. Be honest rather than mint a dead URL.
+    toast('Live portal links require a server-side portal endpoint (not yet wired). This is a known integration boundary.', 'info');
+    return;
+  }
   const link = 'https://portal.debtiq.com/u/'+Math.random().toString(36).slice(2,10);
-  toast('Secure link generated: '+link, 'ok');
+  toast('Demo link (not live): '+link+' — connect the backend to issue real, tracked secure links.', 'info');
 }
 
 /* ============================================================
@@ -7086,27 +7092,45 @@ function renderMarkets(el){
 /* ============================================================
    PAGE: BILLING
    ============================================================ */
+function billingPlan(){ try{ return localStorage.getItem('debtiq_billing_plan') || 'Professional'; }catch(e){ return 'Professional'; } }
+function setBillingPlan(name){
+  try{ localStorage.setItem('debtiq_billing_plan', name); }catch(e){}
+  auditLog('BILLING_PLAN_SELECTED', 'Plan set to '+name+' (demo — no charge)', 'Owner','owner');
+  toast(name+' selected — demo only, no card was charged. Connect a billing provider to subscribe.', 'info');
+  const host = document.getElementById('settingsBilling') || document.getElementById('app');
+  if(document.getElementById('settingsBilling')) renderBilling(document.getElementById('settingsBilling'));
+}
 function renderBilling(el){
+  // Real, local usage — no fabricated meters. Deals/documents come from live app state;
+  // this-month deals use the YYYY-MM of each deal's close/created date when present.
+  const thisMonth = TODAY_STR.slice(0,7);
+  const dealsThisMonth = DEALS.filter(d=>((d.closed||d.created||'')+'').slice(0,7)===thisMonth).length;
+  const docCount = (typeof DOCS!=='undefined' ? DOCS.length : 0);
+  const plan = billingPlan();
+  const planCap = {Starter:25, Professional:Infinity, Aggregator:Infinity}[plan] || Infinity;
+  const capLabel = planCap===Infinity ? 'Unlimited' : planCap;
+  const usePct = planCap===Infinity ? Math.min(100, dealsThisMonth*4) : Math.min(100, Math.round(dealsThisMonth/planCap*100));
   el.innerHTML = `
-    <div class="page-head"><h1>Billing & Usage</h1><p>Manage your subscription and monitor usage</p></div>
+    <div class="page-head"><h1>Billing &amp; Usage</h1><p>Your subscription and real, local usage. Payments are not connected — see the note below.</p></div>
+    <div class="acc-note steel" style="margin-bottom:16px"><b>Demo billing.</b> Plan selection is saved locally and <b>no card is ever charged</b>. Real subscriptions require connecting a payments provider (e.g. Stripe) server-side — that integration is a deliberate boundary, not yet wired.</div>
     <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
-      <div class="kpi"><div class="cap">Deals This Month</div><div class="num mono">34 / 50</div><div class="usage-bar"><span style="width:68%"></span></div></div>
-      <div class="kpi"><div class="cap">AI Credits</div><div class="num mono">1,240 / 2,000</div><div class="usage-bar"><span style="width:62%"></span></div></div>
-      <div class="kpi"><div class="cap">Storage</div><div class="num mono">4.2 / 10 GB</div><div class="usage-bar"><span style="width:42%"></span></div></div>
+      <div class="kpi"><div class="cap">Deals This Month</div><div class="num mono">${dealsThisMonth} / ${capLabel}</div><div class="usage-bar"><span style="width:${usePct}%"></span></div></div>
+      <div class="kpi"><div class="cap">Active Deals</div><div class="num mono">${DEALS.length}</div></div>
+      <div class="kpi"><div class="cap">Documents</div><div class="num mono">${docCount}</div></div>
     </div>
     <h4 style="font-size:16px;font-weight:700;margin:8px 0 16px">Plans</h4>
     <div class="plan-grid">
       ${[
-        {n:'Starter', p:149, cur:state.market, active:false, f:['25 deals/mo','Basic AI commentary','3 markets','Email support']},
-        {n:'Professional', p:249, active:true, f:['Unlimited deals','Full AI suite','AU + NZ markets','Priority support','Client portal']},
-        {n:'Aggregator', p:79, active:false, f:['Per-broker pricing','White-label','API access','Dedicated manager']}
-      ].map(pl=>`
-        <div class="plan ${pl.active?'active':''}">
+        {n:'Starter', p:149, f:['25 deals/mo','Basic AI commentary','3 markets','Email support']},
+        {n:'Professional', p:249, f:['Unlimited deals','Full AI suite','AU + NZ markets','Priority support','Client portal']},
+        {n:'Aggregator', p:79, f:['Per-broker pricing','White-label','API access','Dedicated manager']}
+      ].map(pl=>{ const active = pl.n===plan; return `
+        <div class="plan ${active?'active':''}">
           <div style="font-weight:700;font-size:17px">${pl.n}</div>
           <div class="price">${m().sym}${pl.p}<small>/mo</small></div>
           <ul>${pl.f.map(x=>`<li>✓ ${x}</li>`).join('')}</ul>
-          <button class="btn ${pl.active?'':'primary'}" style="width:100%;${pl.active?'background:rgba(255,255,255,.2);color:#fff;border:none':''}" onclick="toast('${pl.active?'Current plan':'Switched to '+pl.n}','${pl.active?'info':'ok'}')">${pl.active?'Current Plan':'Choose '+pl.n}</button>
-        </div>`).join('')}
+          <button class="btn ${active?'':'primary'}" style="width:100%;${active?'background:rgba(255,255,255,.2);color:#fff;border:none':''}" onclick="${active?`toast('Current plan','info')`:`setBillingPlan('${pl.n}')`}">${active?'Current Plan':'Choose '+pl.n}</button>
+        </div>`; }).join('')}
     </div>`;
 }
 
