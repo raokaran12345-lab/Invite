@@ -3871,16 +3871,20 @@ function computeServiceability(){
   // DTI: total debt balance (existing + every new facility) vs gross shaded annual income (APRA 2026 cap).
   const dti = shadedAnnual>0 ? (totalLiab + totalNewAmt)/shadedAnnual : 0;
 
-  let verdict;
-  const pass = ndi>0 && dsr<dsrMax;
-  if(pass) verdict='PASS';
-  else if(ndi > -250 && dsr < dsrMax+5) verdict='BORDERLINE';
-  else verdict='FAIL';
-
   // DTI assessment (Phase 4) — APRA 2026 high-DTI treatment as a per-lender
   // appetite FLAG, with OO/investor segment + bridging/construction exemption.
-  // Deliberately does NOT feed `verdict` — high DTI flags, it never fails.
+  // A high-DTI flag DOWNGRADES a clean pass to BORDERLINE so the broker sees it,
+  // but DTI alone never forces a FAIL — consistent with APRA's "flag not cutoff".
   const dtiAssess = dtiAssessment(dti, state.lender, (state.calc||{}).purpose);
+
+  // "Thin" surplus scales with income instead of a flat dollar figure: an NDI under
+  // 5% of monthly income (min $300/mo) is real but fragile → BORDERLINE, not a clean
+  // PASS. Negative surplus or DSR at/over the cap is a hard FAIL (blocks compliance docs).
+  const thinMargin = Math.max(300, income * 0.05);
+  let verdict;
+  if(ndi <= 0 || dsr >= dsrMax) verdict='FAIL';
+  else if(ndi < thinMargin || dsr >= dsrMax - 3 || (dtiAssess && dtiAssess.high)) verdict='BORDERLINE';
+  else verdict='PASS';
 
   // assessedRate reflects the *primary* facility's contract rate + the active buffer — the figure brokers
   // recognise on the assessment console headline; per-facility rates show in the facility breakdown.
@@ -7665,6 +7669,7 @@ function renderPilotResults(){
 async function generateSubmissionPack(){
   if(!requirePermission('pack.generate','generate a submission pack')) return;   // Phase 5 RBAC gate
   const r = computeServiceability();
+  if(!bidGenerationGuard(r)) return;
   const pol = activePolicy();
   const deal = DEALS[0] || {};
   const d = state.wizData;
@@ -9532,25 +9537,29 @@ function deleteClientPII(){
 function renderCompliance(el){
   const r = computeServiceability();
   const validation = validateBIDBeforeGenerate(r);
+  // Generators are enabled only when serviceability passes AND every material flag
+  // has been attested. canGen drives both the button state and a runtime guard.
+  const canGen = !validation.blocked && validation.acksOK;
   el.innerHTML = `
     <div class="page-head"><h1 class="serif" style="font-weight:500;letter-spacing:-.005em">Compliance AI</h1>
       <p>Generate ASIC RG209-compliant BID documentation, HEM explanations, and responsible-lending summaries — each AI-drafted, editable inline, and gated by the deal's serviceability.</p></div>
     ${!state.anthropicKey ? `<div class="comp-gate info"><span class="caption-cool">Backend required</span><div class="cg-body"><b>API key not configured.</b> <span class="serif-italic">Without a key, DebtIQ generates editable template placeholders. Set <span class="mono">ANTHROPIC_API_KEY</span> server-side to enable live generation.</span></div></div>` : ''}
     ${validation.blocked ? `<div class="comp-gate blocked"><span class="caption-cool" style="color:var(--red)">Cannot generate</span><div class="cg-body"><b>Serviceability does not pass.</b> <span class="serif-italic">${esc(validation.reason)}</span></div></div>` : ''}
+    ${validation.acks && validation.acks.length ? `<div class="comp-gate ${validation.acksOK?'warn':'blocked'}"><span class="caption-cool" style="color:${validation.acksOK?'var(--amber)':'var(--red)'}">Attestation required</span><div class="cg-body"><b>${validation.acksOK?'All material flags acknowledged.':'Acknowledge each material flag before generating.'}</b><div style="margin-top:8px;display:flex;flex-direction:column;gap:8px">${validation.acks.map(a=>`<label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;color:var(--t2);line-height:1.55;cursor:pointer"><input type="checkbox" ${((complianceFor().bidAcks)||{})[a.key]?'checked':''} onchange="toggleBidAck('${a.key}')" style="margin-top:3px;flex-shrink:0"><span class="serif-italic">${esc(a.text)}</span></label>`).join('')}</div></div></div>` : ''}
     ${validation.warnings && validation.warnings.length ? `<div class="comp-gate warn"><span class="caption-cool" style="color:var(--amber)">Policy flags</span><div class="cg-body"><b>Address these in your documentation.</b><ul style="margin-top:6px;padding-left:18px;font-size:13px;color:var(--t2);line-height:1.7">${validation.warnings.map(w=>`<li class="serif-italic">${esc(w)}</li>`).join('')}</ul></div></div>` : ''}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
       <div class="card comp-card"><div class="caption-cool">RG209</div><h3 class="serif" style="font-weight:500;font-size:17px;margin:4px 0 6px;color:var(--t1)">Requirements &amp; Objectives</h3>
         <p class="serif-italic" style="font-size:13px;color:var(--t2);margin-bottom:14px">Per ASIC RG209 — explains why this loan meets the client's stated objectives.</p>
-        <button class="btn primary" style="width:100%" onclick="genBID()" ${validation.blocked?'disabled':''}>Generate R&amp;O</button></div>
+        <button class="btn primary" style="width:100%" onclick="genBID()" ${canGen?'':'disabled'}>Generate R&amp;O</button></div>
       <div class="card comp-card"><div class="caption-cool">Living expenses</div><h3 class="serif" style="font-weight:500;font-size:17px;margin:4px 0 6px;color:var(--t1)">HEM Explanation</h3>
         <p class="serif-italic" style="font-size:13px;color:var(--t2);margin-bottom:14px">Required when declared expenses are below HEM — references specific evidence.</p>
         <button class="btn primary" style="width:100%" onclick="genHEM()">Generate HEM explanation</button></div>
       <div class="card comp-card"><div class="caption-cool">Credit assessor</div><h3 class="serif" style="font-weight:500;font-size:17px;margin:4px 0 6px;color:var(--t1)">Serviceability Commentary</h3>
         <p class="serif-italic" style="font-size:13px;color:var(--t2);margin-bottom:14px">DSR · NDI · DTI · lender policy references — assessor-tone narrative.</p>
-        <button class="btn primary" style="width:100%" onclick="genServiceability()" ${validation.blocked?'disabled':''}>Generate commentary</button></div>
+        <button class="btn primary" style="width:100%" onclick="genServiceability()" ${canGen?'':'disabled'}>Generate commentary</button></div>
       <div class="card comp-card featured"><div class="caption-cool" style="color:var(--ink)">Submission</div><h3 class="serif" style="font-weight:500;font-size:17px;margin:4px 0 6px;color:var(--ink)">Full Submission Pack</h3>
         <p class="serif-italic" style="font-size:13px;color:var(--t2);margin-bottom:14px">All sections + cover + checklist + provenance — print-ready credit memo.</p>
-        <button class="btn primary" style="width:100%" onclick="generateSubmissionPack()">Generate full pack</button></div>
+        <button class="btn primary" style="width:100%" onclick="generateSubmissionPack()" ${canGen?'':'disabled'}>Generate full pack</button></div>
     </div>
     <div class="card" style="padding:20px;margin-bottom:16px">
       <h3 style="font-size:15px;font-weight:700;margin-bottom:6px">Document extraction tester</h3>
@@ -9677,18 +9686,55 @@ function renderComplianceEvidence(r){
 }
 function validateBIDBeforeGenerate(r){
   const pol = activePolicy();
-  const warnings = [];
+  const warnings = [];   // advisory — surfaced, do not gate generation
+  const acks = [];       // high-severity — broker must explicitly attest before generating
   if(r.verdict === 'FAIL'){
-    return { blocked:true, reason:'Loan does not service — DSR '+r.dsr.toFixed(1)+'% or NDI '+fmtMoney(r.ndi)+'/mo. Fix serviceability before generating compliance documents.' };
+    return { blocked:true, reason:'Loan does not service — DSR '+r.dsr.toFixed(1)+'% or NDI '+fmtMoney(r.ndi)+'/mo. Fix serviceability before generating compliance documents.', warnings:[], acks:[], acksOK:false };
   }
-  if((r.dtiAssess||{}).high || r.dti>9){ warnings.push(dtiFlagText(r.dtiAssess || dtiAssessment(r.dti, state.lender, (state.calc||{}).purpose))); }
-  if(r.lvr > 90) warnings.push('LVR '+r.lvr.toFixed(1)+'% — LMI applies. Must explain LMI to client and document their acknowledgement.');
-  if(r.ndi < 500 && r.ndi >= 0) warnings.push('NDI only '+fmtMoney(r.ndi)+'/mo — very thin surplus. Document any income not captured or expenses that will reduce.');
-  if(state.calc.dependants > 0 && r.income>0 && r.HEM > r.income * 0.4) warnings.push('HEM floor is '+((r.HEM/r.income)*100).toFixed(0)+'% of income with '+state.calc.dependants+' dependant(s). Verify living expenses evidence.');
-  return { blocked:false, warnings };
+  // High-severity flags now require an explicit broker attestation (audit-logged)
+  // rather than a passive warning — you cannot generate a "not unsuitable" pack while
+  // a material risk sits unaddressed. This mirrors the responsible-lending obligation
+  // to make and document reasonable inquiries.
+  const thin = Math.max(300, (r.income||0) * 0.05);
+  if((r.dtiAssess||{}).high || r.dti>9){
+    acks.push({ key:'dti', text: dtiFlagText(r.dtiAssess || dtiAssessment(r.dti, state.lender, (state.calc||{}).purpose)) + ' — confirm the high DTI is within lender appetite and documented.' });
+  }
+  if(r.lvr > 90){
+    acks.push({ key:'lvr', text:'LVR '+r.lvr.toFixed(1)+'% — LMI applies. Confirm you have explained LMI to the client and captured their acknowledgement.' });
+  }
+  if(r.ndi < thin && r.ndi > 0){
+    acks.push({ key:'ndi', text:'NDI only '+fmtMoney(r.ndi)+'/mo — very thin surplus. Confirm you have documented income not captured or expenses that will reduce, and that the loan remains not unsuitable.' });
+  }
+  // Advisory only — informs the narrative, does not gate.
+  if(state.calc.dependants > 0 && r.income>0 && r.HEM > r.income * 0.4){
+    warnings.push('HEM floor is '+((r.HEM/r.income)*100).toFixed(0)+'% of income with '+state.calc.dependants+' dependant(s). Verify living-expense evidence.');
+  }
+  const ackState = (complianceFor().bidAcks)||{};
+  const acksOK = acks.every(a=>ackState[a.key]);
+  return { blocked:false, warnings, acks, acksOK };
+}
+/* Defense-in-depth runtime guard for the compliance generators: even if a button
+   is reached with stale state, generation is refused while serviceability fails or
+   a required attestation is missing. Returns true when generation may proceed. */
+function bidGenerationGuard(r){
+  const v = validateBIDBeforeGenerate(r || computeServiceability());
+  if(v.blocked){ toast(v.reason, 'err'); return false; }
+  if(!v.acksOK){ toast('Acknowledge the material serviceability flags before generating.', 'err'); rerenderCompliance(); return false; }
+  return true;
+}
+/* Broker attestation for a high-severity serviceability flag. Audit-logged; the
+   compliance generators stay disabled until every required ack is ticked. */
+function toggleBidAck(key){
+  const c = complianceFor();
+  c.bidAcks = c.bidAcks || {};
+  c.bidAcks[key] = !c.bidAcks[key];
+  saveCompliance();
+  auditLog('BID_ACK', `Serviceability flag "${key}" ${c.bidAcks[key]?'acknowledged':'un-acknowledged'} for deal ${state.activeDeal||'(unsaved)'}`, 'Broker','broker');
+  rerenderCompliance();
 }
 async function genBID(){
   const r = computeServiceability(); const pol = activePolicy();
+  if(!bidGenerationGuard(r)) return;
   showLoader('Generating Requirements & Objectives…');
   const txt = await callClaude(buildBIDPrompt(r, pol, state.wizData));
   hideLoader(); renderComplianceCard('Requirements & Objectives (RG209)', txt, 'bid', 'green');
@@ -9708,6 +9754,7 @@ Read by a credit assessor; reference specific evidence sources (bank statements,
 }
 async function genServiceability(){
   const r = computeServiceability(); const pol = activePolicy();
+  if(!bidGenerationGuard(r)) return;
   showLoader('Generating serviceability commentary…');
   const txt = await callClaude(buildServicingPrompt(r, pol));
   hideLoader(); renderComplianceCard('Serviceability Commentary', txt, 'serv', 'neutral');

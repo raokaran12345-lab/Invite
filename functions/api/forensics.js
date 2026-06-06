@@ -13,19 +13,32 @@ import { CORS, json, corsPreflight, requireSupabaseSession, parseJsonLoose } fro
 
 const DISCLAIMER = 'Signal-based analysis. Absence of signals is not proof of authenticity. A clean result means no tampering indicators were found, not that the document is verified genuine.';
 
-// Consumer editors that legitimate bank/payroll PDFs are essentially never produced by.
-const EDIT_TOOLS = ['photoshop','illustrator','acrobat pro','pdfescape','ilovepdf','smallpdf',
-  'foxit phantompdf','sejda','pdf-xchange editor','nitro pro','canva'];
+// Image editors: seeing a payslip/statement "produced by" one of these is a strong
+// signal — genuine bank/payroll exports are not image-edited. Treated as high.
+const IMAGE_EDITORS = ['photoshop','illustrator','gimp','canva','figma','sketch'];
+// PDF editors/converters: commonly used LEGITIMATELY to merge, rotate, compress or
+// re-save documents (e.g. a borrower combining pages before upload). On their own
+// these are a weak signal, not proof — treated as medium and only escalated when
+// corroborated by an actual content-edit signal. This is the de-false-positive fix:
+// "re-saved through Acrobat" must not, alone, read as "tampering detected".
+const PDF_EDITORS = ['acrobat pro','pdfescape','ilovepdf','smallpdf','foxit phantompdf',
+  'sejda','pdf-xchange editor','nitro pro'];
 
 const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
 
-/* ---------- scoring ---------- */
+/* ---------- scoring ----------
+   A single weak signal should not present as "tampering detected". REVIEW REQUIRED
+   is reserved for a genuine high-severity finding OR two independent corroborating
+   medium signals (e.g. an editing tool AND a content-edit/arithmetic anomaly). */
 function scoreFindings(findings){
   const hasHigh = findings.some(f => f.severity === 'high');
-  const hasMed  = findings.some(f => f.severity === 'medium');
+  const meds    = findings.filter(f => f.severity === 'medium');
+  // Corroboration: distinct medium signals across different codes reinforce each other.
+  const distinctMed = new Set(meds.map(f => f.code)).size;
   if (hasHigh) return { status: 'REVIEW REQUIRED', integrity: 'Tampering signals detected' };
-  if (hasMed)  return { status: 'CAUTION',         integrity: 'Minor anomalies — verify manually' };
-  return            { status: 'CLEAR',           integrity: 'No tampering signals detected' };
+  if (distinctMed >= 2) return { status: 'REVIEW REQUIRED', integrity: 'Multiple corroborating anomalies — verify manually' };
+  if (meds.length)  return { status: 'CAUTION', integrity: 'A single anomaly — likely benign, verify manually' };
+  return            { status: 'CLEAR',  integrity: 'No tampering signals detected' };
 }
 
 /* ---------- LAYER 1: PDF metadata & structure (pure JS) ---------- */
@@ -52,12 +65,18 @@ function metadataForensics(base64){
   const creationRaw = grab(/\/CreationDate\s*\(([^)]{0,40})\)/);
   const modRaw      = grab(/\/ModDate\s*\(([^)]{0,40})\)/);
 
-  // META01 — Producer/Creator is a known editing tool
+  // META01 — Producer/Creator is a known editing tool.
+  // Image editors → high (a bank PDF is not legitimately image-edited).
+  // PDF editors/converters → medium (routinely used to merge/compress/re-save).
   const tool = [producer, creator].map(s => (s || '').toLowerCase());
-  const hit = EDIT_TOOLS.find(t => tool.some(s => s.includes(t)));
-  if (hit) findings.push({ layer:'metadata', severity:'high', code:'META01',
-    finding:'Produced by a known editing tool',
-    detail:`PDF Producer/Creator contains "${hit}" (${producer || creator}). Bank/payroll PDFs are not legitimately produced by image/PDF editors.` });
+  const imgHit = IMAGE_EDITORS.find(t => tool.some(s => s.includes(t)));
+  const pdfHit = PDF_EDITORS.find(t => tool.some(s => s.includes(t)));
+  if (imgHit) findings.push({ layer:'metadata', severity:'high', code:'META01',
+    finding:'Produced by an image editor',
+    detail:`PDF Producer/Creator contains "${imgHit}" (${producer || creator}). Genuine bank/payroll PDFs are not produced by image editors — this is a strong tampering signal.` });
+  else if (pdfHit) findings.push({ layer:'metadata', severity:'medium', code:'META01',
+    finding:'Re-saved through a PDF editor/converter',
+    detail:`PDF Producer/Creator contains "${pdfHit}" (${producer || creator}). This is common for legitimately combined or compressed documents, so on its own it is a weak signal — confirm only if corroborated by a content-edit or arithmetic anomaly.` });
 
   // META02 — Modified after creation
   const created = parsePdfDate(creationRaw), modified = parsePdfDate(modRaw);
