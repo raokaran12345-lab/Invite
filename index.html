@@ -5953,9 +5953,10 @@ function computeManual(){
   // a high DTI (>=6x, APRA high-DTI marker) downgrades a clean pass to BORDERLINE,
   // and negative surplus / DSR at-or-over the cap is a hard FAIL.
   const thinMargin = Math.max(300, incomeMo * 0.05);
+  const dtiHigh = (dtiAssessment(dti, state.lender, (state.manual||{}).purpose)||{}).high;
   let verdict;
   if(ndi <= 0 || dsr >= dsrMax) verdict='FAIL';
-  else if(ndi < thinMargin || dsr >= dsrMax - 3 || dti >= 6) verdict='BORDERLINE';
+  else if(ndi < thinMargin || dsr >= dsrMax - 3 || dtiHigh) verdict='BORDERLINE';
   else verdict='PASS';
   return {incomeMo, newLoanMo, existingDebt, totalDebt, living, ndi, dsr, lvr, dti, verdict, assessedRate:(parseFloat(x.rate)||0)+buffer*100, dsrMax};
 }
