@@ -61,6 +61,12 @@ interview notes, real API+Textract cost per deal, sign-ups, pricing test results
 The council folds it into the next round and only *then* can the maturity score
 climb past 50.
 
+The `./evidence` inbox is gitignored (real findings are private). Durable,
+shareable ground truth lives in **`./evidence-seed`** (version-controlled) — run
+`npm run seed` to copy it into the inbox before a round. The repo ships with one
+real seed: a direct audit of the DebtIQ codebase, so the council's first run is
+grounded in the product as actually built rather than hypotheses.
+
 ## The honest part
 
 This loop has **no ground truth of its own.** Left to reason in a vacuum it would
