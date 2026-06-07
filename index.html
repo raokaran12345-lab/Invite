@@ -7832,11 +7832,14 @@ function applyLever(kind){
    ============================================================ */
 const PILOT_STEPS = [
   {t:'Extract documents', d:'OCR + classification across the client’s uploaded files'},
+  {t:'Verify documents', d:'Three-layer forensic tamper-signal check on each file'},
   {t:'Populate serviceability', d:'Auto-fill income, liabilities & loan — no manual entry'},
-  {t:'Rank lenders', d:'Score every in-market lender by approvability'},
-  {t:'Draft commentary', d:'Generate the submission overview'}
+  {t:'Assess serviceability', d:'Buffered DSR / NDI / DTI against lender policy'},
+  {t:'Match lender', d:'Score every in-market lender by approvability'},
+  {t:'Compliance evidence', d:'Responsible-lending / Best-Interests-Duty readiness for the file'}
 ];
-let pilotStatus = [0,0,0,0];   // 0 pending · 1 running · 2 done
+const PILOT_POPULATE_STEP = 2;   // index at which extracted data is consolidated into calc
+let pilotStatus = PILOT_STEPS.map(()=>0);   // 0 pending · 1 running · 2 done
 let pilotState = 'idle';       // idle · running · done
 let pilotResult = null;
 let pilotUsedSample = false;   // true when the run shows the demo SAMPLE, not real data
@@ -7847,7 +7850,7 @@ function renderAIPilot(el){
     <div class="market-hero ai-hero">
       <div class="caption" style="color:rgba(255,255,255,.55)">Autopilot · ${aiLive()?'live':'demo'}</div>
       <h2 class="serif" style="font-weight:500;font-size:30px;letter-spacing:-.005em;margin-top:6px">AI Pilot ${aiLive()?'':'<span class="ai-demo-chip">DEMO</span>'}</h2>
-      <p class="serif-italic" style="margin-top:6px;opacity:.92;max-width:640px">End-to-end — reads this deal's extracted documents, assesses serviceability, matches a lender, drafts the submission. Everything Pilot uses comes from the same deal record the Calculator reads from — enter once, never re-key.${aiLive()?'':' <span class="serif" style="font-style:normal;font-weight:500;color:rgba(255,255,255,.92)">Demo mode shows a clearly-labelled sample — deploy the backend and sign in for real document processing.</span>'}</p>
+      <p class="serif-italic" style="margin-top:6px;opacity:.92;max-width:640px">The whole prelim assessment in one pass — extract documents → <b>verify</b> them (forensics) → assess serviceability → match a lender → check <b>compliance</b> readiness. Everything reads from the same deal record the Calculator uses — enter once, never re-key.${aiLive()?'':' <span class="serif" style="font-style:normal;font-weight:500;color:rgba(255,255,255,.92)">Demo mode shows a clearly-labelled sample — deploy the backend and sign in for real document processing.</span>'}</p>
       <button class="btn" id="pilotBtn" style="margin-top:18px;background:#fff;color:var(--ink);font-weight:700;border:none" onclick="runAIPilot()">${pilotState==='done'?'Re-run AI Pilot':'Run AI Pilot'}</button>
     </div>
     <div id="pilotSteps" style="max-width:760px"></div>
@@ -7866,7 +7869,7 @@ function renderPilotSteps(){
 }
 function runAIPilot(){
   if(pilotState==='running') return;
-  pilotState = 'running'; pilotStatus = [0,0,0,0]; pilotResult = null;
+  pilotState = 'running'; pilotStatus = PILOT_STEPS.map(()=>0); pilotResult = null;
   const rb = document.getElementById('pilotResults'); if(rb) rb.innerHTML = '';
   const btn = document.getElementById('pilotBtn'); if(btn){ btn.style.opacity=.55; btn.textContent='Running…'; }
   runPilotStep(0);
@@ -7874,8 +7877,8 @@ function runAIPilot(){
 function runPilotStep(i){
   if(i >= PILOT_STEPS.length){ finishPilot(); return; }
   pilotStatus[i] = 1; renderPilotSteps();
-  if(i===1) applyExtractedProfile();   // the "zero re-keying" moment: write into shared calc state
-  setTimeout(()=>{ pilotStatus[i] = 2; renderPilotSteps(); runPilotStep(i+1); }, 1050);
+  if(i===PILOT_POPULATE_STEP) applyExtractedProfile();   // the "zero re-keying" moment: write into shared calc state
+  setTimeout(()=>{ pilotStatus[i] = 2; renderPilotSteps(); runPilotStep(i+1); }, 850);
 }
 // Consolidate the deal's data into the SAME state the calculator/compare/commentary
 // read from. HONEST behaviour — Pilot never fabricates a paying user's figures:
@@ -7920,25 +7923,55 @@ function finishPilot(){
   const top = ranked.find(x=>x.serviceable) || ranked[0];
   if(top && state.market==='AU') state.lender = top.l;   // adopt the recommended lender's policy
   const r = computeServiceability();
+  // Pillar: document verification (forensics) — aggregate the deal's forensic integrity.
+  let fx = null;
+  try{ fx = (typeof getForensicReport==='function') ? getForensicReport(state.activeDeal) : null; }catch(e){}
+  // Pillar: compliance readiness — the SAME gate the Compliance page enforces.
+  let comp = null;
+  try{ comp = (typeof validateBIDBeforeGenerate==='function') ? validateBIDBeforeGenerate(r) : null; }catch(e){}
   COMMENTARY[0].text = mockCommentary('pilot');   // synchronous draft (safe if user navigates away)
-  pilotResult = {r, top};
+  pilotResult = {r, top, fx, comp};
   pilotState = 'done';
   const btn = document.getElementById('pilotBtn'); if(btn){ btn.style.opacity=1; btn.textContent='Re-run AI Pilot'; }
   renderPilotResults();
-  toast('AI Pilot complete — deal assessed end-to-end', 'ok');
+  toast('AI Pilot complete — documents → verified → serviceable → compliance-checked', 'ok');
+}
+// Compact status chip for a pilot pillar.
+function pilotPillar(label, value, tone, onclick){
+  return `<div class="res-box" ${onclick?`onclick="${onclick}" style="cursor:pointer"`:''}>
+    <div class="rl">${label}</div>
+    <div class="rv" style="font-size:14px;font-weight:700;color:var(--${tone||'t1'})">${value}</div></div>`;
 }
 function renderPilotResults(){
   const box = document.getElementById('pilotResults'); if(!box || !pilotResult) return;
-  const {r, top} = pilotResult;
+  const {r, top, fx, comp} = pilotResult;
   const pilotNote = top && top.serviceable
     ? ('Recommended lender: '+(top.label||top.l)+' @ '+top.rate.toFixed(2)+'% ('+(top.buffer*100).toFixed(0)+'% buffer).')
     : 'No lender services this structure — see the levers below.';
+  // Pillar: document verification.
+  const fxStatus = fx ? (fx.status||'—') : 'Not run';
+  const fxTone = !fx ? 't3' : /REVIEW/i.test(fxStatus) ? 'red' : /CAUTION/i.test(fxStatus) ? 'amber' : 'green';
+  const fxVal = fx ? fxStatus + (fx.demo ? ' (demo)' : '') : 'Upload docs';
+  // Pillar: compliance readiness (from the real gate).
+  let compVal='—', compTone='t3';
+  if(comp){
+    if(comp.blocked){ compVal='Blocked'; compTone='red'; }
+    else if(comp.acks && comp.acks.length && !comp.acksOK){ compVal='Attest first'; compTone='amber'; }
+    else if(comp.warnings && comp.warnings.length){ compVal='Flagged'; compTone='amber'; }
+    else { compVal='Ready'; compTone='green'; }
+  }
   box.innerHTML = `
     ${verdictHero(r.verdict, pilotNote, 'NDI', fmtMoney(r.ndi)+'/mo')}
+    <div class="res-grid" style="margin-bottom:10px">
+      ${pilotPillar('Documents', fxVal, fxTone, "navigate('documents')")}
+      ${pilotPillar('Serviceability', r.verdict, r.verdict==='PASS'?'green':r.verdict==='BORDERLINE'?'amber':'red', "navigate('serviceability')")}
+      ${pilotPillar('Lender', top&&top.serviceable?(top.label||top.l):'None', top&&top.serviceable?'green':'red', "navigate('compare')")}
+      ${pilotPillar('Compliance', compVal, compTone, "navigate('compliance')")}
+    </div>
     <div class="res-grid">
       <div class="res-box"><div class="rl">DSR</div><div class="rv mono">${r.dsr.toFixed(1)}%</div></div>
       <div class="res-box"><div class="rl">NDI/mo</div><div class="rv mono" style="color:${r.ndi>=0?'var(--green)':'var(--red)'}">${fmtMoney(r.ndi)}</div></div>
-      <div class="res-box"><div class="rl">Income/mo</div><div class="rv mono">${fmtMoney(r.income)}</div></div>
+      <div class="res-box"><div class="rl">DTI</div><div class="rv mono">${(r.dti||0).toFixed(1)}×</div></div>
     </div>
     <div class="card" style="padding:18px;margin-bottom:14px">
       <h4 style="font-size:13px;font-weight:700;margin-bottom:8px">Next-best levers</h4>
