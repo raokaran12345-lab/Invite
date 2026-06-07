@@ -3761,36 +3761,68 @@ const WS_RENDERERS = {
    ============================================================ */
 function commState(){
   if(!state.commercial) state.commercial = {
-    business_name:'Nguyen Trading Pty Ltd', years_in_business:4,
+    business_name:'Nguyen Trading Pty Ltd', years_in_business:4, lender_class:'generic',
     ebitda:240000, addback_depreciation:28000, addback_interest:16000, addback_lease:9000,
     business_debt_service_mo:3200, loan_amount:900000, rate:6.9, term:20
   };
   return state.commercial;
 }
+// Illustrative commercial DSCR floors by lender CLASS (deliberately not named banks
+// with invented numbers). Structured so a real per-lender policy feed can replace it.
+const COMMERCIAL_LENDERS = {
+  generic: {label:'Years-based (default)', dscrMin:null},
+  major:   {label:'Major bank — illustrative', dscrMin:1.40},
+  midtier: {label:'Mid-tier / regional — illustrative', dscrMin:1.30},
+  nonbank: {label:'Non-bank / specialist — illustrative', dscrMin:1.15}
+};
+const COMM_SCENARIOS = {
+  healthy:{label:'Healthy', loan_amount:900000},
+  thin:   {label:'Thin', loan_amount:1600000},
+  fails:  {label:'Stretched', loan_amount:2400000}
+};
 function setComm(field,val){ const c=commState(); c[field]=(val!==''&&!isNaN(+val))?+val:val; renderCommercialResults(); }
+function setCommLender(cls){ commState().lender_class=cls; renderCommercialResults(); }
+function setCommScenario(name){ const s=COMM_SCENARIOS[name]; if(!s) return; Object.assign(commState(), {loan_amount:s.loan_amount}); renderCommercial(document.getElementById('page-commercial')); }
 function commPMT(principal, annualRatePct, years){
   const r=(parseFloat(annualRatePct)||0)/100/12, n=(parseFloat(years)||0)*12, P=parseFloat(principal)||0;
   if(!P||!n) return 0; if(!r) return P/n; return P*r/(1-Math.pow(1+r,-n));
 }
+function commInversePMT(payment, annualRatePct, years){
+  const r=(parseFloat(annualRatePct)||0)/100/12, n=(parseFloat(years)||0)*12, A=parseFloat(payment)||0;
+  if(A<=0||!n) return 0; if(!r) return A*n; return A*(1-Math.pow(1+r,-n))/r;
+}
 function computeCommercialServiceability(){
   const c=commState(); const buffer=(typeof activeBuffer==='function')?activeBuffer():0.03;
   const assessable=(parseFloat(c.ebitda)||0)+(parseFloat(c.addback_depreciation)||0)+(parseFloat(c.addback_interest)||0)+(parseFloat(c.addback_lease)||0);
-  const newLoanMo=commPMT(c.loan_amount,(parseFloat(c.rate)||0)+buffer*100,c.term);
-  const totalDebtMo=(parseFloat(c.business_debt_service_mo)||0)+newLoanMo;
+  const ratePct=(parseFloat(c.rate)||0)+buffer*100;
+  const newLoanMo=commPMT(c.loan_amount,ratePct,c.term);
+  const existingMo=parseFloat(c.business_debt_service_mo)||0;
+  const totalDebtMo=existingMo+newLoanMo;
   const annualDebt=totalDebtMo*12;
   const dscr=annualDebt>0?assessable/annualDebt:0;
-  const dscrMin=(parseFloat(c.years_in_business)||0)<2?1.50:1.25;
+  // Floor: lender-class policy if chosen, else years-in-business heuristic.
+  const polMin=(COMMERCIAL_LENDERS[c.lender_class]||{}).dscrMin;
+  const dscrMin=polMin!=null?polMin:((parseFloat(c.years_in_business)||0)<2?1.50:1.25);
+  // Lever: largest new facility that still meets the DSCR floor.
+  const targetTotalMo=(dscrMin>0)?(assessable/dscrMin)/12:0;
+  const targetNewMo=targetTotalMo-existingMo;
+  const maxLoanAtFloor=targetNewMo>0?commInversePMT(targetNewMo,ratePct,c.term):0;
   let verdict='PASS', reason='Adequate debt-service cover on business income.';
-  if(dscr<dscrMin){ verdict='FAIL'; reason='DSCR '+dscr.toFixed(2)+'x is below the '+dscrMin.toFixed(2)+'x floor — does not service on business income alone.'; }
-  else if(dscr<dscrMin+0.15){ verdict='BORDERLINE'; reason='DSCR '+dscr.toFixed(2)+'x is a thin margin above the '+dscrMin.toFixed(2)+'x floor.'; }
-  return { assessable, newLoanMo, totalDebtMo, annualDebt, dscr, dscrMin, verdict, reason };
+  if(dscr<dscrMin){ verdict='FAIL'; reason='DSCR '+dscr.toFixed(2)+'× is below the '+dscrMin.toFixed(2)+'× floor — does not service on business income alone.'; }
+  else if(dscr<dscrMin+0.15){ verdict='BORDERLINE'; reason='DSCR '+dscr.toFixed(2)+'× is a thin margin above the '+dscrMin.toFixed(2)+'× floor.'; }
+  return { assessable, newLoanMo, totalDebtMo, annualDebt, dscr, dscrMin, verdict, reason, maxLoanAtFloor, lenderLabel:(COMMERCIAL_LENDERS[c.lender_class]||{}).label||'—' };
 }
 function renderCommercial(el){
+  if(!el) return;
   const c=commState();
-  const f=(label,field,prefix)=>`<div class="inp"><label>${label}</label><input type="number" value="${c[field]??''}" oninput="setComm('${field}',this.value)" style="font-family:var(--mono)"></div>`;
+  const f=(label,field)=>`<div class="inp"><label>${label}</label><input type="number" value="${c[field]??''}" oninput="setComm('${field}',this.value)" style="font-family:var(--mono)"></div>`;
   el.innerHTML=`
     <div class="page-head"><h1>Commercial &amp; SME Serviceability</h1><p>DSCR-based assessment for business and asset-finance deals — the part residential serviceability tools don't do.</p></div>
-    <div class="acc-note amber" style="margin-bottom:16px"><b>Illustrative thresholds.</b> The DSCR floors below (1.25× / 1.50×) are indicative only — real commercial serviceability is per-lender and requires accountant-verified financials. Treat this as a fast sanity check before lender lodgement, not an approval.</div>
+    <div class="acc-note amber" style="margin-bottom:16px"><b>Illustrative thresholds.</b> The DSCR floors here (by lender class) are indicative only — real commercial serviceability is per-lender and requires accountant-verified financials. A fast sanity check before lodgement, not an approval.</div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+      <span style="font-size:12px;font-weight:700;color:var(--t3)">Try a scenario:</span>
+      ${Object.entries(COMM_SCENARIOS).map(([k,s])=>`<button class="btn btn-sm" onclick="setCommScenario('${k}')">${s.label}</button>`).join('')}
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
       <div class="card" style="padding:18px">
         <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Business operating income</h3>
@@ -3808,6 +3840,11 @@ function renderCommercial(el){
           ${f('Rate %','rate')}
           ${f('Term (yrs)','term')}
         </div>
+        <div class="inp" style="margin-top:12px"><label>Assess against (DSCR floor)</label>
+          <select onchange="setCommLender(this.value)" style="padding:9px 12px;border:1.5px solid var(--border);border-radius:12px;font-weight:600;width:100%">
+            ${Object.entries(COMMERCIAL_LENDERS).map(([k,v])=>`<option value="${k}" ${c.lender_class===k?'selected':''}>${v.label}${v.dscrMin!=null?' ('+v.dscrMin.toFixed(2)+'×)':''}</option>`).join('')}
+          </select>
+        </div>
       </div>
       <div id="commResults"></div>
     </div>`;
@@ -3815,9 +3852,15 @@ function renderCommercial(el){
 }
 function renderCommercialResults(){
   const box=document.getElementById('commResults'); if(!box) return;
-  const r=computeCommercialServiceability();
+  const r=computeCommercialServiceability(); const c=commState();
   const tone=r.verdict==='PASS'?'var(--green)':r.verdict==='BORDERLINE'?'var(--amber)':'var(--red)';
   const row=(l,v)=>`<div class="detail-row" style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line)"><span style="color:var(--t2);font-size:13px">${l}</span><span class="mono" style="font-weight:600">${v}</span></div>`;
+  const overBy = r.maxLoanAtFloor - (parseFloat(c.loan_amount)||0);
+  const lever = r.verdict==='FAIL'
+    ? (r.maxLoanAtFloor>0
+        ? `Reduce the facility to about <b>${fmtMoney(r.maxLoanAtFloor)}</b> to reach the ${r.dscrMin.toFixed(2)}× floor (or add a director's personal guarantee / income).`
+        : `Business income does not cover even the existing debt at this floor — a personal-guarantee co-assessment would be required.`)
+    : `Headroom: this structure could support up to about <b>${fmtMoney(r.maxLoanAtFloor)}</b> and still meet the ${r.dscrMin.toFixed(2)}× floor (≈ ${fmtMoney(Math.max(0,overBy))} more).`;
   box.innerHTML=`
     <div class="card" style="padding:18px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -3826,14 +3869,15 @@ function renderCommercialResults(){
       </div>
       <div style="text-align:center;padding:14px 0;border-bottom:1px solid var(--line);margin-bottom:8px">
         <div style="font-size:34px;font-weight:800;color:${tone};font-family:var(--mono)">${r.dscr.toFixed(2)}×</div>
-        <div style="font-size:12px;color:var(--t3)">DSCR · floor ${r.dscrMin.toFixed(2)}× ${(parseFloat(commState().years_in_business)||0)<2?'(&lt;2yr business)':''}</div>
+        <div style="font-size:12px;color:var(--t3)">DSCR · floor ${r.dscrMin.toFixed(2)}× · ${esc(r.lenderLabel)}</div>
       </div>
       ${row('Assessable income (EBITDA + add-backs)', fmtMoney(r.assessable)+'/yr')}
       ${row('New facility repayment (buffered)', fmtMoney(r.newLoanMo)+'/mo')}
       ${row('Total debt service', fmtMoney(r.totalDebtMo)+'/mo')}
       ${row('Annual debt service', fmtMoney(r.annualDebt)+'/yr')}
-      <p class="serif-italic" style="font-size:13px;color:var(--t2);margin-top:12px;line-height:1.6">${r.reason}</p>
-      <p style="font-size:11px;color:var(--t3);margin-top:10px">DSCR = assessable business income ÷ total annual debt service. Add-backs must be supported by financial statements; a director's personal guarantee is standard on SME deals and is not modelled here.</p>
+      <div style="margin-top:12px;padding:11px 13px;background:var(--paper);border:1px solid var(--line);border-radius:10px;font-size:12.5px;color:var(--t2);line-height:1.6">${lever}</div>
+      <p class="serif-italic" style="font-size:13px;color:var(--t2);margin-top:10px;line-height:1.6">${r.reason}</p>
+      <p style="font-size:11px;color:var(--t3);margin-top:8px">DSCR = assessable business income ÷ total annual debt service. Add-backs must be supported by financial statements; a director's personal guarantee is standard on SME deals and is not modelled here.</p>
     </div>`;
 }
 
