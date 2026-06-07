@@ -90,6 +90,44 @@ answer tells you partner vs fast-follower — a kill-signal if the latter.)
 
 ---
 
+## Running it remotely with real humans (panels + smoke tests)
+*Yes, you can recruit real participants online — but match the tool to the question,
+and beware that this audience (AU brokers) is niche and easy to fake.*
+
+**Best fit for reaching screened AU brokers (moderated 30-min sessions):**
+- **Askable** — Australian, with AI fraud detection + **voice-clip + LinkedIn
+  verification** (confirms the person is actually a broker). Smaller pool (~500k) but
+  the right authenticity for a niche AU B2B study.
+- **Respondent.io** — specialises in **hard-to-find professionals / decision-makers**
+  (~4M panel), pay-per-session. Strongest niche reach; AU broker sub-pool may be thin.
+- **User Interviews** — large (~6M) but US-centric; ~$98/session B2B + $100–200
+  incentive ≈ $150–300 per completed interview.
+- **Screen hard** regardless: must currently hold an ACL, use Quickli/an aggregator
+  CRM, and write ≥N deals/yr — or you'll pay for fake "brokers" chasing the incentive.
+- **Avoid** generic consumer panels (Prolific, MTurk, Pollfish, SurveyMonkey
+  Audience) for this — they can't reliably reach real AU brokers and invite fraud.
+
+**Best fit for WILLINGNESS-TO-PAY — do NOT trust a survey here:**
+- People are bad at predicting what they'll pay (the "say-do gap"). Run a **fake-door
+  / smoke test** instead: a one-page site describing the unified agent with real price
+  tiers and a "**Reserve early access — $X**" (or waitlist/deposit) button. Measure
+  *behaviour* — clicks → opt-ins → deposits — not stated intent.
+- Drive niche traffic via **LinkedIn ads targeting job title "Mortgage Broker" in
+  Australia**, or posts in broker LinkedIn/Facebook groups. A few hundred dollars buys
+  a real demand signal. A deposit is worth ten "yes I'd pay" survey answers.
+
+**What panels and surveys CANNOT do:**
+- The **AFG/LMG corp-dev** and **commercial-aggregator** conversations are
+  relationship/warm-intro/LinkedIn — no panel substitutes. Use Asset 1 & 3 directly.
+- Treat any survey WTP number as *directional only*; weight the landing-page deposit
+  and the broker who'll switch far more heavily.
+
+**Cheapest sensible sequence:** (1) your own network for the first ~5 brokers (free,
+warm) → (2) a fake-door landing page + small LinkedIn-ad spend for revealed WTP →
+(3) Askable/Respondent only if your network is tapped and you need volume or
+arms-length objectivity. Industry bodies (MFAA/FBAA/MPA) also run broker surveys —
+a partner/sponsor survey is an option for reach, but slower.
+
 ## How to read the fortnight
 - **Best outcome:** a corp-dev "let's talk" (validates acqui-hire/white-label) OR
   ≥2 brokers commit to a real price → build toward that buyer.
