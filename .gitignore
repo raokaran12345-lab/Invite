@@ -3,5 +3,15 @@
 .wrangler/
 node_modules/
 
+# Secrets — NEVER commit these. The API key lives ONLY in the host's environment
+# variables (Cloudflare Pages secret store), never in the repo, never in code.
+.env
+.env.*
+*.pem
+*.key
+secrets.json
+secrets.*
+**/serviceAccount*.json
+
 # Build / OS
 .DS_Store

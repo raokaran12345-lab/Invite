@@ -5466,29 +5466,6 @@ function dealSpineBanner(){
   </div>`;
 }
 
-// Map DebtIQ lender ids → CDR bank keys (functions/api/cdr-rates.js).
-const CDR_BANK_KEY = { CBA:'cba', ANZ:'anz', NAB:'nab', Westpac:'westpac', Macquarie:'macquarie' };
-// Pull the lender's current carded rate from public CDR data and apply it to the calc.
-// Honest: carded (advertised) rate, not the discounted/assessed rate. Works once the
-// backend is deployed (the /api/cdr-rates function + CDR egress); fails soft otherwise.
-async function applyLiveCdrRate(){
-  const key = CDR_BANK_KEY[state.lender];
-  if(!key){ toast('Live CDR rate isn’t mapped for this lender yet.', 'info'); return; }
-  showLoader('Fetching live CDR rate…');
-  try{
-    const res = await fetch('/api/cdr-rates?bank='+encodeURIComponent(key));
-    const data = await res.json(); hideLoader();
-    if(data && data.rate && typeof data.rate.rate==='number'){
-      const pct = +data.rate.rate.toFixed(2);
-      state.calc.newLoan = state.calc.newLoan || {};
-      state.calc.newLoan.rate = pct;
-      toast('Applied live CDR rate '+pct+'% for '+(data.bank||state.lender)+' — carded, not the discounted/assessed rate.', 'ok');
-      renderServiceability(document.getElementById('page-serviceability'));
-    } else {
-      toast((data&&data.error) || 'No live rate returned — CDR rates need the deployed backend.', 'info');
-    }
-  }catch(e){ hideLoader(); toast('Live CDR rates activate once the backend is deployed.', 'info'); }
-}
 function renderServiceability(el){
   const auLender = state.market==='AU' && Object.keys(lenderDB()).length
     ? `<div class="card" style="padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -5497,7 +5474,6 @@ function renderServiceability(el){
            ${Object.keys(lenderDB()).filter(id=> state.accreditedLenders.length===0 || state.accreditedLenders.includes(id)).map(id=>`<option value="${id}" ${state.lender===id?'selected':''}>${lenderDB()[id].label||id} — ${lenderDB()[id].apra_regulated?'ADI':'Non-bank'} ${(lenderDB()[id].buffer*100).toFixed(0)}% buffer</option>`).join('')}
          </select>
          ${activePolicy()?`<span class="pill ${activePolicy().apra_regulated?'gray':'amber'}">${activePolicy().apra_regulated?'ADI':'Non-bank'}</span><span class="pill neutral">${(activeBuffer()*100).toFixed(0)}% buffer</span><span class="pill gray">DSR &lt; ${activeDsrMax()}%</span><span class="pill gray">Max LVR ${activePolicy().max_lvr_owner_occ_pi||'—'}%</span>`:''}
-         ${CDR_BANK_KEY[state.lender]?`<button class="btn btn-sm" onclick="applyLiveCdrRate()" title="Fetch this lender's current carded rate from public CDR data">↻ Live rate (CDR)</button>`:''}
        </div>` : '';
   const tabs = `<div class="tabs" style="margin-bottom:16px">
       <div class="tab ${state.svcTab==='detailed'?'active':''}" onclick="state.svcTab='detailed';renderServiceability(document.getElementById('page-serviceability'))">Detailed (verified)</div>
