@@ -76,8 +76,23 @@ async function handler({ request }){
       return json(200, { bank: bank ? bank.label : base, product: body.productId, rate: pickRate(detail), source: 'CDR product reference data (public, carded rate — not the discounted/assessed rate)' });
     }
 
+    // 2b. No productId: auto-pick a representative variable owner-occ P&I rate by
+    //     fetching detail for the first few residential products and taking the lowest.
+    const sample = products.slice(0, 6);
+    const details = await Promise.allSettled(sample.map(p =>
+      cdrGet(productsUrl(base) + '/' + encodeURIComponent(p.productId), 4)));
+    const rates = details
+      .filter(d => d.status === 'fulfilled')
+      .map(d => pickRate(d.value))
+      .filter(r => r && typeof r.rate === 'number');
+    const best = rates.sort((a, b) => a.rate - b.rate)[0] || null;
+    if (best) {
+      return json(200, { bank: bank ? bank.label : base, count: products.length, rate: best,
+        source: 'CDR product reference data (public). Carded variable owner-occ P&I rate — NOT the discounted/assessed rate.' });
+    }
+
     return json(200, { bank: bank ? bank.label : base, count: products.length, products: products.slice(0, 60),
-      note: 'Public CDR product reference data. Call again with &productId=<id> for that product\'s carded rate. Carded ≠ discounted/assessed.' });
+      note: 'Public CDR product reference data. Could not auto-resolve a rate; call again with &productId=<id>. Carded ≠ discounted/assessed.' });
   } catch (e) {
     return json(502, { error: 'Could not reach CDR endpoint: ' + e.message, hint: 'Verify the base URI against the CDR Register at cdr.gov.au.' });
   }
