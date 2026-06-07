@@ -74,6 +74,17 @@ for the broker's $99 in the old category; go win the emerging one.
   existed.
 First seam to return a paying "yes" (or a corp-dev "let's talk") wins the roadmap.
 
+## Founder decision (2026-06-06)
+Seam 3 (sell to lender/aggregator risk officers) is OUT. Seams 1, 2, 4, 5, 6 kept.
+Key synthesis: 1+2+4+5 are not separate bets — they collapse into ONE product: a
+**CDR-native, agentic, end-to-end assessment + compliance orchestrator, timed to
+the 2026 regulatory wave**. Seam 6 (commercial/SME) is the MARKET to aim it at, not
+a separate product. Open consequence of dropping seam 3: the "who pays" answer
+narrows to (a) brokers-direct on a PREMIUM agentic tier above Quickli's ~$99 band
+(justified because it does the whole prelim assessment, not just serviceability),
+(b) an aggregator white-label / acquirer (AFG/LMG precedent), or (c) commercial
+aggregators (seam 6). First dollar must come from one of these — pick before build.
+
 ## Sources
 AI agents in AU mortgage: Aline Tech, Bulma (Proowrx/Legal Genie roundups); AWS
 Bedrock autonomous mortgage processing. CDR action initiation: Ashurst "Action
