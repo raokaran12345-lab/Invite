@@ -5466,13 +5466,15 @@ function dealSpineBanner(){
   </div>`;
 }
 
-// Map DebtIQ lender ids → CDR bank keys (functions/api/cdr-rates.js).
+// CDR bank key now lives in the lender data model (lenders.js `cdr_bank`); this map
+// is a fallback only. cdrBankFor() is the single source of truth the UI reads.
 const CDR_BANK_KEY = { CBA:'cba', ANZ:'anz', NAB:'nab', Westpac:'westpac', Macquarie:'macquarie' };
+function cdrBankFor(id){ const p=(typeof lenderDB==='function')&&lenderDB()[id]; return (p&&p.cdr_bank) || CDR_BANK_KEY[id] || null; }
 // Pull the lender's current carded rate from public CDR data and apply it to the calc.
 // Honest: carded (advertised) rate, not the discounted/assessed rate. Works once the
 // backend is deployed (the /api/cdr-rates function + CDR egress); fails soft otherwise.
 async function applyLiveCdrRate(){
-  const key = CDR_BANK_KEY[state.lender];
+  const key = cdrBankFor(state.lender);
   if(!key){ toast('Live CDR rate isn’t mapped for this lender yet.', 'info'); return; }
   showLoader('Fetching live CDR rate…');
   try{
@@ -5511,7 +5513,7 @@ function renderServiceability(el){
            ${Object.keys(lenderDB()).filter(id=> state.accreditedLenders.length===0 || state.accreditedLenders.includes(id)).map(id=>`<option value="${id}" ${state.lender===id?'selected':''}>${lenderDB()[id].label||id} — ${lenderDB()[id].apra_regulated?'ADI':'Non-bank'} ${(lenderDB()[id].buffer*100).toFixed(0)}% buffer</option>`).join('')}
          </select>
          ${activePolicy()?`<span class="pill ${activePolicy().apra_regulated?'gray':'amber'}">${activePolicy().apra_regulated?'ADI':'Non-bank'}</span><span class="pill neutral">${(activeBuffer()*100).toFixed(0)}% buffer</span><span class="pill gray">DSR &lt; ${activeDsrMax()}%</span><span class="pill gray">Max LVR ${activePolicy().max_lvr_owner_occ_pi||'—'}%</span>`:''}
-         ${CDR_BANK_KEY[state.lender]?`<button class="btn btn-sm" onclick="applyLiveCdrRate()" title="Fetch this lender's current carded rate from public CDR data">↻ Live rate (CDR)</button>`:''}
+         ${cdrBankFor(state.lender)?`<button class="btn btn-sm" onclick="applyLiveCdrRate()" title="Fetch this lender's current carded rate from public CDR data">↻ Live rate (CDR)</button>`:''}
        </div>` : '';
   const tabs = `<div class="tabs" style="margin-bottom:16px">
       <div class="tab ${state.svcTab==='detailed'?'active':''}" onclick="state.svcTab='detailed';renderServiceability(document.getElementById('page-serviceability'))">Detailed (verified)</div>

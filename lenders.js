@@ -14,7 +14,7 @@ const LENDERS = {
 
   /* ---------- Major banks (APRA, 3% buffer) ---------- */
   CBA: {
-    label:'Commonwealth Bank', type:'major_bank', apra_regulated:true, base_rate:6.04,
+    label:'Commonwealth Bank', type:'major_bank', apra_regulated:true, cdr_bank:'cba', base_rate:6.04,
     buffer:0.03, dsr_max:45,
     max_lvr_owner_occ_pi:95, max_lvr_owner_occ_no_lmi:80,
     max_lvr_investment_pi:90, max_lvr_investment_io:80, max_lvr_investment_no_lmi:80,
@@ -40,7 +40,7 @@ const LENDERS = {
   },
 
   ANZ: {
-    label:'ANZ', type:'major_bank', apra_regulated:true, base_rate:6.09,
+    label:'ANZ', type:'major_bank', apra_regulated:true, cdr_bank:'anz', base_rate:6.09,
     buffer:0.03, dsr_max:45,
     max_lvr_owner_occ_pi:95, max_lvr_owner_occ_no_lmi:80, max_lvr_investment_pi:90, max_lvr_investment_io:80,
     max_loan_amount:5000000, min_loan_amount:10000, max_loan_term:30,
@@ -62,7 +62,7 @@ const LENDERS = {
   },
 
   NAB: {
-    label:'NAB', type:'major_bank', apra_regulated:true, base_rate:6.14,
+    label:'NAB', type:'major_bank', apra_regulated:true, cdr_bank:'nab', base_rate:6.14,
     buffer:0.03, dsr_max:45,
     max_lvr_owner_occ_pi:95, max_lvr_owner_occ_no_lmi:80, max_lvr_investment_pi:90, max_lvr_investment_io:80,
     max_loan_amount:5000000, min_loan_amount:20000, max_loan_term:30,
@@ -84,7 +84,7 @@ const LENDERS = {
   },
 
   Westpac: {
-    label:'Westpac', type:'major_bank', apra_regulated:true, base_rate:6.19,
+    label:'Westpac', type:'major_bank', apra_regulated:true, cdr_bank:'westpac', base_rate:6.19,
     buffer:0.03, dsr_max:45,
     max_lvr_owner_occ_pi:95, max_lvr_owner_occ_no_lmi:80, max_lvr_investment_pi:95, max_lvr_investment_io:80,
     max_loan_amount:5000000, min_loan_amount:25000, max_loan_term:30,
@@ -106,7 +106,7 @@ const LENDERS = {
   },
 
   Macquarie: {
-    label:'Macquarie Bank', type:'major_bank', apra_regulated:true, base_rate:5.99,
+    label:'Macquarie Bank', type:'major_bank', apra_regulated:true, cdr_bank:'macquarie', base_rate:5.99,
     buffer:0.03, dsr_max:45,
     max_lvr_owner_occ_pi:95, max_lvr_owner_occ_no_lmi:80, max_lvr_investment_pi:90, max_lvr_investment_io:80,
     max_lvr_equity_release:80, max_loan_amount:10000000, min_loan_amount:150000, max_loan_term:30, max_io_term:5,
