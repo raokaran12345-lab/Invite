@@ -398,6 +398,13 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .os-tab:hover{color:var(--t1)}
 .os-tab.active{color:var(--brand);border-bottom-color:var(--brand)}
 .tab-badge{font-size:9px;font-weight:800;background:var(--amber-bg);color:var(--amber);padding:1px 5px;border-radius:5px;letter-spacing:.04em}
+.os-tab.tab-locked{opacity:.5}
+.os-tab.tab-locked::after{content:'🔒';font-size:9px;margin-left:5px;opacity:.8}
+.tier-badge{cursor:pointer;font-size:11px;font-weight:800;letter-spacing:.03em;padding:3px 9px;border-radius:999px;border:1px solid var(--line2);color:var(--t2);background:var(--paper);text-transform:uppercase}
+.tier-badge.tier-commercial{color:var(--brand);border-color:var(--brand);background:rgba(30,42,68,.06)}
+.tier-badge.tier-complete{color:#fff;border:none;background:var(--brand-grad)}
+.tier-lock{max-width:520px;margin:8vh auto 0;text-align:center;padding:36px 28px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-card)}
+.tier-lock-icon{width:54px;height:54px;border-radius:16px;background:var(--amber-bg);color:var(--amber);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
 
 /* Main canvas */
 #canvas{flex:1;display:flex;overflow:hidden;min-height:0}
@@ -2218,6 +2225,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
         <button id="roleBroker" class="active" type="button" onclick="setRole('broker')" aria-pressed="true">Broker</button>
         <button id="roleAssessor" type="button" onclick="setRole('assessor')" aria-pressed="false">Assessor</button>
       </div>
+      <span id="tierBadge" class="tier-badge" onclick="navigate('billing')" title="Your plan — click to manage"></span>
       <button class="btn primary btn-sm" onclick="startNewDeal()">+ New Deal</button>
       <button onclick="openSettings()" class="cmd-icon-btn" aria-label="Settings">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -3750,11 +3758,19 @@ function renderWorkspace(page){
   document.querySelectorAll('.os-tab').forEach(b=> b.classList.toggle('active', b.dataset.tab===state.tab));
   const ws = document.getElementById('workspace');
   if(!ws) return;
+  // Tier gate — billing is the upsell target and always renders. A higher-tier page
+  // on a lower plan shows an in-place "Upgrade to unlock" interstitial, not the feature.
+  if(page!=='billing' && typeof hasTier==='function' && !hasTier(featureTier(page))){
+    ws.innerHTML = `<div class="workspace-page" id="page-${page}">${tierLockHTML(page)}</div>`;
+    decorateLockedTabs();
+    return;
+  }
   ws.innerHTML = `<div class="workspace-page" id="page-${page}"></div>`;
   (WS_RENDERERS[page] || renderDashboard)(document.getElementById('page-'+page));
   updateDealStrip();
   updateCopilot();
   renderPolicyDrawer();
+  decorateLockedTabs();
 }
 
 // Back-compat shim — every existing navigate('x') still works.
@@ -7098,11 +7114,55 @@ function renderMarkets(el){
    PAGE: BILLING
    ============================================================ */
 function billingPlan(){ try{ return localStorage.getItem('debtiq_billing_plan') || 'Free'; }catch(e){ return 'Free'; } }
+
+/* ---------- Tier model (Free / Commercial / Complete) ----------
+   Orthogonal to the RBAC can()/CAPABILITIES axis: tier = what the plan paid for.
+   A single gate in renderWorkspace() enforces it across every page. NOTE: this is
+   client-side only (a demo gate) — live AI routes must also be tier-gated server-side. */
+const TIER_RANK = { Free:0, Commercial:1, Complete:2 };
+const TIER_PRICE = { Commercial:99, Complete:199 };
+function currentTier(){ return TIER_RANK[billingPlan()] ?? 0; }
+// Page id → minimum tier. Unlisted pages are Free. The AI-powered surfaces are Complete;
+// the commercial calculator (added with the Commercial feature) is Commercial.
+const FEATURE_TIER = { documents:'Complete', aipilot:'Complete', compliance:'Complete', commercial:'Commercial' };
+function featureTier(page){ return TIER_RANK[FEATURE_TIER[page]] ?? 0; }
+function hasTier(required){ const need=(typeof required==='number')?required:(TIER_RANK[required]??0); return currentTier()>=need; }
+const FEATURE_COPY = {
+  documents:  { name:'Documents & AI Forensics', desc:'Automated extraction and tamper-detection on every uploaded document.' },
+  aipilot:    { name:'AI Pilot', desc:'The full agentic prelim assessment — documents to a verified, serviceable, compliant file in one pass.' },
+  compliance: { name:'Compliance AI', desc:'Responsible-lending / Best-Interests-Duty compliance-evidence engine (RG 209).' },
+  commercial: { name:'Commercial & SME Lending', desc:'DSCR-based commercial serviceability — business income, add-backs and asset finance.' }
+};
+function tierLockHTML(page){
+  const need = FEATURE_TIER[page] || 'Complete';
+  const c = FEATURE_COPY[page] || { name:page, desc:'' };
+  const price = TIER_PRICE[need];
+  return `<div class="tier-lock">
+    <div class="tier-lock-icon">${svgIcon('alert',26)}</div>
+    <h1 style="font-size:22px;font-weight:800;margin:0">${c.name}</h1>
+    <p class="serif-italic" style="color:var(--t2);max-width:440px;margin:8px auto 0">${c.desc}</p>
+    <p style="margin:14px 0 4px;font-size:13px;color:var(--t3)">Available on <b style="color:var(--t1)">${need}</b>${price?` · ${m().sym}${price}/mo`:''}</p>
+    <button class="btn primary" style="margin-top:10px" onclick="navigate('billing')">Upgrade to ${need} →</button>
+  </div>`;
+}
+function renderTierBadge(){
+  const el = document.getElementById('tierBadge'); if(!el) return;
+  const t = billingPlan();
+  el.textContent = t; el.className = 'tier-badge tier-'+t.toLowerCase();
+}
+function decorateLockedTabs(){
+  document.querySelectorAll('.os-tab').forEach(b=>{
+    const page = PAGE_OF_TAB[b.dataset.tab];
+    const locked = page && page!=='billing' && !hasTier(featureTier(page));
+    b.classList.toggle('tab-locked', !!locked);
+  });
+}
 // Demo path — saves locally, never charges.
 function setBillingPlan(name){
   try{ localStorage.setItem('debtiq_billing_plan', name); }catch(e){}
   auditLog('BILLING_PLAN_SELECTED', 'Plan set to '+name+' (demo — no charge)', 'Owner','owner');
   toast(name+' selected — demo only, no card was charged. Connect a billing provider to subscribe.', 'info');
+  renderTierBadge(); decorateLockedTabs();
   if(document.getElementById('settingsBilling')) renderBilling(document.getElementById('settingsBilling'));
 }
 // Dispatcher — live tries a real Stripe Checkout session via /api/checkout; if the
@@ -11703,6 +11763,7 @@ function init(){
   renderRightDockPane(state.rightDockTab || 'ai');
   updateDockConditionsCount();
   renderWorkspace('dashboard');   // Pipeline tab, no active deal → deal strip hidden
+  renderTierBadge(); decorateLockedTabs();   // reflect the current plan in the UI
   updateCopilot();
   logEvent('Session started');
   // simulate live AI progress on the processing deal (demo data only).
