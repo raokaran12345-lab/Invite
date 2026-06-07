@@ -405,6 +405,9 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .tier-badge.tier-complete{color:#fff;border:none;background:var(--brand-grad)}
 .tier-lock{max-width:520px;margin:8vh auto 0;text-align:center;padding:36px 28px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-card)}
 .tier-lock-icon{width:54px;height:54px;border-radius:16px;background:var(--amber-bg);color:var(--amber);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+#demoTour{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9000;width:min(440px,92vw)}
+#demoTour .dt-card{background:var(--paper);border:1px solid var(--line2);border-radius:16px;box-shadow:0 16px 48px rgba(15,15,26,.22);padding:16px 18px}
+#demoTour .dt-step{font-size:11px;font-weight:700;letter-spacing:.03em;color:var(--t3);text-transform:uppercase}
 
 /* Main canvas */
 #canvas{flex:1;display:flex;overflow:hidden;min-height:0}
@@ -2225,6 +2228,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
         <button id="roleBroker" class="active" type="button" onclick="setRole('broker')" aria-pressed="true">Broker</button>
         <button id="roleAssessor" type="button" onclick="setRole('assessor')" aria-pressed="false">Assessor</button>
       </div>
+      <button class="btn btn-sm" onclick="startDemoTour()" title="Guided demo walkthrough" style="font-weight:700">▶ Demo</button>
       <span id="tierBadge" class="tier-badge" onclick="navigate('billing')" title="Your plan — click to manage"></span>
       <button class="btn primary btn-sm" onclick="startNewDeal()">+ New Deal</button>
       <button onclick="openSettings()" class="cmd-icon-btn" aria-label="Settings">
@@ -3831,6 +3835,45 @@ function renderCommercialResults(){
       <p class="serif-italic" style="font-size:13px;color:var(--t2);margin-top:12px;line-height:1.6">${r.reason}</p>
       <p style="font-size:11px;color:var(--t3);margin-top:10px">DSCR = assessable business income ÷ total annual debt service. Add-backs must be supported by financial statements; a director's personal guarantee is standard on SME deals and is not modelled here.</p>
     </div>`;
+}
+
+/* ============================================================
+   GUIDED DEMO TOUR — scripts the three-tier story so a broker
+   walkthrough is foolproof. Switches plan + navigates per step.
+   ============================================================ */
+const DEMO_TOUR = [
+  { plan:'Free', go:'dashboard', title:'Welcome to DebtIQ', body:'DebtIQ does a broker\'s whole prelim assessment — across three tiers. This 60-second tour shows what each unlocks. Use Next / Back to step through.' },
+  { plan:'Free', go:'serviceability', title:'Free — Residential serviceability', body:'Serviceability across 23+ lenders, the policy library and funds-to-complete — free. This is exactly what brokers pay Quickli ~$99/mo for. We give it away to win the broker.' },
+  { plan:'Free', go:'compare', title:'Free — Lender comparison', body:'Rank the lenders this deal actually services against, on policy and price. Also free.' },
+  { plan:'Free', go:'commercial', title:'Locked — Commercial lending', body:'Commercial & SME DSCR serviceability — something no residential tool (Quickli included) does. On Free it\'s locked. Watch what happens when we upgrade…' },
+  { plan:'Commercial', go:'commercial', title:'Commercial — $99/mo', body:'Now unlocked: a DSCR assessment for business and asset-finance deals — business income, add-backs, debt-service cover. This is the wedge competitors don\'t have.' },
+  { plan:'Commercial', go:'aipilot', title:'Locked — the full AI assessment', body:'AI Pilot, document forensics and the compliance engine are the Complete tier. Still locked on Commercial…' },
+  { plan:'Complete', go:'aipilot', title:'Complete — $199/mo', body:'Everything unlocked. Documents → verified (tamper-checked) → serviceable → a defensible compliant file, in one agentic pass. The whole prelim assessment, done.' },
+  { plan:'Complete', go:'billing', title:'That\'s DebtIQ', body:'Free undercuts Quickli for acquisition · Commercial is the wedge · Complete is the whole deal. The pricing is right here. Close the tour to explore freely.' }
+];
+let _tourIx = 0;
+function startDemoTour(){ _tourIx = 0; runTourStep(); }
+function tourGo(d){ _tourIx = Math.max(0, Math.min(DEMO_TOUR.length-1, _tourIx+d)); runTourStep(); }
+function endDemoTour(){ const o=document.getElementById('demoTour'); if(o) o.remove(); }
+function runTourStep(){
+  const s = DEMO_TOUR[_tourIx]; if(!s) return;
+  // Set the plan silently (no toast) so the gate reflects it, then navigate.
+  if(s.plan && billingPlan()!==s.plan){ try{ localStorage.setItem('debtiq_billing_plan', s.plan); }catch(e){} renderTierBadge(); decorateLockedTabs(); }
+  if(s.go) navigate(s.go);
+  let o = document.getElementById('demoTour');
+  if(!o){ o=document.createElement('div'); o.id='demoTour'; document.body.appendChild(o); }
+  const last = _tourIx===DEMO_TOUR.length-1;
+  o.innerHTML = `<div class="dt-card">
+    <div class="dt-step">Step ${_tourIx+1} / ${DEMO_TOUR.length} · <b>${billingPlan()}</b> tier</div>
+    <h3 style="font-size:17px;font-weight:800;margin:4px 0 6px">${esc(s.title)}</h3>
+    <p style="font-size:13.5px;color:var(--t2);line-height:1.6;margin:0 0 12px">${esc(s.body)}</p>
+    <div class="dt-actions" style="display:flex;gap:8px;align-items:center">
+      <button class="btn btn-sm" onclick="tourGo(-1)" ${_tourIx===0?'disabled':''}>← Back</button>
+      ${last?`<button class="btn primary btn-sm" onclick="endDemoTour()">Done</button>`:`<button class="btn primary btn-sm" onclick="tourGo(1)">Next →</button>`}
+      <span style="flex:1"></span>
+      <button class="btn btn-sm" onclick="endDemoTour()" aria-label="Close tour">✕</button>
+    </div>
+  </div>`;
 }
 
 // Core renderer. Keeps id="page-<legacyId>" so existing re-render call sites keep working.
