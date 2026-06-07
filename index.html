@@ -3843,7 +3843,7 @@ function renderCommercialResults(){
    ============================================================ */
 const DEMO_TOUR = [
   { plan:'Free', go:'dashboard', title:'Welcome to DebtIQ', body:'DebtIQ does a broker\'s whole prelim assessment — across three tiers. This 60-second tour shows what each unlocks. Use Next / Back to step through.' },
-  { plan:'Free', go:'serviceability', title:'Free — Residential serviceability', body:'Serviceability across 23+ lenders, the policy library and funds-to-complete — free. This is exactly what brokers pay Quickli ~$99/mo for. We give it away to win the broker.' },
+  { plan:'Free', go:'serviceability', title:'Free — Indicative serviceability', body:'A fast indicative serviceability check across 26 lenders, plus the policy library and funds-to-complete — free. Note: these are indicative figures (not each lender\'s live calculator), pitched as a quick sanity check, not a Quickli replacement.' },
   { plan:'Free', go:'compare', title:'Free — Lender comparison', body:'Rank the lenders this deal actually services against, on policy and price. Also free.' },
   { plan:'Free', go:'commercial', title:'Locked — Commercial lending', body:'Commercial & SME DSCR serviceability — something no residential tool (Quickli included) does. On Free it\'s locked. Watch what happens when we upgrade…' },
   { plan:'Commercial', go:'commercial', title:'Commercial — $99/mo', body:'Now unlocked: a DSCR assessment for business and asset-finance deals — business income, add-backs, debt-service cover. This is the wedge competitors don\'t have.' },
@@ -5437,6 +5437,7 @@ function renderServiceability(el){
     </div>`;
   el.innerHTML = `
     <div class="page-head"><h1>Serviceability Calculator</h1><p>Live assessment — updates on every keystroke · ${m().flag} ${m().label}</p></div>
+    <div class="acc-note steel" style="margin-bottom:14px"><b>Indicative.</b> Figures use DebtIQ's own engine with indicative rates and per-lender policy — a fast sanity check, <b>not a replica of each lender's live servicing calculator</b>. Confirm against the lender's own calc before lodgement.</div>
     ${dealSpineBanner()}
     ${tabs}
     ${auLender}
@@ -7338,11 +7339,12 @@ function renderBilling(el){
   // only Complete carries per-deal AI cost — so the price tracks the cost. See
   // docs/PRICING.md for the full model.
   const TIERS = [
-    {n:'Free', p:0, sub:'Quickli-equivalent', f:[
-      'Residential serviceability — 23+ lenders',
+    {n:'Free', p:0, sub:'Indicative serviceability', f:[
+      'Indicative serviceability — 26 lenders',
       'Lender policy &amp; SLA library',
       'Funds-to-complete + product comparison',
       'Unlimited deals',
+      '<span style="opacity:.6">— indicative figures, not each lender\'s live calculator</span>',
       '<span style="opacity:.6">— no AI document processing</span>']},
     {n:'Commercial', p:99, sub:'+ commercial lending', f:[
       'Everything in Free',

@@ -8,7 +8,7 @@ ask is the test), not a committed price list.*
 
 | Tier | Price | What you get | Who it's for |
 |---|---|---|---|
-| **Free** | **$0** | **Residential serviceability** across 23+ lenders, lender policy & SLA library, funds-to-complete, product comparison. *(Quickli-equivalent.)* No AI document processing. | Every broker — land-and-expand |
+| **Free** | **$0** | **Indicative residential serviceability** across 26 lenders (indicative figures, *not* each lender's live calculator — a fast sanity check, not a Quickli replacement), lender policy & SLA library, funds-to-complete, product comparison. No AI document processing. | Every broker — land-and-expand |
 | **Commercial** | **$99/mo** | Everything in Free **+ commercial & SME serviceability**, asset/commercial lending tools, commercial policy library. | Brokers doing commercial/SME |
 | **Complete** | **$199/mo** | Everything in Commercial **+ AI document forensics** (tamper detection), automated extraction → calculator, and the **responsible-lending / BID compliance-evidence engine** — the full agentic prelim assessment. | Brokers who want the whole deal done |
 
