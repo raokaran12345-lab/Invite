@@ -7097,7 +7097,7 @@ function renderMarkets(el){
 /* ============================================================
    PAGE: BILLING
    ============================================================ */
-function billingPlan(){ try{ return localStorage.getItem('debtiq_billing_plan') || 'Professional'; }catch(e){ return 'Professional'; } }
+function billingPlan(){ try{ return localStorage.getItem('debtiq_billing_plan') || 'Free'; }catch(e){ return 'Free'; } }
 // Demo path — saves locally, never charges.
 function setBillingPlan(name){
   try{ localStorage.setItem('debtiq_billing_plan', name); }catch(e){}
@@ -7145,31 +7145,49 @@ function renderBilling(el){
   const dealsThisMonth = DEALS.filter(d=>((d.closed||d.created||'')+'').slice(0,7)===thisMonth).length;
   const docCount = (typeof DOCS!=='undefined' ? DOCS.length : 0);
   const plan = billingPlan();
-  const planCap = {Starter:25, Professional:Infinity, Aggregator:Infinity}[plan] || Infinity;
-  const capLabel = planCap===Infinity ? 'Unlimited' : planCap;
-  const usePct = planCap===Infinity ? Math.min(100, dealsThisMonth*4) : Math.min(100, Math.round(dealsThisMonth/planCap*100));
+  const usePct = Math.min(100, dealsThisMonth*4);
+  // Three COGS-aligned tiers. Free + Commercial are ~zero marginal cost (no AI);
+  // only Complete carries per-deal AI cost — so the price tracks the cost. See
+  // docs/PRICING.md for the full model.
+  const TIERS = [
+    {n:'Free', p:0, sub:'Quickli-equivalent', f:[
+      'Residential serviceability — 23+ lenders',
+      'Lender policy &amp; SLA library',
+      'Funds-to-complete + product comparison',
+      'Unlimited deals',
+      '<span style="opacity:.6">— no AI document processing</span>']},
+    {n:'Commercial', p:99, sub:'+ commercial lending', f:[
+      'Everything in Free',
+      'Commercial &amp; SME serviceability',
+      'Asset &amp; commercial lending tools',
+      'Commercial policy library']},
+    {n:'Complete', p:199, sub:'the whole prelim assessment', featured:true, f:[
+      'Everything in Commercial',
+      'AI document forensics (tamper detection)',
+      'Automated extraction → calculator',
+      'Responsible-lending / BID compliance engine',
+      'Full agentic prelim assessment']}
+  ];
   el.innerHTML = `
-    <div class="page-head"><h1>Billing &amp; Usage</h1><p>Your subscription and real, local usage. Payments are not connected — see the note below.</p></div>
-    <div class="acc-note steel" style="margin-bottom:16px"><b>Demo billing.</b> Plan selection is saved locally and <b>no card is ever charged</b>. Real subscriptions require connecting a payments provider (e.g. Stripe) server-side — that integration is a deliberate boundary, not yet wired.</div>
+    <div class="page-head"><h1>Plans &amp; Usage</h1><p>Free undercuts a serviceability-only tool; you only pay for the AI-powered features. Real, local usage shown below.</p></div>
+    <div class="acc-note steel" style="margin-bottom:16px"><b>Demo billing.</b> Plan selection is saved locally and <b>no card is ever charged</b>. Real subscriptions require connecting a payments provider (Stripe) server-side — a deliberate boundary, not yet wired (see <span class="mono">docs/INTEGRATIONS.md</span>).</div>
     <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
-      <div class="kpi"><div class="cap">Deals This Month</div><div class="num mono">${dealsThisMonth} / ${capLabel}</div><div class="usage-bar"><span style="width:${usePct}%"></span></div></div>
+      <div class="kpi"><div class="cap">Deals This Month</div><div class="num mono">${dealsThisMonth}</div><div class="usage-bar"><span style="width:${usePct}%"></span></div></div>
       <div class="kpi"><div class="cap">Active Deals</div><div class="num mono">${DEALS.length}</div></div>
-      <div class="kpi"><div class="cap">Documents</div><div class="num mono">${docCount}</div></div>
+      <div class="kpi"><div class="cap">Current Plan</div><div class="num mono" style="font-size:18px">${plan}</div></div>
     </div>
     <h4 style="font-size:16px;font-weight:700;margin:8px 0 16px">Plans</h4>
     <div class="plan-grid">
-      ${[
-        {n:'Starter', p:149, f:['25 deals/mo','Basic AI commentary','3 markets','Email support']},
-        {n:'Professional', p:249, f:['Unlimited deals','Full AI suite','AU + NZ markets','Priority support','Client portal']},
-        {n:'Aggregator', p:79, f:['Per-broker pricing','White-label','API access','Dedicated manager']}
-      ].map(pl=>{ const active = pl.n===plan; return `
-        <div class="plan ${active?'active':''}">
+      ${TIERS.map(pl=>{ const active = pl.n===plan; return `
+        <div class="plan ${active?'active':''} ${pl.featured?'featured':''}">
           <div style="font-weight:700;font-size:17px">${pl.n}</div>
-          <div class="price">${m().sym}${pl.p}<small>/mo</small></div>
+          <div style="font-size:11.5px;color:var(--t3);margin:2px 0 4px">${pl.sub}</div>
+          <div class="price">${pl.p===0?'Free':m().sym+pl.p+'<small>/mo</small>'}</div>
           <ul>${pl.f.map(x=>`<li>✓ ${x}</li>`).join('')}</ul>
-          <button class="btn ${active?'':'primary'}" style="width:100%;${active?'background:rgba(255,255,255,.2);color:#fff;border:none':''}" onclick="${active?`toast('Current plan','info')`:`choosePlan('${pl.n}')`}">${active?'Current Plan':'Choose '+pl.n}</button>
+          <button class="btn ${active?'':'primary'}" style="width:100%;${active?'background:rgba(255,255,255,.2);color:#fff;border:none':''}" onclick="${active?`toast('Current plan','info')`:(pl.p===0?`setBillingPlan('Free')`:`choosePlan('${pl.n}')`)}">${active?'Current Plan':(pl.p===0?'Switch to Free':'Upgrade to '+pl.n)}</button>
         </div>`; }).join('')}
-    </div>`;
+    </div>
+    <p style="font-size:12px;color:var(--t3);margin-top:14px">Annual: 2 months free. Founding partners (first 10): Complete at ${m().sym}99/mo locked. Teams (5+ seats) &amp; aggregator white-label: <a href="#" onclick="toast('Contact sales — aggregator/white-label is the partner path','info');return false">contact us</a>.</p>`;
 }
 
 /* ============================================================

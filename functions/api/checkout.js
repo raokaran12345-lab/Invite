@@ -15,11 +15,11 @@ import { json, corsPreflight, requireSupabaseSession } from './_lib.js';
 
 export const onRequestOptions = () => corsPreflight();
 
-// Plan → monthly price in cents (AUD). Adjust or replace with Stripe Price IDs.
+// Plan → monthly price in cents (AUD). Free is handled client-side (no checkout).
+// Adjust or replace with Stripe Price IDs. See docs/PRICING.md.
 const PLANS = {
-  Starter:      { amount: 14900, label: 'DebtIQ Starter' },
-  Professional: { amount: 24900, label: 'DebtIQ Professional' },
-  Aggregator:   { amount:  7900, label: 'DebtIQ Aggregator (per broker)' },
+  Commercial: { amount:  9900, label: 'DebtIQ Commercial' },
+  Complete:   { amount: 19900, label: 'DebtIQ Complete' },
 };
 
 function appOrigin(request, env){
