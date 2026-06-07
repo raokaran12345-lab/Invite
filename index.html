@@ -3750,7 +3750,7 @@ const WS_RENDERERS = {
   serviceability:renderServiceability, aipilot:renderAIPilot, compliance:renderCompliance,
   commentary:renderCommentary, compare:renderLenders, intel:renderIntel, portal:renderPortal,
   markets:renderMarkets, billing:renderBilling, review:renderReview, assessment:renderAssessment,
-  settlement:renderSettlement, commercial:renderCommercial
+  settlement:renderSettlement, commercial:renderCommercial, methodology:renderMethodology
 };
 
 /* ============================================================
@@ -5489,6 +5489,20 @@ async function applyLiveCdrRate(){
     }
   }catch(e){ hideLoader(); toast('Live CDR rates activate once the backend is deployed.', 'info'); }
 }
+function renderMethodology(el){
+  const card=(title,body)=>`<div class="card" style="padding:16px 18px;margin-bottom:12px"><h3 style="font-size:14px;font-weight:700;margin-bottom:6px">${title}</h3><div style="font-size:13px;color:var(--t2);line-height:1.65">${body}</div></div>`;
+  el.innerHTML=`
+    <div class="page-head"><h1>How our numbers work</h1><p>Exactly what's real, what's indicative, and where to confirm — so you can trust the output and know its limits.</p></div>
+    <div class="acc-note steel" style="margin-bottom:16px"><b>Honest by design.</b> DebtIQ is an <b>indicative cross-check</b> — it tells you which lenders are likely to fit and roughly how much, fast. It is <b>not</b> a replica of each lender's internal servicing calculator (that logic is accreditation-gated). Always confirm against the lender's own calc before lodgement.</div>
+    ${card('Assessment buffer — REAL', 'The +3% serviceability buffer is the APRA minimum (Prudential Standard <b>APS 220</b>, guidance <b>APG 223</b>) — uniform for ADIs; non-bank lenders legitimately run lower buffers. We apply a buffer <b>per lender</b>, not a blanket figure.')}
+    ${card('Interest rates — INDICATIVE, with a LIVE option', 'By default we use indicative carded rates. On the Calculator, <b>↻ Live rate (CDR)</b> pulls a lender\'s <b>current carded rate from public Consumer Data Right APIs</b> (free, no login) for the majors. Note: carded ≠ the discounted/assessed rate a specific borrower gets.')}
+    ${card('Living expenses (HEM) — INDICATIVE "HEM-style" floor', 'We apply an indicative HEM-style expense floor derived from public ABS/benchmark data. This is <b>not</b> the licensed Melbourne Institute HEM tables (those require a commercial licence). Treat the floor as a sanity check, and verify declared expenses with evidence.')}
+    ${card('Income shading & policy — INDICATIVE', 'We apply the published APG 223 floors (e.g. ≥20% haircut on non-salary income, ≥20% on rental) plus per-lender policy from public credit guides. Each lender\'s <b>exact</b> shading grid and add-backs are confidential, so those cells are indicative and flagged for verification.')}
+    ${card('DTI & HECS — current conventions', 'High DTI (≥6×) is treated as a per-lender appetite <b>flag</b>, not a hard fail (consistent with APRA\'s macroprudential framing). HECS and negative-gearing rules are changing in 2025–26 and we track the published conventions.')}
+    ${card('Realistic accuracy', 'For vanilla PAYG, single-applicant, standard purchase, a public-data engine like this typically lands within a few percent of a major lender\'s capacity figure. It can diverge meaningfully on complex income (self-employed, overtime/bonus/commission, rental, foreign income) where confidential lender grids dominate. <b>Use it to shortlist and sanity-check, not to quote the lender\'s number.</b>')}
+    <p style="font-size:11px;color:var(--t3);margin-top:8px">Sources: APRA APG 223 / APS 220 (apra.gov.au); Consumer Data Right (cdr.gov.au); ABS Household Expenditure Survey; lender public credit guides. Not legal or credit advice.</p>
+    <div style="margin-top:14px"><button class="btn" onclick="navigate('serviceability')">← Back to the calculator</button></div>`;
+}
 function renderServiceability(el){
   const auLender = state.market==='AU' && Object.keys(lenderDB()).length
     ? `<div class="card" style="padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -5505,7 +5519,7 @@ function renderServiceability(el){
     </div>`;
   el.innerHTML = `
     <div class="page-head"><h1>Serviceability Calculator</h1><p>Live assessment — updates on every keystroke · ${m().flag} ${m().label}</p></div>
-    <div class="acc-note steel" style="margin-bottom:14px"><b>Indicative.</b> Figures use DebtIQ's own engine with indicative rates and per-lender policy — a fast sanity check, <b>not a replica of each lender's live servicing calculator</b>. Confirm against the lender's own calc before lodgement.</div>
+    <div class="acc-note steel" style="margin-bottom:14px"><b>Indicative.</b> Figures use DebtIQ's own engine with indicative rates and per-lender policy — a fast sanity check, <b>not a replica of each lender's live servicing calculator</b>. Confirm against the lender's own calc before lodgement. <a href="#" onclick="navigate('methodology');return false" style="color:var(--brand);font-weight:600">How our numbers work →</a></div>
     ${dealSpineBanner()}
     ${tabs}
     ${auLender}
