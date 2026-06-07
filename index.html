@@ -2271,6 +2271,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
     <button class="os-tab" data-tab="loan" onclick="goTab('loan',this)">Loan</button>
     <button class="os-tab" data-tab="documents" onclick="goTab('documents',this)">Documents</button>
     <button class="os-tab" data-tab="calculate" onclick="goTab('calculate',this)">Calculate</button>
+    <button class="os-tab" data-tab="commercial" onclick="goTab('commercial',this)">Commercial</button>
     <button class="os-tab" data-tab="aipilot" onclick="goTab('aipilot',this)">AI Pilot<span class="tab-badge" id="aipilotBadge">DEMO</span></button>
     <button class="os-tab" data-tab="settlement" onclick="goTab('settlement',this)">Settlement</button>
     <button class="os-tab" data-tab="assessment" onclick="goTab('assessment',this)">Assessment</button>
@@ -3737,16 +3738,100 @@ function renderNav(){ /* sidebar removed — tab strip is static HTML */ }
 function toggleSidebar(){ /* no sidebar in the OS shell */ }
 
 // Legacy page id ⇄ OS tab id.
-const TAB_OF_PAGE = { dashboard:'pipeline', client:'client', loan:'loan', documents:'documents', serviceability:'calculate', aipilot:'aipilot', settlement:'settlement', assessment:'assessment' };
-const PAGE_OF_TAB = { pipeline:'dashboard', client:'client', loan:'loan', documents:'documents', calculate:'serviceability', aipilot:'aipilot', settlement:'settlement', assessment:'assessment' };
+const TAB_OF_PAGE = { dashboard:'pipeline', client:'client', loan:'loan', documents:'documents', serviceability:'calculate', commercial:'commercial', aipilot:'aipilot', settlement:'settlement', assessment:'assessment' };
+const PAGE_OF_TAB = { pipeline:'dashboard', client:'client', loan:'loan', documents:'documents', calculate:'serviceability', commercial:'commercial', aipilot:'aipilot', settlement:'settlement', assessment:'assessment' };
 // Every workspace-renderable page (top-level tabs + contextual views reached via navigate()).
 const WS_RENDERERS = {
   dashboard:renderDashboard, client:renderClientTab, loan:renderLoanTab, documents:renderDocuments,
   serviceability:renderServiceability, aipilot:renderAIPilot, compliance:renderCompliance,
   commentary:renderCommentary, compare:renderLenders, intel:renderIntel, portal:renderPortal,
   markets:renderMarkets, billing:renderBilling, review:renderReview, assessment:renderAssessment,
-  settlement:renderSettlement
+  settlement:renderSettlement, commercial:renderCommercial
 };
+
+/* ============================================================
+   COMMERCIAL / SME LENDING (Commercial tier) — DSCR-based.
+   Self-contained: does NOT touch the residential serviceability engine.
+   DSCR thresholds here are ILLUSTRATIVE — real per-lender commercial policy
+   (and accountant-verified financials) are required before relying on this.
+   ============================================================ */
+function commState(){
+  if(!state.commercial) state.commercial = {
+    business_name:'Nguyen Trading Pty Ltd', years_in_business:4,
+    ebitda:240000, addback_depreciation:28000, addback_interest:16000, addback_lease:9000,
+    business_debt_service_mo:3200, loan_amount:900000, rate:6.9, term:20
+  };
+  return state.commercial;
+}
+function setComm(field,val){ const c=commState(); c[field]=(val!==''&&!isNaN(+val))?+val:val; renderCommercialResults(); }
+function commPMT(principal, annualRatePct, years){
+  const r=(parseFloat(annualRatePct)||0)/100/12, n=(parseFloat(years)||0)*12, P=parseFloat(principal)||0;
+  if(!P||!n) return 0; if(!r) return P/n; return P*r/(1-Math.pow(1+r,-n));
+}
+function computeCommercialServiceability(){
+  const c=commState(); const buffer=(typeof activeBuffer==='function')?activeBuffer():0.03;
+  const assessable=(parseFloat(c.ebitda)||0)+(parseFloat(c.addback_depreciation)||0)+(parseFloat(c.addback_interest)||0)+(parseFloat(c.addback_lease)||0);
+  const newLoanMo=commPMT(c.loan_amount,(parseFloat(c.rate)||0)+buffer*100,c.term);
+  const totalDebtMo=(parseFloat(c.business_debt_service_mo)||0)+newLoanMo;
+  const annualDebt=totalDebtMo*12;
+  const dscr=annualDebt>0?assessable/annualDebt:0;
+  const dscrMin=(parseFloat(c.years_in_business)||0)<2?1.50:1.25;
+  let verdict='PASS', reason='Adequate debt-service cover on business income.';
+  if(dscr<dscrMin){ verdict='FAIL'; reason='DSCR '+dscr.toFixed(2)+'x is below the '+dscrMin.toFixed(2)+'x floor — does not service on business income alone.'; }
+  else if(dscr<dscrMin+0.15){ verdict='BORDERLINE'; reason='DSCR '+dscr.toFixed(2)+'x is a thin margin above the '+dscrMin.toFixed(2)+'x floor.'; }
+  return { assessable, newLoanMo, totalDebtMo, annualDebt, dscr, dscrMin, verdict, reason };
+}
+function renderCommercial(el){
+  const c=commState();
+  const f=(label,field,prefix)=>`<div class="inp"><label>${label}</label><input type="number" value="${c[field]??''}" oninput="setComm('${field}',this.value)" style="font-family:var(--mono)"></div>`;
+  el.innerHTML=`
+    <div class="page-head"><h1>Commercial &amp; SME Serviceability</h1><p>DSCR-based assessment for business and asset-finance deals — the part residential serviceability tools don't do.</p></div>
+    <div class="acc-note amber" style="margin-bottom:16px"><b>Illustrative thresholds.</b> The DSCR floors below (1.25× / 1.50×) are indicative only — real commercial serviceability is per-lender and requires accountant-verified financials. Treat this as a fast sanity check before lender lodgement, not an approval.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+      <div class="card" style="padding:18px">
+        <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Business operating income</h3>
+        <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          ${f('Years in business','years_in_business')}
+          ${f('EBITDA / operating profit (yr)','ebitda')}
+          ${f('Add-back: depreciation','addback_depreciation')}
+          ${f('Add-back: interest','addback_interest')}
+          ${f('Add-back: lease/equipment','addback_lease')}
+          ${f('Existing biz debt service (mo)','business_debt_service_mo')}
+        </div>
+        <h3 style="font-size:15px;font-weight:700;margin:16px 0 12px">New commercial facility</h3>
+        <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          ${f('Loan amount','loan_amount')}
+          ${f('Rate %','rate')}
+          ${f('Term (yrs)','term')}
+        </div>
+      </div>
+      <div id="commResults"></div>
+    </div>`;
+  renderCommercialResults();
+}
+function renderCommercialResults(){
+  const box=document.getElementById('commResults'); if(!box) return;
+  const r=computeCommercialServiceability();
+  const tone=r.verdict==='PASS'?'var(--green)':r.verdict==='BORDERLINE'?'var(--amber)':'var(--red)';
+  const row=(l,v)=>`<div class="detail-row" style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line)"><span style="color:var(--t2);font-size:13px">${l}</span><span class="mono" style="font-weight:600">${v}</span></div>`;
+  box.innerHTML=`
+    <div class="card" style="padding:18px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h3 style="font-size:15px;font-weight:700">Assessment</h3>
+        <span class="pill" style="background:${tone};color:#fff;font-weight:700">${r.verdict}</span>
+      </div>
+      <div style="text-align:center;padding:14px 0;border-bottom:1px solid var(--line);margin-bottom:8px">
+        <div style="font-size:34px;font-weight:800;color:${tone};font-family:var(--mono)">${r.dscr.toFixed(2)}×</div>
+        <div style="font-size:12px;color:var(--t3)">DSCR · floor ${r.dscrMin.toFixed(2)}× ${(parseFloat(commState().years_in_business)||0)<2?'(&lt;2yr business)':''}</div>
+      </div>
+      ${row('Assessable income (EBITDA + add-backs)', fmtMoney(r.assessable)+'/yr')}
+      ${row('New facility repayment (buffered)', fmtMoney(r.newLoanMo)+'/mo')}
+      ${row('Total debt service', fmtMoney(r.totalDebtMo)+'/mo')}
+      ${row('Annual debt service', fmtMoney(r.annualDebt)+'/yr')}
+      <p class="serif-italic" style="font-size:13px;color:var(--t2);margin-top:12px;line-height:1.6">${r.reason}</p>
+      <p style="font-size:11px;color:var(--t3);margin-top:10px">DSCR = assessable business income ÷ total annual debt service. Add-backs must be supported by financial statements; a director's personal guarantee is standard on SME deals and is not modelled here.</p>
+    </div>`;
+}
 
 // Core renderer. Keeps id="page-<legacyId>" so existing re-render call sites keep working.
 function renderWorkspace(page){
