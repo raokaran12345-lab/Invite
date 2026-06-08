@@ -329,6 +329,7 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
   height:54px;flex-shrink:0;background:var(--surface);
   border-bottom:1px solid var(--hairline);display:flex;align-items:center;
   padding:10px 18px;gap:14px;z-index:100;
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 6px 20px -16px rgba(45,34,12,.45);
 }
 /* Subtle separators rhyme with assessor's `.ac-cmd-sep` */
 .cmd-sep{display:inline-block;width:1px;height:18px;background:var(--hairline);margin:0 4px;flex-shrink:0}
@@ -425,7 +426,8 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
   border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;transition:.13s;
   display:flex;align-items:center;gap:6px;
 }
-.os-tab:hover{color:var(--t1)}
+.os-tab{border-radius:var(--r-sm) var(--r-sm) 0 0}
+.os-tab:hover{color:var(--t1);background:var(--ink-bg)}
 .os-tab.active{color:var(--brand);border-bottom-color:var(--brand)}
 .tab-badge{font-size:9px;font-weight:800;background:var(--amber-bg);color:var(--amber);padding:1px 5px;border-radius:5px;letter-spacing:.04em}
 .os-tab.tab-locked{opacity:.5}
