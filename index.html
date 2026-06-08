@@ -1259,10 +1259,10 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 
 /* KPI grid */
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}
-.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);padding:18px;box-shadow:var(--sh-1);border-top:3px solid var(--brand);transition:.18s}
-.kpi:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}
-.kpi .ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:12px}
-.kpi .num{font-size:26px;font-weight:800}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);padding:18px;box-shadow:var(--sh-1);border-top:3px solid var(--brand);transition:transform .2s cubic-bezier(.22,1,.36,1),box-shadow .2s ease}
+.kpi:hover{transform:translateY(-3px);box-shadow:var(--sh-lift)}
+.kpi .ico{width:38px;height:38px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:12px}
+.kpi .num{font-size:27px;font-weight:700;letter-spacing:-.01em}
 .kpi .cap{color:var(--t3);font-size:12.5px;font-weight:600;margin-top:2px}
 
 /* Deal grid */
