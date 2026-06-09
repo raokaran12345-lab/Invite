@@ -7,7 +7,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23FBFAF6' stroke='%23E7E2D6'/%3E%3Cpath d='M9 5 L9 27 L17 27 C22.5 27 26 22.5 26 16 C26 9.5 22.5 5 17 5 Z' stroke='%231E2A44' stroke-width='1.6' fill='none' stroke-linejoin='miter'/%3E%3Cline x1='5.5' y1='5' x2='12.5' y2='5' stroke='%231E2A44' stroke-width='.8'/%3E%3Cline x1='5.5' y1='27' x2='12.5' y2='27' stroke='%231E2A44' stroke-width='.8'/%3E%3Cline x1='4' y1='29' x2='28' y2='29' stroke='%231E2A44' stroke-width='.6' opacity='.45'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
    DEBTIQ v6 — Design System
@@ -26,51 +26,51 @@
                        needs its own knob (e.g. --copilot-w).
      Raw hex/rgba live ONLY in the primitive layer.
      ============================================================ */
-  /* === DESIGN TOKENS v2 — warm fintech, restrained depth ===
+  /* === DESIGN TOKENS v3 — "Sovereign" luxury: white · royal blue · emerald · crimson ===
      Primitive layer remapped; the semantic + compat aliases below inherit,
      so the whole app shifts language without touching component selectors. */
   /* Surfaces */
-  --page:#F1EDE3;        /* bone — app background */
-  --paper:#FCFBF8;       /* card / panel */
+  --page:#F4F6FB;        /* cool light — app background */
+  --paper:#FFFFFF;       /* card / panel */
   --white:#FFFFFF;
-  --bone:#F1EDE3;
-  --card:#FCFBF8;
+  --bone:#F4F6FB;
+  --card:#FFFFFF;
   /* Structure & interaction */
-  --ink:#191917;
-  --steel:#4B57D6;       /* periwinkle — informational only */
-  --brass:#B08D4F;
+  --ink:#13265E;         /* royal navy — dark surfaces, brand, hero panels */
+  --steel:#2A50C8;       /* royal blue — informational / interactive */
+  --brass:#1E3A8A;       /* deep royal blue — replaces gold accent */
   /* Lines */
-  --line:#E7E1D3;
-  --line2:#EFEADD;
+  --line:#E5E7F0;
+  --line2:#EEF1FB;
   /* Text */
-  --t1:#191917;
-  --t2:#6E6A60;
-  --t3-warm:#6E6A60;
-  --t3-cool:#6E6A60;
-  --muted:#6E6A60;
-  /* Status (each means ONE thing) */
-  --green:#157A52;
-  --green-2:#0F5C3E;
-  --amber:#B5791F;
-  --amber-2:#946212;
-  --red:#B0402F;
-  --red-2:#8E3122;
-  --blue:#4B57D6;
-  --green-bg:#DCEFE4;
-  --amber-bg:#F7E8C9;
-  --red-bg:#F6DED9;
-  --steel-bg:#E7E9FB;
-  --blue-bg:#E7E9FB;
-  --ink-bg:rgba(25,25,23,.06);
-  /* On-ink legibility variants — used on dark hero panels only */
-  --green-on-ink:#9FE0BB;
-  --steel-on-ink:#C2C7F5;
-  --amber-on-ink:#F4D193;
-  --red-on-ink:#F8B0B0;
-  /* Type */
-  --ui:'Hanken Grotesk',system-ui,sans-serif;
-  --mono:'Jost',ui-monospace,monospace;
-  --serif:'Jost',system-ui,sans-serif;
+  --t1:#141C32;
+  --t2:#5A6178;
+  --t3-warm:#7A8194;
+  --t3-cool:#969BAC;
+  --muted:#969BAC;
+  /* Status (each means ONE thing) — palette-locked to white/blue/green/red */
+  --green:#1C7A4D;
+  --green-2:#0F4C30;
+  --amber:#1E3A8A;       /* caution → royal blue (palette-locked, no gold) */
+  --amber-2:#13265E;
+  --red:#B22230;
+  --red-2:#8E1A26;
+  --blue:#2A50C8;
+  --green-bg:#EAF4EE;
+  --amber-bg:#EEF1FB;
+  --red-bg:#FBEEEF;
+  --steel-bg:#EEF1FB;
+  --blue-bg:#EEF1FB;
+  --ink-bg:rgba(19,38,94,.06);
+  /* On-ink legibility variants — used on dark royal-navy hero panels only */
+  --green-on-ink:#7FE3B4;
+  --steel-on-ink:#AEC0FF;
+  --amber-on-ink:#AEC0FF;
+  --red-on-ink:#F4A8A8;
+  /* Type — Playfair display serif over Inter (luxury editorial) */
+  --ui:'Inter',system-ui,sans-serif;
+  --mono:'Inter',ui-monospace,monospace;
+  --serif:'Playfair Display',Georgia,serif;
   /* Shape */
   --r:20px; --r-sm:11px; --pill:999px;
   --r-card:20px;
@@ -78,8 +78,8 @@
   --r-btn:999px;
   --r-pill:999px;
   /* Depth — soft layered shadow with a lit white top edge */
-  --sh-card:0 1px 0 rgba(255,255,255,.9) inset, 0 18px 40px -26px rgba(45,34,12,.55), 0 2px 6px -3px rgba(45,34,12,.18);
-  --sh-lift:0 1px 0 rgba(255,255,255,.9) inset, 0 26px 54px -26px rgba(45,34,12,.6), 0 4px 10px -4px rgba(45,34,12,.22);
+  --sh-card:0 1px 0 rgba(255,255,255,.9) inset, 0 18px 40px -26px rgba(20,28,50,.5), 0 2px 6px -3px rgba(20,28,50,.16);
+  --sh-lift:0 1px 0 rgba(255,255,255,.95) inset, 0 26px 54px -24px rgba(30,58,138,.5), 0 4px 12px -4px rgba(30,58,138,.24);
   --sh-1:var(--sh-card);
   --sh-2:var(--sh-card);
   /* === Compatibility aliases (mapped to brand tokens; do not extend) === */
@@ -128,7 +128,7 @@
   --status-fail-bg:var(--red-bg);
   --hairline:var(--line);
   --hairline-cool:var(--line2);
-  --focus-ring:0 0 0 3px rgba(75,87,214,.38);
+  --focus-ring:0 0 0 3px rgba(30,58,138,.38);
   /* Spacing scale (4·8·12·16·24·32·48·64·96) */
   --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px;
   --space-5:24px; --space-6:32px; --space-7:48px; --space-8:64px; --space-9:96px;
@@ -170,12 +170,12 @@ body{
 body::before{
   content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.45;filter:blur(90px);
   background:
-    radial-gradient(40% 40% at 12% 8%, rgba(21,122,82,.18), transparent 70%),
-    radial-gradient(38% 38% at 88% 12%, rgba(181,121,31,.15), transparent 70%),
-    radial-gradient(42% 42% at 80% 90%, rgba(75,87,214,.13), transparent 70%),
-    radial-gradient(40% 40% at 16% 92%, rgba(176,64,47,.11), transparent 70%);
+    radial-gradient(40% 40% at 12% 8%, rgba(28,122,77,.16), transparent 70%),
+    radial-gradient(38% 38% at 88% 12%, rgba(42,80,200,.16), transparent 70%),
+    radial-gradient(42% 42% at 80% 90%, rgba(30,58,138,.14), transparent 70%),
+    radial-gradient(40% 40% at 16% 92%, rgba(178,34,48,.08), transparent 70%);
 }
-/* Headings + all numbers carry the page in Jost. */
+/* Headings carry the page in Playfair Display; numbers in Inter tabular. */
 h1,h2,h3{font-family:var(--serif);letter-spacing:-.015em}
 .mono,.num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-feature-settings:"tnum";}
 @media (prefers-reduced-motion: reduce){
