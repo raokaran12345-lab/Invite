@@ -306,10 +306,10 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
 #app{display:none;flex-direction:column;height:100vh;overflow:hidden}
 .logo-mark{
   width:36px;height:36px;border-radius:var(--r-card);flex-shrink:0;
-  background:var(--paper);             /* paper ground for the ink monogram */
-  border:1px solid var(--line);
+  background:linear-gradient(145deg,var(--steel),var(--ink));  /* royal-blue brand mark */
+  border:none;
   display:flex;align-items:center;justify-content:center;
-  color:var(--ink);
+  color:#fff;box-shadow:0 6px 14px -6px rgba(30,58,138,.55);
 }
 .logo-mark svg{display:block}
 .wordmark{font-weight:800;font-size:18px;letter-spacing:-.4px}
@@ -428,7 +428,7 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 }
 .os-tab{border-radius:var(--r-sm) var(--r-sm) 0 0}
 .os-tab:hover{color:var(--t1);background:var(--ink-bg)}
-.os-tab.active{color:var(--brand);border-bottom-color:var(--brand)}
+.os-tab.active{color:var(--steel);border-bottom-color:var(--steel);font-weight:700}
 .tab-badge{font-size:9px;font-weight:800;background:var(--amber-bg);color:var(--amber);padding:1px 5px;border-radius:5px;letter-spacing:.04em}
 .os-tab.tab-locked{opacity:.5}
 .os-tab.tab-locked::after{content:'🔒';font-size:9px;margin-left:5px;opacity:.8}
@@ -1647,7 +1647,7 @@ body.reduced-motion .verdict-hero .vh-statement.pulse{animation:none}
 .conf2>span{display:block;height:100%;background:var(--ink)}
 
 /* Buttons — flat ink primary, calm rest */
-.btn.primary{background:var(--ink);color:#fff;border:none;box-shadow:none}
+.btn.primary{background:linear-gradient(145deg,var(--steel),var(--ink));color:#fff;border:none;box-shadow:0 8px 20px -8px rgba(30,58,138,.5)}
 .btn.primary:hover{filter:brightness(1.08);transform:none}
 .btn:hover{filter:none;transform:none;box-shadow:none}
 
@@ -2265,10 +2265,6 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
       <div id="searchResults" class="search-results"></div>
     </div>
     <div class="cmd-right">
-      <div class="role-toggle" role="tablist" aria-label="Role">
-        <button id="roleBroker" class="active" type="button" onclick="setRole('broker')" aria-pressed="true">Broker</button>
-        <button id="roleAssessor" type="button" onclick="setRole('assessor')" aria-pressed="false">Assessor</button>
-      </div>
       <button class="btn btn-sm" onclick="startDemoTour()" title="Guided demo walkthrough" style="font-weight:700">▶ Demo</button>
       <span id="tierBadge" class="tier-badge" onclick="navigate('billing')" title="Your plan — click to manage"></span>
       <button class="btn primary btn-sm" onclick="startNewDeal()">+ New Deal</button>
@@ -2319,7 +2315,6 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
     <button class="os-tab" data-tab="commercial" onclick="goTab('commercial',this)">Commercial</button>
     <button class="os-tab" data-tab="aipilot" onclick="goTab('aipilot',this)">AI Pilot<span class="tab-badge" id="aipilotBadge">DEMO</span></button>
     <button class="os-tab" data-tab="settlement" onclick="goTab('settlement',this)">Settlement</button>
-    <button class="os-tab" data-tab="assessment" onclick="goTab('assessment',this)">Assessment</button>
   </div>
 
   <!-- MAIN CANVAS -->
