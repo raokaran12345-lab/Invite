@@ -5216,6 +5216,10 @@ function renderWizStep(){
     const types = d.loanClass==='business' ? BIZ_TYPES : d.loanClass==='both' ? [...HOME_TYPES, ...BIZ_TYPES.filter(t=>!HOME_TYPES.includes(t))] : HOME_TYPES;
     html = `<div class="wiz-card active"><h3>What kind of loan is this?</h3>
       <p class="desc">This shapes the assessment. You don't choose a lender here — DebtIQ ranks the lenders that will actually approve this deal in the <b>Calculate</b> &amp; <b>Compare</b> steps.</p>
+      <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--steel-bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin:6px 0 14px">
+        <div style="font-size:12.5px;color:var(--t2);max-width:60%"><b style="color:var(--t1)">📄 Have the client's documents?</b> Upload payslips, statements, ID &amp; contract — DebtIQ pre-fills the whole application and you review &amp; amend every field.</div>
+        <button class="btn primary" onclick="startDocFirst()">Upload &amp; auto-fill →</button>
+      </div>
       <div class="subsec">Loan type</div>
       <div class="tile-grid">
         ${classTile('home','🏠 Home loan','Owner-occupied or investment property')}
@@ -5329,12 +5333,24 @@ function renderWizStep(){
         ${docs.map((doc,i)=>`<div class="upload-zone" id="wizUp${i}" onclick="wizUpload(${i},this.dataset.doc,0)" data-doc="${doc.replace(/"/g,'&quot;')}">⬆ ${doc}</div>`).join('')}
       </div>${wizNav()}</div>`;
   } else if(state.wizStep===6){
-    html = `<div class="wiz-card active"><h3>AI Data Extraction</h3><p class="desc">Extracted fields from uploaded documents.</p>
-      <table><thead><tr><th>Field</th><th>Value</th><th>Confidence</th></tr></thead><tbody>
-      ${[['Gross Income','$142,000','98%'],['Employer','Acme Corp Pty Ltd','96%'],['Net Monthly','$8,420','94%'],['Credit Card Limit','$15,000','99%'],['Account Conduct','Satisfactory','89%']].map(r=>
-        `<tr><td>${r[0]}</td><td class="mono">${r[1]}</td><td><div class="conf-bar"><span style="width:${r[2]}"></span></div> ${r[2]}</td></tr>`).join('')}
+    const rows=[];
+    (state.calc.entities||[]).forEach((e,ei)=>{
+      const who = e.name || ('Applicant '+(ei+1));
+      (e.incomes||[]).forEach(inc=>rows.push({who, item:(INCOME_TYPES[inc.type]||inc.type), val:fmtMoney(inc.amount_y1||inc.amount||0)+' / yr', prov:inc._prov}));
+      (e.liabilities||[]).forEach(l=>rows.push({who, item:(LIAB_TYPES[l.type]||l.type), val:fmtMoney(l.balance||0), prov:l._prov}));
+      (e.assets||[]).forEach(a=>rows.push({who, item:(a.label||a.type||'Asset'), val:fmtMoney(a.value||0), prov:a._prov}));
+    });
+    if(state.wizData.firstName||state.wizData.lastName) rows.unshift({who:'Applicant', item:'Name', val:[state.wizData.firstName,state.wizData.lastName].filter(Boolean).join(' '), prov:state.wizData._autofilled?{verified:false}:null});
+    const statusCell = p => p ? (p.verified?'<span style="font-size:10px;color:var(--green);font-weight:700">VERIFIED</span>':'<span style="font-size:10px;color:var(--amber);font-weight:700">REVIEW</span>') : '<span style="font-size:10px;color:var(--t3)">manual</span>';
+    html = `<div class="wiz-card active"><h3>Review extracted data</h3>
+      <p class="desc">${rows.length?`Pre-filled from your documents and inputs. <b>Unverified values are flagged REVIEW — amend each to match your assessment</b> before you proceed.`:'Nothing captured yet. Upload documents on the previous step (or use “Upload &amp; auto-fill”), or key financials into the calculator.'}</p>
+      ${rows.length?`<table><thead><tr><th>Who</th><th>Item</th><th>Value</th><th>Status</th></tr></thead><tbody>
+        ${rows.map(r=>`<tr><td>${escHtml(r.who)}</td><td>${escHtml(r.item)}</td><td class="mono">${escHtml(r.val)}</td><td>${statusCell(r.prov)}</td></tr>`).join('')}
       </tbody></table>
-      <button class="btn primary" style="margin-top:16px" onclick="callExtract()">↻ Re-run AI Extraction</button>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn" onclick="state.wizStep=2;renderWizard(document.getElementById('wizModalContent')||document.getElementById('page-wizard'))">← Review applicant fields</button>
+        <button class="btn" onclick="closeWizardModal();state.svcTab='detailed';navigate('serviceability')">Amend financials in calculator →</button>
+      </div>`:''}
       ${wizNav()}</div>`;
   } else if(state.wizStep===7){
     html = `<div class="wiz-card active"><h3>AI Commentary</h3><p class="desc">Generated submission notes — edit inline.</p>
@@ -5392,8 +5408,35 @@ function wizExtract(name, entityIdx=0){
   if(/payslip/.test(n) && !ent.incomes.some(x=>x._payslip)){ ent.incomes.push({type:'salary_ft', amount:142000, amount_y1:142000, amount_y2:138000, use_average:false, evidence_years:2, _payslip:true, _sample:true, _prov:prov('gross_period')}); added='a sample salary'; }
   else if(/tax/.test(n) && !ent.incomes.some(x=>x._tax)){ ent.incomes.push({type:'self_emp', amount:90000, amount_y1:90000, amount_y2:84000, use_average:false, evidence_years:2, _tax:true, _sample:true, _prov:prov('self_emp')}); added='a sample self-employed income'; }
   else if(/(liabilit|statement)/.test(n) && !ent.liabilities.some(x=>x._stmt)){ ent.liabilities.push({type:'credit_card', balance:15000, rate:21.9, term:0, _stmt:true, _sample:true, _prov:prov('credit_card_limit')}); added='a sample credit-card liability'; }
+  // Document-first: also pre-fill applicant identity + a sample loan/security so the broker
+  // reviews a COMPLETE (unverified) application instead of a blank form. Honest demo: every
+  // value is a flagged sample to be amended — real OCR replaces this when aiLive().
+  if(state.wizData._docFirst){
+    const wd = state.wizData;
+    if(/payslip|licence|license|\bid\b|passport|medicare/.test(n) && !wd.firstName && !wd.lastName){
+      Object.assign(wd, {firstName:'Jordan', lastName:'Banks', dob:'1986-04-12', residency:'Australian citizen',
+        email:'jordan.banks@email.com', phone:'0412 345 678', address:'12 Sample Street, Carlton VIC 3053',
+        employment:'PAYG (full-time)', employer:'Acme Corp Pty Ltd', occupation:'Operations Manager', yearsEmployed:'4', _autofilled:true});
+      added = added || 'sample applicant details';
+    }
+    if(/contract|valuation|purchase|security/.test(n) && !(state.calc.securities||[]).length){
+      const s = newSecurity(); Object.assign(s, {address:'12 Sample Street', suburb:'Carlton', state:'VIC', postcode:'3053', value:900000, value_basis:'Contract of Sale'});
+      state.calc.securities = [s];
+      state.calc.newLoan.amount = state.calc.newLoan.amount || 720000;
+      state.calc.newLoan.rate = state.calc.newLoan.rate || 6.14;
+      state.calc.newLoan.term = state.calc.newLoan.term || 30;
+      added = added || 'sample loan & security';
+    }
+  }
   if(added) toast('Demo: loaded '+added+' (unverified) — confirm against the document before submitting', 'info');
   if(state.page==='serviceability') updateStatusStrip();
+}
+function startDocFirst(){
+  state.wizData._docFirst = true;
+  state.wizStep = 5;   // jump straight to document upload; the rest pre-fills from there
+  const host = document.getElementById('wizModalContent') || document.getElementById('page-wizard');
+  if(host) renderWizard(host);
+  toast('Upload the client documents — DebtIQ pre-fills the application for you to review & amend.','info');
 }
 function submitDeal(){
   if(!requirePermission('deal.submit','submit a deal')) return;   // Phase 5 RBAC gate
