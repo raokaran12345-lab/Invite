@@ -2308,6 +2308,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
     <span id="dsStatus" class="ds-status"></span>
     <div class="ds-metrics" id="dsMetrics"></div>
     <button class="deal-back" onclick="goTab('documents')" title="Documents for this file" style="margin-left:auto;font-size:12px;font-weight:600">📎 Documents</button>
+    <button class="deal-back" onclick="openApplyOnlinePack()" title="Generate an ApplyOnline pre-fill sheet" style="font-size:12px;font-weight:600">⇪ ApplyOnline</button>
   </div>
 
   <!-- TAB STRIP -->
@@ -5378,8 +5379,9 @@ function renderWizStep(){
       ${[['Lender selected', lenderName],['Deal type', d.dealType||'Owner Occupier'],['Applicants/entities', state.calc.entities.length],['Securities', (state.calc.securities||[]).length||'1 implicit'],['Loan amount', fmtMoney(state.calc.newLoan.amount)],['LVR', ((parseFloat(state.calc.newLoan.amount)||0)/(totalSecurityValue()||1)*100).toFixed(1)+'%'],['Documents requested', lenderChecklist(d.lender,d.dealType).length+' items'],['Commentary generated','Complete']].map(r=>
         `<div class="detail-row"><span class="dl">✓ ${r[0]}</span><span class="dv">${r[1]}</span></div>`).join('')}
       ${reqs}
-      <div class="assessed-note" style="background:rgba(5,150,105,.08);color:var(--green);margin:16px 0">✓ All requirements satisfied. Ready to submit to ${lenderName}${pol?(' via '+(pol.submission_channel||'broker portal')):''}.</div>
-      <button class="btn" style="width:100%;margin-bottom:10px" onclick="generateSubmissionPack()">📄 Generate AOL-Ready Submission Pack</button>
+      <div class="assessed-note" style="background:rgba(5,150,105,.08);color:var(--green);margin:16px 0">✓ Application complete. Generate the ApplyOnline pre-fill, then lodge via ApplyOnline (NextGen) — no re-keying.</div>
+      <button class="btn primary" style="width:100%;margin-bottom:8px" onclick="openApplyOnlinePack()">⇪ Generate ApplyOnline application</button>
+      <button class="btn" style="width:100%;margin-bottom:10px" onclick="generateSubmissionPack()">📄 Credit submission pack (lender memo)</button>
       ${wizNav()}</div>`;
   }
   c.innerHTML = html;
@@ -8252,6 +8254,160 @@ function openPackWindow(html){
   const w = window.open('', '_blank', 'width=900,height=850,scrollbars=yes,toolbar=no,menubar=no');
   if(!w){ toast('Please allow popups for DebtIQ', 'err'); return; }
   w.document.write(html); w.document.close();
+}
+
+/* ============================================================
+   APPLYONLINE / LIXI CAL PRE-FILL EXPORT
+   Maps the active deal + calculator into ApplyOnline (NextGen)
+   section order so a broker fills ApplyOnline without re-keying
+   (~90 min/deal). The pack is structured (section -> rows) so the
+   same data layer can emit a LIXI CAL XML payload / API push later.
+   ============================================================ */
+function buildApplyOnlinePack(){
+  const deal = DEALS.find(x=>x.id===state.activeDeal) || DEALS[0] || {};
+  const c = state.calc || {};
+  const ap = deal.applicant || {};
+  const wd = state.wizData || {};
+  let r = {}; try { r = computeServiceability() || {}; } catch(e){}
+  const purposeLabel = (CALC_PURPOSES.find(x=>x.id===(c.purpose||deal.purpose))||{}).label || deal.purpose || 'Purchase';
+  const money = v => fmtMoney(parseFloat(v)||0);
+  const fmt = v => (v===0 || v) ? String(v) : '—';
+  const ents = c.entities || [];
+  const nl = c.newLoan || {};
+  const secs = c.securities || [];
+  const reqs = deal.requirements || { features:wd.roFeatures||[], priority:wd.roPriority, foreseeable:wd.roForeseeable||[] };
+  const cons = deal.consents || { privacy:!!wd.consentPrivacy, creditGuide:!!wd.consentCreditGuide };
+  const secLabel = id => { const i = secs.findIndex(s=>s.id===id); return i<0 ? 'Unsecured' : ('Security '+(i+1)+(secs[i].address?' — '+secs[i].address:'')); };
+  const S = [];
+
+  S.push({ title:'Application', lixi:'LoanDetails · Purpose', rows:[
+    ['Deal ID', deal.id||'(new)'],
+    ['Loan class', wd.loanClass||deal.loanClass||'home'],
+    ['Application type', deal.type||wd.dealType||'Owner Occupier'],
+    ['Loan purpose', purposeLabel],
+    ['Loan amount', money(nl.amount)],
+    ['Term', (nl.term||30)+' years'],
+    ['Interest rate', (parseFloat(nl.rate)||0).toFixed(2)+'%'],
+    ['Assessed rate (incl. buffer)', r.assessedRate!=null ? r.assessedRate.toFixed(2)+'%' : '—'],
+    ['Target lender', (typeof lenderLabel==='function') ? lenderLabel(deal.lender||state.lender) : (deal.lender||state.lender||'—')],
+  ]});
+
+  S.push({ title:'Primary applicant', lixi:'Person · AML/CTF VOI', rows:[
+    ['Name', [ap.firstName||wd.firstName, ap.lastName||wd.lastName].filter(Boolean).join(' ') || (ents[0]&&ents[0].name) || deal.name || '—'],
+    ['Date of birth', fmt(ap.dob||wd.dob)],
+    ['Residency', fmt(ap.residency||wd.residency)],
+    ['Residential address', fmt(ap.address||wd.address)],
+    ['Email', fmt(ap.email||wd.email||deal.primary_email)],
+    ['Phone', fmt(ap.phone||wd.phone||deal.primary_phone)],
+    ['Relationship status', fmt(ap.relationship||wd.relationship)],
+    ['Dependants', fmt(ap.dependants!=null?ap.dependants:c.dependants)],
+    ['Identification (VOI)', [ap.idType||wd.idType, ap.idNumber||wd.idNumber].filter(Boolean).join(' · ')||'—'],
+  ]});
+
+  S.push({ title:'Parties / entities', lixi:'Person · Company · Trust', rows:
+    (ents.length?ents:[{name:deal.name,kind:'individual',role:'borrower',ownership_pct:100}]).map(e=>[
+      (e.name||'Unnamed'),
+      [ (ENTITY_KINDS[e.kind]||'Individual'), (ENTITY_ROLES[e.role]||'Borrower'), 'ownership '+(e.ownership_pct==null?100:e.ownership_pct)+'%', e.abn?('ABN '+e.abn):'', e.trustee_name?('Trustee/dir '+e.trustee_name):'' ].filter(Boolean).join(' · ')
+    ]) });
+
+  S.push({ title:'Employment', lixi:'Employment · RLO verification', rows:[
+    ['Employment type', fmt(ap.employment||wd.employment)],
+    ['Employer', fmt(ap.employer||wd.employer)],
+    ['Occupation', fmt(ap.occupation||wd.occupation)],
+    ['Years in role', fmt(ap.yearsEmployed||wd.yearsEmployed)],
+  ]});
+
+  const incRows=[]; ents.forEach(e=>(e.incomes||[]).forEach(i=>{
+    const gross = (i.use_average&&i.amount_y2)?(((+i.amount_y1||0)+(+i.amount_y2||0))/2):(parseFloat(i.amount_y1||i.amount)||0);
+    let assessable = gross; try{ assessable = getShadedIncome(i, state.lender); }catch(e2){}
+    incRows.push([ (e.name||'Applicant')+' — '+(INCOME_TYPES[i.type]||i.type), money(gross)+' gross · '+money(assessable)+' assessable'+(i._prov&&!i._prov.verified?' · REVIEW':'') ]);
+  }));
+  S.push({ title:'Income', lixi:'Income (employment / business / rental)', rows: incRows.length?incRows:[['—','No income lines captured']] });
+
+  S.push({ title:'Expenses', lixi:'Expenses · HEM floor', rows:[
+    ['HEM floor (monthly)', r.HEM!=null?money(r.HEM):'—'],
+    ['Net disposable income (monthly)', r.ndi!=null?money(r.ndi):'—'],
+  ]});
+
+  const assetRows=[]; ents.forEach(e=>(e.assets||[]).forEach(a=>assetRows.push([ (e.name||'Applicant')+' — '+(a.label||a.type||'Asset'), money(a.value) ])));
+  S.push({ title:'Assets', lixi:'Real-estate & non-real-estate assets', rows: assetRows.length?assetRows:[['—','No assets captured']] });
+
+  const liabRows=[]; ents.forEach(e=>(e.liabilities||[]).forEach(l=>liabRows.push([
+    (e.name||'Applicant')+' — '+(LIAB_TYPES[l.type]||l.type),
+    money(l.balance)+(l.type==='credit_card'?' limit':' balance')+(l.security_id?(' · secured to '+secLabel(l.security_id)):'')
+  ])));
+  S.push({ title:'Liabilities', lixi:'Liability (linked to securities)', rows: liabRows.length?liabRows:[['—','No liabilities captured']] });
+
+  S.push({ title:'Securities', lixi:'Security (property)', rows:
+    (secs.length?secs:[]).map((s,i)=>[ 'Security '+(i+1)+(s.address?' — '+s.address:''),
+      [ (s.property_type||''), (s.purpose||''), 'value '+money(s.value), securityDebt(s)>0?('debt '+money(securityDebt(s))+' · LVR '+securityLVR(s).toFixed(1)+'%'):'', (s.guarantee_type&&s.guarantee_type!=='None')?('guarantee: '+s.guarantee_type+(s.guarantor?' ('+s.guarantor+')':'')):'' ].filter(Boolean).join(' · ')
+    ]).concat(secs.length?[]:[['—','No securities captured']]) });
+
+  S.push({ title:'Loan / facilities', lixi:'LoanAccount', rows:[
+    ['Loan amount', money(nl.amount)],
+    ['Repayment / term', (nl.term||30)+' years'],
+    ['Rate', (parseFloat(nl.rate)||0).toFixed(2)+'%'],
+    ['LVR (incl. existing secured debt)', r.lvr!=null?(r.lvr.toFixed(1)+'%'):'—'],
+  ]});
+
+  S.push({ title:'Requirements & objectives', lixi:'NCCP RG209 · BID', rows:[
+    ['Features requested', (reqs.features&&reqs.features.length)?reqs.features.join(', '):'—'],
+    ['Primary priority', fmt(reqs.priority)],
+    ['Reasonably foreseeable changes', (reqs.foreseeable&&reqs.foreseeable.length)?reqs.foreseeable.join(', '):'—'],
+  ]});
+
+  S.push({ title:'Declarations', lixi:'Privacy Act · CCR · BID', rows:[
+    ['Privacy & credit-check consent', cons.privacy?'Provided ✓':'Not recorded'],
+    ['Credit Guide & BID disclosure', cons.creditGuide?'Provided ✓':'Not recorded'],
+  ]});
+
+  S.push({ title:'Serviceability snapshot', lixi:'(DebtIQ assessment)', rows:[
+    ['Verdict', r.verdict||'—'],
+    ['DSR', r.dsr!=null?r.dsr.toFixed(1)+'%':'—'],
+    ['DTI', r.dti!=null?r.dti.toFixed(1)+'×':'—'],
+    ['NDI (monthly)', r.ndi!=null?money(r.ndi):'—'],
+  ]});
+
+  return { meta:{ dealId:deal.id||'(new)', applicant:S[1].rows[0][1], broker:state.userName||'Broker', generated:(new Date()).toLocaleString('en-AU') }, sections:S };
+}
+function buildApplyOnlineHTML(pack){
+  const esc = s => String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const secHTML = sec => `<section class="sec"><div class="sh"><h2>${esc(sec.title)}</h2><span class="lx">LIXI: ${esc(sec.lixi)}</span></div>
+    <table>${sec.rows.map(r=>`<tr><td class="k">${esc(r[0])}</td><td class="v">${esc(r[1])}</td></tr>`).join('')}</table></section>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><title>ApplyOnline pre-fill — ${esc(pack.meta.dealId)}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;color:#14203a;background:#f4f6fb;padding:30px;line-height:1.45}
+    .wrap{max-width:860px;margin:0 auto}
+    .top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1e3a8a;padding-bottom:14px;margin-bottom:8px}
+    .brand{font-size:22px;font-weight:800;color:#1e3a8a}
+    .brand b{color:#2a50c8}
+    .sub{font-size:12px;color:#5a6178;margin-top:3px}
+    .meta{text-align:right;font-size:11.5px;color:#5a6178}
+    .note{background:#eef1fb;border:1px solid #d5d8e6;border-radius:8px;padding:10px 13px;font-size:12px;color:#454c5f;margin:14px 0 18px}
+    .sec{background:#fff;border:1px solid #e5e7f0;border-radius:11px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(20,28,50,.05);break-inside:avoid}
+    .sh{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #eef1fb;padding-bottom:7px;margin-bottom:8px}
+    .sh h2{font-size:14px;color:#13265e}
+    .lx{font-size:10px;font-weight:700;letter-spacing:.04em;color:#2a50c8;background:#eef1fb;padding:2px 8px;border-radius:6px}
+    table{width:100%;border-collapse:collapse}
+    td{padding:5px 4px;font-size:12.5px;vertical-align:top;border-bottom:1px dotted #eef1fb}
+    td.k{color:#5a6178;width:42%} td.v{color:#14203a;font-weight:600}
+    .actions{display:flex;gap:10px;margin:6px 0 16px}
+    button{font:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;border:none;cursor:pointer;background:#1e3a8a;color:#fff}
+    button.sec-btn{background:#fff;color:#14203a;border:1px solid #d5d8e6}
+    @media print{ body{background:#fff;padding:0} .actions{display:none} .sec{box-shadow:none} }
+  </style></head><body><div class="wrap">
+    <div class="top"><div><div class="brand">Debt<b>IQ</b> → ApplyOnline</div><div class="sub">Field-mapped pre-fill · copy into ApplyOnline (NextGen) · LIXI CAL section order</div></div>
+      <div class="meta">${esc(pack.meta.dealId)} · ${esc(pack.meta.applicant)}<br>${esc(pack.meta.broker)} · ${esc(pack.meta.generated)}</div></div>
+    <div class="actions"><button onclick="window.print()">⎙ Print / Save PDF</button></div>
+    <div class="note"><b>How to use:</b> fields below are laid out in ApplyOnline's section order. Values marked <b>REVIEW</b> were pre-filled from documents and must be verified before lodgement. This sheet is a pre-fill aid, not a lodged application.</div>
+    ${pack.sections.map(secHTML).join('')}
+  </div></body></html>`;
+}
+function openApplyOnlinePack(){
+  if(!state.activeDeal && !(DEALS[0])){ toast('Open a deal first', 'err'); return; }
+  try { openPackWindow(buildApplyOnlineHTML(buildApplyOnlinePack())); logEvent('ApplyOnline pre-fill generated'); }
+  catch(e){ toast('Could not build ApplyOnline pack: '+e.message, 'err'); }
 }
 function buildBIDPrompt(r, pol, d){
   const lenderName = pol ? pol.label : (d.lender||'CBA');
