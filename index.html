@@ -2194,7 +2194,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
         <div class="lp"><div class="lp-num">A–D</div><div class="lp-label">Routing with coded reasons</div></div>
         <div class="lp"><div class="lp-num">100%</div><div class="lp-label">Audited, attributable</div></div>
       </div>
-      <div class="lh-foot">For mortgage brokers and credit assessors across Australia.</div>
+      <div class="lh-foot">For mortgage brokers across Australia.</div>
     </div>
   </aside>
   <div class="login-form-col">
@@ -2203,25 +2203,9 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
       <h1>Welcome back.</h1>
       <p class="sub">Pick up where you left off — or open a new file.</p>
 
-      <div class="role-cap">I'm signing in as</div>
-      <div class="role-select" role="radiogroup" aria-label="Sign-in role">
-        <button type="button" class="role-opt" id="roleOptBroker" role="radio" aria-checked="true" onclick="setLoginRole('broker')">
-          <span class="ro-name">Broker</span>
-          <span class="ro-sub">Pipeline, deals, calculator</span>
-        </button>
-        <button type="button" class="role-opt" id="roleOptLender" role="radio" aria-checked="false" onclick="setLoginRole('lender')">
-          <span class="ro-name">Lender / Assessor</span>
-          <span class="ro-sub">Assessment console, decisioning</span>
-        </button>
-      </div>
-
       <div class="field">
         <label for="loginEmail">Email</label>
         <input id="loginEmail" type="email" value="broker@debtiq.com" placeholder="you@brokerage.com" autocomplete="username">
-      </div>
-      <div class="field" id="loginOrgField" style="display:none">
-        <label for="loginOrg">Lending institution</label>
-        <input id="loginOrg" type="text" value="Commonwealth Bank" placeholder="e.g. Commonwealth Bank" autocomplete="organization">
       </div>
       <div class="field">
         <label for="loginPass">Password</label>
