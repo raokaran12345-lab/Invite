@@ -2203,10 +2203,25 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
       <h1 id="lcHead">Welcome back.</h1>
       <p class="sub" id="lcSub">Pick up where you left off — or open a new file.</p>
 
+      <div id="ssoBlock" style="display:flex;flex-direction:column;gap:9px;margin-bottom:14px">
+        <button type="button" class="btn" onclick="ssoLogin('google')" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;background:#fff;border:1px solid var(--border);color:var(--t1);font-weight:600">
+          <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.1-5.1l-6.5-5.5C29.6 35 26.9 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.4l6.5 5.5C41.4 36.3 44 30.7 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+          Continue with Google
+        </button>
+        <button type="button" class="btn" onclick="ssoLogin('azure')" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;background:#fff;border:1px solid var(--border);color:var(--t1);font-weight:600">
+          <svg width="15" height="15" viewBox="0 0 23 23" aria-hidden="true"><path fill="#f25022" d="M1 1h10v10H1z"/><path fill="#7fba00" d="M12 1h10v10H12z"/><path fill="#00a4ef" d="M1 12h10v10H1z"/><path fill="#ffb900" d="M12 12h10v10H12z"/></svg>
+          Continue with Microsoft
+        </button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.08em">
+        <div style="flex:1;height:1px;background:var(--line)"></div> or <div style="flex:1;height:1px;background:var(--line)"></div>
+      </div>
+
       <div id="signupFields" style="display:none">
         <div class="field"><label for="suName">Full name</label><input id="suName" type="text" placeholder="e.g. Jordan Banks" autocomplete="name"></div>
         <div class="field"><label for="suFirm">Brokerage / aggregator</label><input id="suFirm" type="text" placeholder="Your business" autocomplete="organization"></div>
         <div class="field"><label for="suAcl">ACL or Credit Rep number <span style="color:var(--t3);font-weight:400">(optional)</span></label><input id="suAcl" type="text" placeholder="e.g. 389201 — add now or later in Settings" inputmode="numeric"></div>
+        <label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--t2);margin:2px 0 8px;cursor:pointer"><input type="checkbox" id="suTerms" style="margin-top:2px">I agree to the <a href="#" onclick="event.preventDefault();toast('Terms of Service — placeholder for demo','info')" style="color:var(--steel);font-weight:600">Terms of Service</a> and <a href="#" onclick="event.preventDefault();toast('Privacy Policy — placeholder for demo','info')" style="color:var(--steel);font-weight:600">Privacy Policy</a>.</label>
       </div>
       <div class="field">
         <label for="loginEmail">Email</label>
@@ -2216,6 +2231,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
         <label for="loginPass">Password</label>
         <input id="loginPass" type="password" value="demo1234" placeholder="••••••••" autocomplete="current-password">
       </div>
+      <div id="forgotRow" style="text-align:right;margin:-6px 0 12px"><a onclick="doForgotPassword()" style="font-size:12px;color:var(--steel);cursor:pointer;font-weight:600">Forgot password?</a></div>
       <button class="btn-grad" id="loginBtn" onclick="doAuth()">Enter broker workspace</button>
       <div id="authExtra"></div>
       <div id="authToggle" style="text-align:center;font-size:12.5px;color:var(--t2);margin-top:14px">New to DebtIQ? <a onclick="setAuthMode('signup')" style="color:var(--steel);font-weight:600;cursor:pointer">Create an account</a></div>
@@ -11247,7 +11263,7 @@ function setAuthMode(mode){
   const su = state.authMode==='signup';
   const setTxt=(id,t)=>{ const e=document.getElementById(id); if(e) e.textContent=t; };
   const show=(id,on)=>{ const e=document.getElementById(id); if(e) e.style.display = on?'':'none'; };
-  show('signupFields', su); show('demoCreds', !su);
+  show('signupFields', su); show('demoCreds', !su); show('forgotRow', !su);
   setTxt('lcCap', su?'Create account':'Sign in');
   setTxt('lcHead', su?'Start your free trial.':'Welcome back.');
   setTxt('lcSub', su?'About two minutes to set up. No card required.':'Pick up where you left off — or open a new file.');
@@ -11261,6 +11277,26 @@ function setAuthMode(mode){
     if(em && em.value==='broker@debtiq.com') em.value=''; if(pw && pw.value==='demo1234') pw.value=''; }
 }
 function doAuth(){ return (state.authMode==='signup') ? doSignUp() : doLogin(); }
+function ssoLogin(provider){
+  const label = provider==='azure' ? 'Microsoft' : 'Google';
+  if(state.backend && sbClient){
+    sbClient.auth.signInWithOAuth({ provider: provider==='azure'?'azure':'google', options:{ redirectTo: location.origin } });
+    return;
+  }
+  toast(label+' sign-in connects when the backend is live — opening the demo workspace.', 'info');
+  state.role = 'broker';
+  showLoader('Signing in with '+label+'…');
+  setTimeout(()=>{ hideLoader(); enterApp(); }, 800);
+}
+function doForgotPassword(){
+  const email = (document.getElementById('loginEmail')?.value||'').trim();
+  if(!/.+@.+\..+/.test(email)){ toast('Enter your email above first, then tap “Forgot password”.', 'err'); return; }
+  if(state.backend && sbClient){
+    sbClient.auth.resetPasswordForEmail(email, { redirectTo: location.origin });
+    toast('Password reset link sent to '+email, 'ok'); return;
+  }
+  toast('Demo: a reset link would be emailed to '+email+' once the backend is connected.', 'info');
+}
 async function doSignUp(){
   const name = (document.getElementById('suName')?.value||'').trim();
   const firm = (document.getElementById('suFirm')?.value||'').trim();
@@ -11270,6 +11306,7 @@ async function doSignUp(){
   if(!name){ toast('Enter your name', 'err'); return; }
   if(!/.+@.+\..+/.test(email)){ toast('Enter a valid email', 'err'); return; }
   if((password||'').length<6){ toast('Password must be at least 6 characters', 'err'); return; }
+  if(!document.getElementById('suTerms')?.checked){ toast('Please accept the Terms of Service & Privacy Policy to continue', 'err'); return; }
   if(state.backend && sbClient){
     showLoader('Creating account…');
     const { data, error } = await sbClient.auth.signUp({ email, password, options:{ data:{ full_name:name, brokerage:firm, acl } } });
