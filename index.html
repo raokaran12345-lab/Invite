@@ -4026,12 +4026,14 @@ function newEntity(kind){
     liabilities:[], assets:[] };
 }
 function newAsset(){ return { type:'savings', label:'', value:0, notes:'' }; }
+// Guarantee is a property of the security (who/what backs it beyond the mortgage).
+const GUARANTEE_TYPES = ['None','Family pledge (security guarantee)','Limited guarantee','Unlimited guarantee','Servicing (income) guarantee','Director / company guarantee'];
 function newSecurity(){
   return { id:'s_'+Math.random().toString(36).slice(2,8), address:'', suburb:'', state:'NSW', postcode:'',
     property_type:'House', purpose:'Owner Occupied', transaction:'Purchasing',
     value:0, value_basis:'Applicant Estimate', zoning:'Residential',
     first_mortgage:true, existing_mortgage:0, existing_lender:'',
-    rental_income:0, rental_frequency:'Weekly',
+    rental_income:0, rental_frequency:'Weekly', guarantee_type:'None', guarantor:'',
     owner_entity_id:null, title:{ folio:'', section:'', block:'' } };
 }
 // Each entity contributes a weight: 0 if excluded, else ownership_pct/100 (default 100%).
@@ -4046,6 +4048,17 @@ function totalSecurityValue(){
 function existingPropertyDebt(){
   return (state.calc.securities||[]).reduce((s,x)=>s+(parseFloat(x.existing_mortgage)||0),0);
 }
+// Liabilities can be linked to a security via liability.security_id — so the broker
+// can see the true secured position (and LVR) on each property.
+function linkedLiabDebt(secId){
+  let sum=0;
+  (state.calc.entities||[]).forEach(e=>(e.liabilities||[]).forEach(l=>{ if(l.security_id && l.security_id===secId) sum += parseFloat(l.balance)||0; }));
+  return sum;
+}
+// Total debt already secured against a property = its existing mortgage + any linked liabilities.
+function securityDebt(sec){ return (parseFloat(sec.existing_mortgage)||0) + linkedLiabDebt(sec.id); }
+function securityLVR(sec){ const v=parseFloat(sec.value)||0; return v>0 ? securityDebt(sec)/v*100 : 0; }
+function totalExistingSecuredDebt(){ return (state.calc.securities||[]).reduce((s,x)=>s+securityDebt(x),0); }
 
 /* ============================================================
    SERVICEABILITY COMPUTATION
@@ -5150,10 +5163,11 @@ function filterLenderTiles(q){
 /* Update LVR badge in place so the input keeps focus while typing */
 function updateWizLVR(){
   const tv = totalSecurityValue(), amt = parseFloat(state.calc.newLoan.amount)||0;
-  const lvr = tv>0 ? (amt/tv*100) : 0;
+  const exist = totalExistingSecuredDebt();
+  const lvr = tv>0 ? ((amt+exist)/tv*100) : 0;
   const color = lvr<=80?'var(--green)':lvr<=90?'var(--amber)':'var(--red)';
   const el = document.getElementById('wizLvr');
-  if(el){ el.textContent='LVR '+lvr.toFixed(1)+'% · Loan '+fmtMoney(amt)+' / Security '+fmtMoney(tv); el.style.background=color+'1a'; el.style.color=color; }
+  if(el){ el.textContent='LVR '+lvr.toFixed(1)+'% · Loan '+fmtMoney(amt)+(exist>0?' + existing '+fmtMoney(exist):'')+' / Security '+fmtMoney(tv); el.style.background=color+'1a'; el.style.color=color; }
 }
 // Checklist generator — selected lender's required docs, extended by deal type.
 function lenderChecklist(id, dealType){
@@ -5242,7 +5256,8 @@ function renderWizStep(){
   } else if(state.wizStep===4){
     const nl = state.calc.newLoan;
     const tv = totalSecurityValue(), amt = parseFloat(nl.amount)||0;
-    const lvr = tv>0 ? (amt/tv*100) : 0;
+    const exist = totalExistingSecuredDebt();
+    const lvr = tv>0 ? ((amt+exist)/tv*100) : 0;
     const lvrColor = lvr<=80?'var(--green)':lvr<=90?'var(--amber)':'var(--red)';
     html = `<div class="wiz-card active"><h3>Securities &amp; loan</h3><p class="desc">Part A captures every property securing the loan (multi-security supported, like AOL). Part B is the loan structure. LVR uses the aggregate security value.</p>
       <div class="subsec">Part A — Securities</div>
@@ -5253,7 +5268,7 @@ function renderWizStep(){
         <div class="inp"><label for="wzRate">Interest rate (%)</label><input id="wzRate" type="number" step="0.01" value="${nl.rate}" oninput="state.calc.newLoan.rate=+this.value;updateStatusStrip()"></div>
         <div class="inp"><label for="wzTerm">Term (years)</label><input id="wzTerm" type="number" value="${nl.term}" oninput="state.calc.newLoan.term=+this.value;updateStatusStrip()"></div>
       </div>
-      <div class="lvr-badge" id="wizLvr" style="background:${lvrColor}1a;color:${lvrColor}">LVR ${lvr.toFixed(1)}% · Loan ${fmtMoney(amt)} / Security ${fmtMoney(tv)}</div>
+      <div class="lvr-badge" id="wizLvr" style="background:${lvrColor}1a;color:${lvrColor}">LVR ${lvr.toFixed(1)}% · Loan ${fmtMoney(amt)}${exist>0?' + existing '+fmtMoney(exist):''} / Security ${fmtMoney(tv)}</div>
       ${wizNav()}</div>`;
   } else if(state.wizStep===5){
     const docs = lenderChecklist(d.lender, d.dealType);
@@ -5632,6 +5647,13 @@ function renderCalcEditor(){
                  <input type="number" aria-label="HECS monthly deduction" value="${l.monthly_deduction||0}" oninput="state.calc.entities[${ei}].liabilities[${li}].monthly_deduction=+this.value;updateCalc()" style="width:84px;padding:4px 7px;border:1px solid var(--border);border-radius:7px" title="From the latest payslip — used for CBA's 12-month exclusion rule">
                  <span style="opacity:.7">(from payslip)</span></div>`
             : (noTerm ? `<div style="margin:-1px 0 9px;padding-left:2px;font-size:11px;color:var(--amber)">⚠ Term must be &gt; 0 for accurate assessment (defaulting to ${defaultTerm(l.type)}yr).</div>` : '');
+          const securable = !['credit_card','hecs','bnpl'].includes(l.type);
+          const _secs = state.calc.securities||[];
+          const securedSel = (securable && _secs.length) ? `<div style="margin:-1px 0 9px;padding-left:2px;font-size:11px;color:var(--t3);display:flex;gap:6px;align-items:center">Secured against
+              <select aria-label="Secured against property" onchange="state.calc.entities[${ei}].liabilities[${li}].security_id=this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()" style="padding:4px 7px;border:1px solid var(--border);border-radius:7px">
+                <option value="" ${!l.security_id?'selected':''}>Unsecured</option>
+                ${_secs.map((s,si)=>`<option value="${escHtml(s.id)}" ${l.security_id===s.id?'selected':''}>Security ${si+1}${s.address?' — '+escHtml(s.address):''}</option>`).join('')}
+              </select><span style="opacity:.7">(feeds property LVR)</span></div>` : '';
           return `<div class="row-line liab">
             <select aria-label="Liability type" onchange="state.calc.entities[${ei}].liabilities[${li}].type=this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()">${Object.entries(LIAB_TYPES).map(([k,v])=>`<option value="${k}" ${l.type===k?'selected':''}>${v}</option>`).join('')}</select>
             <input type="number" aria-label="Balance or limit" value="${l.balance}" oninput="state.calc.entities[${ei}].liabilities[${li}].balance=+this.value;updateCalc()">
@@ -5639,7 +5661,7 @@ function renderCalcEditor(){
             <input type="number" aria-label="Term" value="${l.term}" oninput="state.calc.entities[${ei}].liabilities[${li}].term=+this.value;updateCalc()">
             <span class="computed mono" id="liabAss-${ei}-${li}">${fmtMoney(assessed)}${provBadge(l._prov)}</span>
             <span class="row-x" role="button" tabindex="0" aria-label="Remove liability" onclick="removeLiab(${ei},${li})">×</span>
-          </div>${extra}`;}).join('')}
+          </div>${extra}${securedSel}`;}).join('')}
         <button class="add-row" onclick="addLiab(${ei})">+ Add liability</button>
       </div>`:''}
     </div>`).join('');
@@ -5916,6 +5938,8 @@ function securitiesBuilderHTML(){
       <div class="inp"><label>Value (${m().sym})</label><input type="number" value="${sec.value||0}" oninput="updateSecurityField(${idx},'value',+this.value)"></div>
       <div class="inp"><label>Value basis</label><select onchange="updateSecurityField(${idx},'value_basis',this.value)">${PROP_BASIS.map(t=>`<option ${sec.value_basis===t?'selected':''}>${t}</option>`).join('')}</select></div>
       <div class="inp"><label>Owner entity</label><select onchange="updateSecurityField(${idx},'owner_entity_id',this.value||null)"><option value="">— select —</option>${ents.map(e=>`<option value="${escHtml(e.id)}" ${sec.owner_entity_id===e.id?'selected':''}>${escHtml(e.name||(ENTITY_KINDS[e.kind]||'Entity'))}</option>`).join('')}</select></div>
+      <div class="inp"><label>Guarantee type</label><select onchange="updateSecurityField(${idx},'guarantee_type',this.value)">${GUARANTEE_TYPES.map(t=>`<option ${(sec.guarantee_type||'None')===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="inp"><label>Guarantor (if any)</label><input value="${escHtml(sec.guarantor||'')}" oninput="updateSecurityField(${idx},'guarantor',this.value)" placeholder="Name / entity"></div>
     </div>
     ${(sec.purpose==='Investment' || sec.transaction==='Refinancing' || sec.transaction==='Owned (additional security)') ? `<div class="form-grid" style="margin-bottom:8px">
       <div class="inp"><label>Existing mortgage (${m().sym})</label><input type="number" value="${sec.existing_mortgage||0}" oninput="updateSecurityField(${idx},'existing_mortgage',+this.value)"></div>
@@ -5923,6 +5947,13 @@ function securitiesBuilderHTML(){
       <div class="inp"><label>Rental income (gross)</label><input type="number" value="${sec.rental_income||0}" oninput="updateSecurityField(${idx},'rental_income',+this.value)"></div>
       <div class="inp"><label>Rental frequency</label><select onchange="updateSecurityField(${idx},'rental_frequency',this.value)">${FREQ_OPTS.map(t=>`<option ${sec.rental_frequency===t?'selected':''}>${t}</option>`).join('')}</select></div>
     </div>`:''}
+    ${(()=>{ const debt=securityDebt(sec), v=parseFloat(sec.value)||0, lvr=v>0?debt/v*100:0, linked=linkedLiabDebt(sec.id), guar=sec.guarantee_type&&sec.guarantee_type!=='None';
+      return (debt>0||guar) ? `<div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:2px 0 10px;padding:8px 11px;background:var(--blue-bg);border-radius:9px;font-size:12px">
+        <span>Secured debt <b class="mono">${fmtMoney(debt)}</b></span>
+        <span>Current LVR <b class="mono" style="color:${lvr<=80?'var(--green)':lvr<=90?'var(--amber)':'var(--red)'}">${lvr.toFixed(1)}%</b></span>
+        ${linked>0?`<span style="color:var(--t3)">incl. ${fmtMoney(linked)} linked liabilities</span>`:''}
+        ${guar?`<span style="color:var(--t3)">🛡 ${escHtml(sec.guarantee_type)}${sec.guarantor?' · '+escHtml(sec.guarantor):''}</span>`:''}
+      </div>` : ''; })()}
     <button class="mini-btn" onclick="toggleSecurityTitle(${idx})">${sec._titleOpen?'▾':'▸'} Title details (Torrens)</button>
     ${sec._titleOpen?`<div class="form-grid" style="margin-top:8px">
       <div class="inp"><label>Folio</label><input value="${escHtml((sec.title||{}).folio||'')}" oninput="updateSecurityTitle(${idx},'folio',this.value)"></div>
@@ -5936,7 +5967,7 @@ function securitiesBuilderHTML(){
 }
 function addIncome(ei){ state.calc.entities[ei].incomes.push({type:'salary_ft',amount:0}); renderCalcEditor();renderCalcResults();updateStatusStrip(); logEvent('Income line added'); }
 function removeIncome(ei,ii){ state.calc.entities[ei].incomes.splice(ii,1); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
-function addLiab(ei){ state.calc.entities[ei].liabilities.push({type:'credit_card',balance:0,rate:0,term:0}); renderCalcEditor();renderCalcResults();updateStatusStrip(); logEvent('Liability added'); }
+function addLiab(ei){ state.calc.entities[ei].liabilities.push({type:'credit_card',balance:0,rate:0,term:0,security_id:''}); renderCalcEditor();renderCalcResults();updateStatusStrip(); logEvent('Liability added'); }
 function removeLiab(ei,li){ state.calc.entities[ei].liabilities.splice(li,1); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
 
 function setText(id,v){ const e=document.getElementById(id); if(e) e.textContent=v; }
@@ -10966,12 +10997,14 @@ function renderLoanStructureSection(){
 function renderPropertySection(){
   const nl = state.calc.newLoan;
   const tv = totalSecurityValue(), amt = parseFloat(nl.amount)||0;
-  const lvr = tv>0 ? (amt/tv*100) : 0;
+  const exist = totalExistingSecuredDebt();
+  const lvr = tv>0 ? ((amt+exist)/tv*100) : 0;
   const col = lvr<=80?'var(--green)':lvr<=90?'var(--amber)':'var(--red)';
   return `<div class="card" style="padding:18px">
     <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Securities (${(state.calc.securities||[]).length||'1 implicit'})</h3>
     ${securitiesBuilderHTML()}
-    <div class="lvr-badge" style="background:${col}1a;color:${col};margin-top:12px">LVR ${lvr.toFixed(1)}% · Loan ${fmtMoney(amt)} / Security ${fmtMoney(tv)}</div>
+    <div class="lvr-badge" style="background:${col}1a;color:${col};margin-top:12px">LVR ${lvr.toFixed(1)}% · Loan ${fmtMoney(amt)}${exist>0?' + existing '+fmtMoney(exist):''} / Security ${fmtMoney(tv)}</div>
+    ${exist>0?`<p style="font-size:11px;color:var(--t3);text-align:center;margin-top:6px">Includes ${fmtMoney(exist)} debt already secured against these properties.</p>`:''}
   </div>`;
 }
 function renderLoanTab(el){
