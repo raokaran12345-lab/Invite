@@ -2301,6 +2301,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
     <span id="dsAmt" class="ds-amt mono"></span>
     <span id="dsStatus" class="ds-status"></span>
     <div class="ds-metrics" id="dsMetrics"></div>
+    <button class="deal-back" onclick="goTab('documents')" title="Documents for this file" style="margin-left:auto;font-size:12px;font-weight:600">📎 Documents</button>
   </div>
 
   <!-- TAB STRIP -->
@@ -2308,11 +2309,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
     <button class="os-tab active" data-tab="pipeline" onclick="goTab('pipeline',this)">Pipeline</button>
     <button class="os-tab" data-tab="client" onclick="goTab('client',this)">Client</button>
     <button class="os-tab" data-tab="loan" onclick="goTab('loan',this)">Loan</button>
-    <button class="os-tab" data-tab="documents" onclick="goTab('documents',this)">Documents</button>
     <button class="os-tab" data-tab="calculate" onclick="goTab('calculate',this)">Calculate</button>
-    <button class="os-tab" data-tab="commercial" onclick="goTab('commercial',this)">Commercial</button>
-    <button class="os-tab" data-tab="aipilot" onclick="goTab('aipilot',this)">AI Pilot<span class="tab-badge" id="aipilotBadge">DEMO</span></button>
-    <button class="os-tab" data-tab="settlement" onclick="goTab('settlement',this)">Settlement</button>
   </div>
 
   <!-- MAIN CANVAS -->
@@ -5108,7 +5105,7 @@ function advanceDeal(id){
 /* ============================================================
    PAGE: WIZARD (8 steps)
    ============================================================ */
-const WIZ_STEPS = ['Lender','Borrower','Entities','Loan','Documents','Extract','Commentary','Submit'];
+const WIZ_STEPS = ['Type','Borrower','Entities','Loan','Documents','Extract','Commentary','Submit'];
 function renderWizard(el){
   el.innerHTML = `
     <div class="wiz-head">
@@ -5172,44 +5169,23 @@ function renderWizStep(){
   const d = state.wizData;
   let html='';
   if(state.wizStep===1){
-    const useDB = state.market==='AU' && Object.keys(lenderDB()).length;
-    const lenderIds = useDB ? Object.keys(lenderDB()) : m().lenders;
-    // Show ALL lenders here — accreditation filtering belongs in the calculator/compare, not deal creation.
-    const tileFor = (l)=>{
-      const p = useDB ? lenderDB()[l] : null;
-      const type = p ? (p.apra_regulated?'ADI':'Non-bank') : '';
-      const buffer = p ? (p.buffer*100).toFixed(0)+'%' : '';
-      const maxLvr = p ? (p.max_lvr_owner_occ_pi||p.max_lvr_owner_occ||'')+'%' : '';
-      const tag = (type+' '+(p?(p.label||l):l)+' '+l).toLowerCase();
-      const meta = p ? `<div class="ts">${type} · <span title="Buffer = % added to the rate to stress-test repayments">${buffer} buffer</span> · max LVR ${maxLvr}</div>` : '';
-      return `<div class="tile lender-tile ${d.lender===l?'sel':''}" data-lender-tag="${escHtml(tag)}" data-lender-type="${type.toLowerCase()}" onclick="state.wizData.lender='${l}';state.lender='${l}';renderWizStep()"><div class="tt">${escHtml(p?(p.label||l):l)}</div>${meta}</div>`;
-    };
-    const adiIds = useDB ? lenderIds.filter(l=> lenderDB()[l] && lenderDB()[l].apra_regulated) : lenderIds;
-    const nbIds  = useDB ? lenderIds.filter(l=> lenderDB()[l] && !lenderDB()[l].apra_regulated) : [];
-    const sortByLabel = (a,b)=> ((lenderDB()[a]||{}).label||a).localeCompare((lenderDB()[b]||{}).label||b);
-    adiIds.sort(sortByLabel); nbIds.sort(sortByLabel);
-    const groupsHtml = useDB
-      ? `<div class="lender-group-head">Banks (ADI)</div><div class="tile-grid lender-group">${adiIds.map(tileFor).join('')}</div>
-         <div class="lender-group-head">Non-bank lenders</div><div class="tile-grid lender-group">${nbIds.map(tileFor).join('')}</div>`
-      : `<div class="tile-grid">${lenderIds.map(tileFor).join('')}</div>`;
-    const pol = useDB ? lenderDB()[d.lender] : null;
-    const reqCard = pol ? `<div class="card" style="padding:16px;margin-top:16px;border-left:4px solid ${pol.lender_color||'var(--brand)'}">
-        <div style="font-weight:700;margin-bottom:8px">${escHtml(pol.label)} — lender requirements</div>
-        <div class="detail-row"><span class="dl">Submission</span><span class="dv">${escHtml(pol.submission_channel||'—')}</span></div>
-        <div class="detail-row"><span class="dl">Conditional SLA</span><span class="dv">${pol.sla_conditional?pol.sla_conditional+' business days':'—'}</span></div>
-        <div class="detail-row"><span class="dl">Buffer / Max DSR</span><span class="dv mono">${(pol.buffer*100).toFixed(0)}% / ${pol.dsr_max}%</span></div>
-        <div class="detail-row"><span class="dl">Max LVR (OO P&I)</span><span class="dv mono">${pol.max_lvr_owner_occ_pi||'—'}%</span></div>
-        <div class="detail-row"><span class="dl">Genuine savings</span><span class="dv">${pol.genuine_savings_required?('Required >'+(pol.genuine_savings_threshold_lvr||85)+'% LVR'):'Not required'}</span></div>
-        <ul style="margin:10px 0 0;padding-left:18px;color:var(--t2);font-size:12.5px">${(pol.notes||[]).slice(0,4).map(n=>`<li style="margin-bottom:3px">${escHtml(n)}</li>`).join('')}</ul>
-      </div>` : '';
-    html = `<div class="wiz-card active"><h3>Select Lender & Deal Type</h3><p class="desc">Choose the lender and product — policy loads from the lender database. All ${useDB?Object.keys(lenderDB()).length:lenderIds.length} ${useDB?'Australian ':''}lenders are shown.</p>
-      <div class="subsec">Lender</div>
-      <p style="font-size:12px;color:var(--t3);margin:-4px 0 10px;line-height:1.5"><b>Buffer</b> = the % added to the actual interest rate to stress-test repayments. APRA requires 3% for banks; some non-banks use 1–2%. <b>Lower buffer = higher borrowing capacity.</b></p>
-      <div style="margin-bottom:12px"><input id="lenderSearch" placeholder="Search lenders (e.g. CBA, Liberty, non-bank)…" oninput="filterLenderTiles(this.value)" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:var(--r-pill);font-size:13.5px;background:var(--bg)"></div>
-      <div id="lenderTiles">${groupsHtml}</div>
-      <div class="subsec">Deal Type</div>
-      <div class="tile-grid">${['Owner Occupier','Investment','First Home','SMSF','Commercial','Refinance'].map(t=>`<div class="tile ${d.dealType===t?'sel':''}" onclick="state.wizData.dealType='${t}';renderWizStep()"><div class="tt">${t}</div></div>`).join('')}</div>
-      ${reqCard}
+    if(!d.loanClass) d.loanClass = 'home';
+    // Loan class drives which purpose tiles make sense. No lender is chosen here —
+    // DebtIQ finds the right lenders for the broker in the Calculate & Compare steps.
+    const classTile = (id,label,desc)=>`<div class="tile ${d.loanClass===id?'sel':''}" onclick="state.wizData.loanClass='${id}';state.wizData.dealType='';renderWizStep()"><div class="tt">${label}</div><div class="ts">${desc}</div></div>`;
+    const HOME_TYPES = ['Owner Occupier','Investment','First Home','Refinance','SMSF'];
+    const BIZ_TYPES  = ['Commercial','SME / Business','Self-employed','Refinance'];
+    const types = d.loanClass==='business' ? BIZ_TYPES : d.loanClass==='both' ? [...HOME_TYPES, ...BIZ_TYPES.filter(t=>!HOME_TYPES.includes(t))] : HOME_TYPES;
+    html = `<div class="wiz-card active"><h3>What kind of loan is this?</h3>
+      <p class="desc">This shapes the assessment. You don't choose a lender here — DebtIQ ranks the lenders that will actually approve this deal in the <b>Calculate</b> &amp; <b>Compare</b> steps.</p>
+      <div class="subsec">Loan type</div>
+      <div class="tile-grid">
+        ${classTile('home','🏠 Home loan','Owner-occupied or investment property')}
+        ${classTile('business','🏢 Business loan','Commercial · SME · self-employed')}
+        ${classTile('both','🏠 + 🏢 Both','Home and business lending together')}
+      </div>
+      <div class="subsec">Purpose</div>
+      <div class="tile-grid">${types.map(t=>`<div class="tile ${d.dealType===t?'sel':''}" onclick="state.wizData.dealType='${t}';renderWizStep()"><div class="tt">${t}</div></div>`).join('')}</div>
       ${wizNav()}</div>`;
   } else if(state.wizStep===2){
     const wd = state.wizData;
@@ -5367,7 +5343,8 @@ function submitDeal(){
       || (state.calc.entities[0] && state.calc.entities[0].name) || 'New Application';
     // Phase 3 — seed the calc.purpose from wizard dealType so Step 1 is pre-filled.
     state.calc.purpose = wizDealTypeToPurpose(wd.dealType);
-    const newDeal = mkDeal({id, name:borrowerName, lender:wd.lender||'CBA', amount:amt, status:'SUBMITTED', lvr:+(amt/pv*100).toFixed(1), progress:null, type:wd.dealType||'Owner Occupier', primary_email:wd.email||'', primary_phone:wd.phone||''});
+    const defaultType = wd.loanClass==='business' ? 'Commercial' : 'Owner Occupier';
+    const newDeal = mkDeal({id, name:borrowerName, lender:wd.lender||'CBA', amount:amt, status:'SUBMITTED', lvr:+(amt/pv*100).toFixed(1), progress:null, type:wd.dealType||defaultType, loanClass:wd.loanClass||'home', purpose:state.calc.purpose, primary_email:wd.email||'', primary_phone:wd.phone||''});
     persistDealIntel(id);  // persist entities + securities + provenance onto the new deal
     DEALS.unshift(newDeal);
     DOCS.forEach(x=>{ if(x.deal==='NEW') x.deal=id; });   // retag wizard docs to the new deal
@@ -8148,7 +8125,7 @@ function buildBIDPrompt(r, pol, d){
 LOAN: ${fmtMoney(parseFloat(state.calc.newLoan.amount)||0)} ${d.dealType||'Owner Occupier'} loan with ${lenderName}.
 ASSESSED RATE: ${((parseFloat(state.calc.newLoan.rate)||0)+(pol?pol.buffer:0.03)*100).toFixed(2)}%
 TERM: ${state.calc.newLoan.term||30} years P&I
-PURPOSE: ${d.purpose||'Purchase — Owner Occupied'}
+PURPOSE: ${(CALC_PURPOSES.find(x=>x.id===(state.calc.purpose||d.purpose))||{}).label || d.purpose || 'Purchase — Owner Occupied'}
 LVR: ${(((parseFloat(state.calc.newLoan.amount)||0)/(totalSecurityValue()||1))*100).toFixed(1)+'%'} (over ${(state.calc.securities||[]).length||1} security/securities)
 SERVICEABILITY: DSR ${r.dsr.toFixed(1)}% vs ceiling ${pol?pol.dsr_max:45}%
 NDI: ${fmtMoney(r.ndi)}/month
@@ -8357,8 +8334,8 @@ td,th{overflow:visible;}
   <div class="section-head"><span class="section-num">01</span><span class="section-title">Application Summary</span></div>
   <div class="kv">
     <div>
-      <div class="kv-row"><span class="kv-k">Application type</span><span class="kv-v text">${esc(d.dealType||'Owner Occupier')}</span></div>
-      <div class="kv-row"><span class="kv-k">Loan purpose</span><span class="kv-v text">${esc(d.purpose||'Purchase')}</span></div>
+      <div class="kv-row"><span class="kv-k">Application type</span><span class="kv-v text">${esc(d.type||d.dealType||'Owner Occupier')}</span></div>
+      <div class="kv-row"><span class="kv-k">Loan purpose</span><span class="kv-v text">${esc((CALC_PURPOSES.find(x=>x.id===(state.calc.purpose||d.purpose))||{}).label || d.purpose || 'Purchase')}</span></div>
       <div class="kv-row"><span class="kv-k">LVR (over ${((state.calc.securities||[]).length||1)} security/ies)</span><span class="kv-v">${lvr}%</span></div>
       <div class="kv-row"><span class="kv-k">Contract rate</span><span class="kv-v">${(parseFloat(nl.rate)||0).toFixed(2)}%</span></div>
       <div class="kv-row"><span class="kv-k">Lender</span><span class="kv-v text">${esc(lenderName)}</span></div>
