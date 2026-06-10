@@ -2623,7 +2623,11 @@ const state = {
   dealSearch:'',
   wizStep:1,
   // Wizard shares state.calc — only non-calc wizard inputs live here.
-  wizData:{lender:null, dealType:null, propValue:1000000, firstName:'', lastName:'', email:'', phone:'', dob:''},
+  wizData:{lender:null, dealType:null, loanClass:'home', propValue:1000000, firstName:'', lastName:'', email:'', phone:'', dob:'',
+    address:'', residency:'Australian citizen', relationship:'Single', idType:'Driver licence', idNumber:'',
+    employment:'PAYG (full-time)', employer:'', occupation:'', yearsEmployed:'',
+    roFeatures:[], roPriority:'Lowest overall cost', roForeseeable:[],
+    consentPrivacy:false, consentCreditGuide:false},
   calc:{
     // Purpose (Phase 3 Step 1) — shapes everything after it. Hydrated from
     // state.wizData.dealType on deal creation (see startNewDeal / setActiveDeal).
@@ -4011,6 +4015,14 @@ function updateStatusStrip(){ updateDealStrip(); updateCopilot(); renderPolicyDr
    ============================================================ */
 const ENTITY_KINDS = { individual:'Individual', joint:'Joint', company:'Company', trust:'Trust', smsf:'SMSF', partnership:'Partnership' };
 const ENTITY_ROLES = { borrower:'Borrower', 'co-borrower':'Co-borrower', guarantor:'Guarantor', trustee:'Trustee', director:'Director' };
+// LIXI CAL / ApplyOnline-aligned option sets for the regulated applicant fact-find.
+const RESIDENCY_OPTS = ['Australian citizen','Permanent resident','New Zealand citizen','Temporary visa (e.g. 482/491)','Foreign / non-resident'];
+const RELATIONSHIP_OPTS = ['Single','Married','De facto','Separated','Divorced','Widowed'];
+const ID_TYPES = ['Driver licence','Passport','Medicare card','Proof of Age card'];
+const EMPLOYMENT_TYPES = ['PAYG (full-time)','PAYG (part-time)','PAYG (casual)','Self-employed','Contractor','Retired','Home duties','Other'];
+const LOAN_FEATURES = ['Offset account','Redraw','Fixed rate','Extra repayments','Split loan','Interest-only period'];
+const PRIORITY_OPTS = ['Lowest overall cost','Lowest repayments','Maximum borrowing','Flexibility / features','Fast approval','Rate certainty'];
+const FORESEEABLE_OPTS = ['Retiring during loan term','Growing family / new dependants','Expected income change','Large one-off expense planned','Intend to sell within term','No anticipated changes'];
 const PROP_TYPES = ['House','Unit/Apartment','Townhouse','Land','Rural','Commercial','Off-the-plan'];
 const PROP_PURPOSES = ['Owner Occupied','Investment'];
 const PROP_TXN = ['Purchasing','Refinancing','Owned (additional security)'];
@@ -5118,7 +5130,7 @@ function advanceDeal(id){
 /* ============================================================
    PAGE: WIZARD (8 steps)
    ============================================================ */
-const WIZ_STEPS = ['Type','Borrower','Entities','Loan','Documents','Extract','Commentary','Submit'];
+const WIZ_STEPS = ['Type','Applicant','Parties','Loan','Documents','Extract','Commentary','Submit'];
 function renderWizard(el){
   el.innerHTML = `
     <div class="wiz-head">
@@ -5143,7 +5155,19 @@ function wizNav(){
     ${state.wizStep<8?`<button class="btn primary" onclick="wizGo(1)">Continue →</button>`:`<button class="btn primary" onclick="submitDeal()">Submit Deal ✓</button>`}
   </div>`;
 }
+function wizToggleArr(field, val){
+  const arr = (state.wizData[field] = state.wizData[field]||[]);
+  const i = arr.indexOf(val); if(i>=0) arr.splice(i,1); else arr.push(val);
+  const host = document.getElementById('wizModalContent') || document.getElementById('page-wizard');
+  if(host) renderWizard(host);
+}
 function wizGo(dir){
+  // Can't move past the applicant step without the regulated minimum: a named applicant.
+  if(dir>0 && state.wizStep===2){
+    if(!(state.wizData.firstName||'').trim() || !(state.wizData.lastName||'').trim()){
+      toast('Enter the applicant’s first and last name to continue.','err'); return;
+    }
+  }
   state.wizStep = Math.min(8, Math.max(1, state.wizStep+dir));
   // Sync entity 0's name from the borrower fields so the calculator entity matches the wizard inputs.
   const bn=[state.wizData.firstName,state.wizData.lastName].filter(Boolean).join(' ').trim();
@@ -5203,15 +5227,42 @@ function renderWizStep(){
       ${wizNav()}</div>`;
   } else if(state.wizStep===2){
     const wd = state.wizData;
-    html = `<div class="wiz-card active"><h3>Borrower Details</h3><p class="desc">Primary applicant information.</p>
+    const chip = (field,f)=>{ const on=(wd[field]||[]).includes(f); return `<label onclick="wizToggleArr('${field}','${f}')" style="display:inline-block;cursor:pointer;padding:5px 11px;border-radius:999px;font-size:12px;margin:0 6px 6px 0;border:1px solid ${on?'var(--steel)':'var(--border)'};background:${on?'var(--steel-bg)':'#fff'};color:${on?'var(--steel)':'var(--t2)'};font-weight:${on?600:500}">${f}</label>`; };
+    const regTag = t=>`<span style="font-size:10px;font-weight:600;color:var(--steel);background:var(--steel-bg);padding:2px 7px;border-radius:6px;margin-left:8px;vertical-align:middle">${t}</span>`;
+    const consent = (f,txt)=>`<label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--t2);margin:7px 0;cursor:pointer"><input type="checkbox" ${wd[f]?'checked':''} onchange="state.wizData.${f}=this.checked" style="margin-top:2px">${txt}</label>`;
+    html = `<div class="wiz-card active"><h3>Primary applicant</h3>
+      <p class="desc">The regulated fact-find — identity, situation and requirements &amp; objectives (NCCP responsible lending + Best Interests Duty). Fields map to <b>ApplyOnline / LIXI&nbsp;CAL</b> so the data lifts straight into lodgement.</p>
+      <div class="subsec">Identity ${regTag('LIXI Person · AML/CTF VOI')}</div>
       <div class="form-grid">
-        <div class="inp"><label for="wzFn">First Name</label><input id="wzFn" value="${esc(wd.firstName||'')}" oninput="state.wizData.firstName=this.value"></div>
-        <div class="inp"><label for="wzLn">Last Name</label><input id="wzLn" value="${esc(wd.lastName||'')}" oninput="state.wizData.lastName=this.value"></div>
-        <div class="inp"><label for="wzEm">Email</label><input id="wzEm" type="email" value="${esc(wd.email||'')}" oninput="state.wizData.email=this.value"></div>
-        <div class="inp"><label for="wzPh">Phone</label><input id="wzPh" value="${esc(wd.phone||'')}" oninput="state.wizData.phone=this.value"></div>
-        <div class="inp"><label for="wzDob">Date of Birth</label><input id="wzDob" type="date" value="${esc(wd.dob||'')}" oninput="state.wizData.dob=this.value"></div>
-        <div class="inp"><label for="wzDep">Dependants</label><input id="wzDep" type="number" min="0" value="${state.calc.dependants||0}" oninput="state.calc.dependants=Math.max(0,+this.value||0)"></div>
-      </div>${wizNav()}</div>`;
+        <div class="inp"><label>First name *</label><input value="${esc(wd.firstName||'')}" oninput="state.wizData.firstName=this.value"></div>
+        <div class="inp"><label>Last name *</label><input value="${esc(wd.lastName||'')}" oninput="state.wizData.lastName=this.value"></div>
+        <div class="inp"><label>Date of birth</label><input type="date" value="${esc(wd.dob||'')}" oninput="state.wizData.dob=this.value"></div>
+        <div class="inp"><label>Residency status</label><select onchange="state.wizData.residency=this.value">${RESIDENCY_OPTS.map(o=>`<option ${wd.residency===o?'selected':''}>${o}</option>`).join('')}</select></div>
+        <div class="inp" style="grid-column:1/-1"><label>Residential address</label><input value="${esc(wd.address||'')}" oninput="state.wizData.address=this.value" placeholder="Current home address"></div>
+        <div class="inp"><label>Email</label><input type="email" value="${esc(wd.email||'')}" oninput="state.wizData.email=this.value"></div>
+        <div class="inp"><label>Phone</label><input value="${esc(wd.phone||'')}" oninput="state.wizData.phone=this.value"></div>
+        <div class="inp"><label>Relationship status</label><select onchange="state.wizData.relationship=this.value">${RELATIONSHIP_OPTS.map(o=>`<option ${wd.relationship===o?'selected':''}>${o}</option>`).join('')}</select></div>
+        <div class="inp"><label>Dependants</label><input type="number" min="0" value="${state.calc.dependants||0}" oninput="state.calc.dependants=Math.max(0,+this.value||0)"></div>
+        <div class="inp"><label>ID type (VOI)</label><select onchange="state.wizData.idType=this.value">${ID_TYPES.map(o=>`<option ${wd.idType===o?'selected':''}>${o}</option>`).join('')}</select></div>
+        <div class="inp"><label>ID number</label><input value="${esc(wd.idNumber||'')}" oninput="state.wizData.idNumber=this.value"></div>
+      </div>
+      <div class="subsec" style="margin-top:14px">Employment ${regTag('LIXI Employment · RLO verification')}</div>
+      <div class="form-grid">
+        <div class="inp"><label>Employment type</label><select onchange="state.wizData.employment=this.value">${EMPLOYMENT_TYPES.map(o=>`<option ${wd.employment===o?'selected':''}>${o}</option>`).join('')}</select></div>
+        <div class="inp"><label>Employer</label><input value="${esc(wd.employer||'')}" oninput="state.wizData.employer=this.value"></div>
+        <div class="inp"><label>Occupation</label><input value="${esc(wd.occupation||'')}" oninput="state.wizData.occupation=this.value"></div>
+        <div class="inp"><label>Years in role</label><input type="number" min="0" step="0.5" value="${esc(wd.yearsEmployed||'')}" oninput="state.wizData.yearsEmployed=this.value"></div>
+      </div>
+      <div class="subsec" style="margin-top:14px">Requirements &amp; objectives ${regTag('NCCP RG209 · Best Interests Duty')}</div>
+      <div class="inp"><label style="display:block;margin-bottom:6px">Features the client wants</label><div>${LOAN_FEATURES.map(f=>chip('roFeatures',f)).join('')}</div></div>
+      <div class="form-grid" style="margin-top:8px">
+        <div class="inp"><label>Primary priority</label><select onchange="state.wizData.roPriority=this.value">${PRIORITY_OPTS.map(o=>`<option ${wd.roPriority===o?'selected':''}>${o}</option>`).join('')}</select></div>
+      </div>
+      <div class="inp" style="margin-top:10px"><label style="display:block;margin-bottom:6px">Reasonably foreseeable changes</label><div>${FORESEEABLE_OPTS.map(f=>chip('roForeseeable',f)).join('')}</div></div>
+      <div class="subsec" style="margin-top:14px">Consents ${regTag('Privacy Act · CCR')}</div>
+      ${consent('consentPrivacy','Client consents to privacy collection &amp; a credit check.')}
+      ${consent('consentCreditGuide','Credit Guide &amp; Best Interests Duty disclosure provided to the client.')}
+      ${wizNav()}</div>`;
   } else if(state.wizStep===3){
     const ents = state.calc.entities;
     const entCard = (ent, idx)=>{
@@ -5359,7 +5410,10 @@ function submitDeal(){
     // Phase 3 — seed the calc.purpose from wizard dealType so Step 1 is pre-filled.
     state.calc.purpose = wizDealTypeToPurpose(wd.dealType);
     const defaultType = wd.loanClass==='business' ? 'Commercial' : 'Owner Occupier';
-    const newDeal = mkDeal({id, name:borrowerName, lender:wd.lender||'CBA', amount:amt, status:'SUBMITTED', lvr:+(amt/pv*100).toFixed(1), progress:null, type:wd.dealType||defaultType, loanClass:wd.loanClass||'home', purpose:state.calc.purpose, primary_email:wd.email||'', primary_phone:wd.phone||''});
+    const applicant = { firstName:wd.firstName, lastName:wd.lastName, dob:wd.dob, residency:wd.residency, address:wd.address, email:wd.email, phone:wd.phone, relationship:wd.relationship, dependants:state.calc.dependants||0, idType:wd.idType, idNumber:wd.idNumber, employment:wd.employment, employer:wd.employer, occupation:wd.occupation, yearsEmployed:wd.yearsEmployed };
+    const requirements = { features:wd.roFeatures||[], priority:wd.roPriority, foreseeable:wd.roForeseeable||[] };
+    const consents = { privacy:!!wd.consentPrivacy, creditGuide:!!wd.consentCreditGuide };
+    const newDeal = mkDeal({id, name:borrowerName, lender:wd.lender||'CBA', amount:amt, status:'SUBMITTED', lvr:+(amt/pv*100).toFixed(1), progress:null, type:wd.dealType||defaultType, loanClass:wd.loanClass||'home', purpose:state.calc.purpose, applicant, requirements, consents, primary_email:wd.email||'', primary_phone:wd.phone||''});
     persistDealIntel(id);  // persist entities + securities + provenance onto the new deal
     DEALS.unshift(newDeal);
     DOCS.forEach(x=>{ if(x.deal==='NEW') x.deal=id; });   // retag wizard docs to the new deal
