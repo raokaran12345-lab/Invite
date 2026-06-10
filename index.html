@@ -2199,10 +2199,15 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
   </aside>
   <div class="login-form-col">
     <div class="login-card" role="form" aria-label="Sign in">
-      <div class="lc-cap">Sign in</div>
-      <h1>Welcome back.</h1>
-      <p class="sub">Pick up where you left off — or open a new file.</p>
+      <div class="lc-cap" id="lcCap">Sign in</div>
+      <h1 id="lcHead">Welcome back.</h1>
+      <p class="sub" id="lcSub">Pick up where you left off — or open a new file.</p>
 
+      <div id="signupFields" style="display:none">
+        <div class="field"><label for="suName">Full name</label><input id="suName" type="text" placeholder="e.g. Jordan Banks" autocomplete="name"></div>
+        <div class="field"><label for="suFirm">Brokerage / aggregator</label><input id="suFirm" type="text" placeholder="Your business" autocomplete="organization"></div>
+        <div class="field"><label for="suAcl">ACL or Credit Rep number <span style="color:var(--t3);font-weight:400">(optional)</span></label><input id="suAcl" type="text" placeholder="e.g. 389201 — add now or later in Settings" inputmode="numeric"></div>
+      </div>
       <div class="field">
         <label for="loginEmail">Email</label>
         <input id="loginEmail" type="email" value="broker@debtiq.com" placeholder="you@brokerage.com" autocomplete="username">
@@ -2211,9 +2216,10 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
         <label for="loginPass">Password</label>
         <input id="loginPass" type="password" value="demo1234" placeholder="••••••••" autocomplete="current-password">
       </div>
-      <button class="btn-grad" id="loginBtn" onclick="doLogin()">Enter broker workspace</button>
+      <button class="btn-grad" id="loginBtn" onclick="doAuth()">Enter broker workspace</button>
       <div id="authExtra"></div>
-      <div class="demo-creds">
+      <div id="authToggle" style="text-align:center;font-size:12.5px;color:var(--t2);margin-top:14px">New to DebtIQ? <a onclick="setAuthMode('signup')" style="color:var(--steel);font-weight:600;cursor:pointer">Create an account</a></div>
+      <div class="demo-creds" id="demoCreds">
         <b>Demo credentials</b><br>
         Email: <span class="mono">broker@debtiq.com</span><br>
         Password: <span class="mono">demo1234</span>
@@ -11235,16 +11241,49 @@ async function doLogin(){
     enterApp();   // static demo mode
   }
 }
+// Swap the auth card between Sign in and Create account / free trial.
+function setAuthMode(mode){
+  state.authMode = (mode==='signup') ? 'signup' : 'signin';
+  const su = state.authMode==='signup';
+  const setTxt=(id,t)=>{ const e=document.getElementById(id); if(e) e.textContent=t; };
+  const show=(id,on)=>{ const e=document.getElementById(id); if(e) e.style.display = on?'':'none'; };
+  show('signupFields', su); show('demoCreds', !su);
+  setTxt('lcCap', su?'Create account':'Sign in');
+  setTxt('lcHead', su?'Start your free trial.':'Welcome back.');
+  setTxt('lcSub', su?'About two minutes to set up. No card required.':'Pick up where you left off — or open a new file.');
+  setTxt('loginBtn', su?'Create account & start':'Enter broker workspace');
+  const tog=document.getElementById('authToggle');
+  if(tog) tog.innerHTML = su
+    ? `Already have an account? <a onclick="setAuthMode('signin')" style="color:var(--steel);font-weight:600;cursor:pointer">Sign in</a>`
+    : `New to DebtIQ? <a onclick="setAuthMode('signup')" style="color:var(--steel);font-weight:600;cursor:pointer">Create an account</a>`;
+  // When switching to signup, clear the prefilled demo creds so the broker types their own.
+  if(su){ const em=document.getElementById('loginEmail'), pw=document.getElementById('loginPass');
+    if(em && em.value==='broker@debtiq.com') em.value=''; if(pw && pw.value==='demo1234') pw.value=''; }
+}
+function doAuth(){ return (state.authMode==='signup') ? doSignUp() : doLogin(); }
 async function doSignUp(){
-  if(!(state.backend && sbClient)) return toast('Connect Supabase (Settings) to create accounts', 'info');
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPass').value;
-  showLoader('Creating account…');
-  const { data, error } = await sbClient.auth.signUp({ email, password });
-  hideLoader();
-  if(error){ toast(error.message, 'err'); return; }
-  if(data.session){ state.user = data.user; syncAi(); enterApp(); }
-  else toast('Account created — check your email to confirm, then sign in.', 'ok');
+  const name = (document.getElementById('suName')?.value||'').trim();
+  const firm = (document.getElementById('suFirm')?.value||'').trim();
+  const acl  = (document.getElementById('suAcl')?.value||'').trim();   // optional
+  const email = (document.getElementById('loginEmail')?.value||'').trim();
+  const password = document.getElementById('loginPass')?.value||'';
+  if(!name){ toast('Enter your name', 'err'); return; }
+  if(!/.+@.+\..+/.test(email)){ toast('Enter a valid email', 'err'); return; }
+  if((password||'').length<6){ toast('Password must be at least 6 characters', 'err'); return; }
+  if(state.backend && sbClient){
+    showLoader('Creating account…');
+    const { data, error } = await sbClient.auth.signUp({ email, password, options:{ data:{ full_name:name, brokerage:firm, acl } } });
+    hideLoader();
+    if(error){ toast(error.message, 'err'); return; }
+    if(data.session){ state.user=data.user; state.role='broker'; state.userName=name; state.org=firm; syncAi(); enterApp(); }
+    else toast('Account created — check your email to confirm, then sign in.', 'ok');
+    return;
+  }
+  // Demo mode — start a local session so the free-trial flow is end-to-end (no real account; keep state.user null so we never overstate persistence).
+  state.role='broker'; state.org=firm; state.userName=name;
+  showLoader('Setting up your workspace…');
+  setTimeout(()=>{ hideLoader(); toast('Welcome to DebtIQ, '+(name.split(' ')[0]||'broker')+'! (demo trial)', 'ok');
+    enterApp(); const nm=document.getElementById('cmdUserName'); if(nm) nm.textContent=name; }, 900);
 }
 async function doMagicLink(){
   if(!(state.backend && sbClient)) return toast('Connect Supabase for magic links', 'info');
