@@ -4161,8 +4161,106 @@ function trendHTML(t){
   const arr = t.dir==='up'?'▲':t.dir==='down'?'▼':'─';
   return `<div style="font-size:11px;font-weight:700;color:${col};margin-top:3px">${arr} ${t.d} vs last month</div>`;
 }
+/* ============================================================
+   RETENTION / REPRICING + CLAWBACK RADAR
+   Turns the trail book into a proactive worklist: who to reprice,
+   who to review, and where refinancing would trigger a clawback.
+   Settlement date + current rate are derived deterministically per
+   deal for the demo book (real values come from the loan record).
+   ============================================================ */
+const RETENTION = { clawbackMonths:24, benchmarkRate:5.99, repriceThresholdBps:25, reviewDueMonths:12, flightRiskBps:40 };
+function buildRetentionBook(){
+  const today = (typeof TODAY!=='undefined' && TODAY) ? new Date(TODAY) : new Date();
+  return (DEALS||[]).map(d=>{
+    const idn = parseInt((d.id||'').replace(/\D/g,''),10) || 0;
+    const settledMonthsAgo = (idn*7) % 31;                              // 0..30 months, deterministic
+    const settled = new Date(today.getTime() - settledMonthsAgo*30.4*864e5);
+    const currentRate = +(5.8 + ((idn*13)%160)/100).toFixed(2);        // ~5.80..7.39%
+    const gapBps = Math.round((currentRate - RETENTION.benchmarkRate)*100);
+    const upfront = (d.amount||0) * (d.upfront_commission_rate||0);
+    const trailAnnual = (d.amount||0) * (d.trail_commission_rate||0);
+    const clawFactor = settledMonthsAgo<12 ? 1 : settledMonthsAgo<24 ? 0.5 : 0;
+    const inClawback = settledMonthsAgo < RETENTION.clawbackMonths;
+    const clawbackExposure = Math.round(upfront*clawFactor);
+    const reviewDue = settledMonthsAgo >= RETENTION.reviewDueMonths;
+    const repriceOpp = gapBps >= RETENTION.repriceThresholdBps;
+    const monthlySaving = repriceOpp ? Math.round((d.amount||0)*(gapBps/10000)/12) : 0;
+    const flightRisk = gapBps >= RETENTION.flightRiskBps;
+    let priority = 0;
+    if(flightRisk && inClawback) priority = 3;        // top alarm: likely to refinance AND would claw back
+    else if(repriceOpp) priority = 2;
+    else if(reviewDue) priority = 1;
+    return { deal:d, settledMonthsAgo, settled, currentRate, gapBps, upfront, trailAnnual, clawFactor, inClawback, clawbackExposure, reviewDue, repriceOpp, monthlySaving, flightRisk, priority };
+  });
+}
+function retentionSummary(book){
+  const inClaw = book.filter(x=>x.inClawback && x.clawbackExposure>0);
+  const reprice = book.filter(x=>x.repriceOpp);
+  return {
+    trailBook: book.reduce((s,x)=>s+x.trailAnnual,0),
+    inClawCount: inClaw.length,
+    clawExposure: inClaw.reduce((s,x)=>s+x.clawbackExposure,0),
+    repriceCount: reprice.length,
+    clientSavingsAnnual: reprice.reduce((s,x)=>s+x.monthlySaving*12,0),
+    reviewsDue: book.filter(x=>x.reviewDue).length
+  };
+}
+function seasonalNote(){
+  const mth = ((typeof TODAY!=='undefined'&&TODAY)?new Date(TODAY):new Date()).getMonth();
+  if(mth===4||mth===5) return '🗓 EOFY: self-employed clients have fresh financials — prime time for reviews and repricing.';
+  if(mth===8||mth===9||mth===10) return '🌸 Spring peak — origination is busy; keep these reviews short and proactive so the book doesn’t leak.';
+  if(mth===11) return '🎄 December — settle-before-Christmas crunch; reprice flight-risk clients early before they shop.';
+  if(mth===0) return '🧹 January lull — the ideal window to clear these book reviews and repricings.';
+  return '📈 Proactive repricing protects trail and pre-empts refinance churn.';
+}
+function callClient(phone, name){
+  if(phone){ try{ window.location.href='tel:'+String(phone).replace(/[^0-9+]/g,''); }catch(e){} toast('Calling '+(name||'client')+'…','info'); }
+  else toast('No phone on file for '+(name||'this client'),'err');
+}
+function callClientByDeal(id){ const d=(DEALS||[]).find(x=>x.id===id)||{}; callClient(d.primary_phone, d.name); }
+function renderRetention(el){
+  const book = buildRetentionBook();
+  const sum = retentionSummary(book);
+  const money = v => fmtMoney(Math.round(v||0));
+  const actions = book.filter(x=>x.priority>0).sort((a,b)=> b.priority-a.priority || b.gapBps-a.gapBps);
+  const kpi = (val,cap,color)=>`<div class="card" style="padding:16px;border-top:3px solid ${color}"><div style="font-family:var(--serif);font-size:30px;font-weight:600;line-height:1">${val}</div><div style="font-size:11.5px;color:var(--t2);margin-top:6px">${cap}</div></div>`;
+  const chip = (txt,kind)=>{ const c={warn:['var(--red-bg)','var(--red-2)'],mute:['var(--ink-bg)','var(--t2)'],pass:['var(--green-bg)','var(--green-2)'],info:['var(--steel-bg)','var(--steel)']}[kind]||['var(--ink-bg)','var(--t2)'];
+    return `<span style="display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:7px;margin:3px 6px 0 0;background:${c[0]};color:${c[1]}">${txt}</span>`; };
+  const row = x => { const d=x.deal; const chips=[];
+    if(x.flightRisk && x.inClawback) chips.push(chip('⚠ Clawback window · '+money(x.clawbackExposure)+' at risk if they refinance','warn'));
+    else if(x.inClawback && x.clawbackExposure>0) chips.push(chip('Clawback '+money(x.clawbackExposure)+' ('+(x.settledMonthsAgo<12?'year 1':'year 2')+')','mute'));
+    if(x.repriceOpp) chips.push(chip('Reprice '+x.gapBps+'bps · saves client '+money(x.monthlySaving)+'/mo','pass'));
+    if(x.reviewDue) chips.push(chip('Annual review due','info'));
+    const action = (x.flightRisk&&x.inClawback) ? 'Reprice now — a refinance would claw back '+money(x.clawbackExposure)
+                 : x.repriceOpp ? 'Call to reprice '+x.gapBps+'bps and retain the client'
+                 : 'Book the annual review';
+    return `<div style="display:flex;gap:12px;align-items:center;padding:13px 4px;border-bottom:1px solid var(--line)">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:14px">${escHtml(d.name||'')}</div>
+        <div style="font-size:12px;color:var(--t2);margin-top:1px">${escHtml(d.lender||'—')} · ${fmtMoney(d.amount)} · settled ${x.settledMonthsAgo}mo ago · <span class="mono">${x.currentRate}%</span> vs <span class="mono">${RETENTION.benchmarkRate}%</span> market</div>
+        <div style="margin-top:5px">${chips.join('')}</div>
+        <div style="font-size:12px;color:var(--t1);margin-top:6px">→ ${action}</div>
+      </div>
+      <button class="btn primary btn-sm" onclick="callClientByDeal('${d.id}')">📞 Call</button>
+    </div>`; };
+  el.innerHTML = `
+    <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap">
+      <div><h1>Retention radar</h1><p>Protect your trail book — reprice and review before clients refinance.</p></div>
+      ${pipelineViewToggleHTML('retention')}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px">
+      ${kpi(money(sum.trailBook),'Trail book p.a.','var(--green)')}
+      ${kpi(sum.inClawCount,'In clawback window · '+money(sum.clawExposure)+' at risk','var(--red)')}
+      ${kpi(sum.repriceCount,'Reprice now · '+money(sum.clientSavingsAnnual)+'/yr client savings','var(--steel)')}
+      ${kpi(sum.reviewsDue,'Annual reviews due','var(--amber)')}
+    </div>
+    <div class="card" style="padding:12px 14px;margin-bottom:14px;background:var(--steel-bg);border:1px solid var(--line);font-size:12.5px;color:var(--t1)">${seasonalNote()}</div>
+    <div class="card" style="padding:6px 16px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 2px"><b style="font-size:13px">Worklist — ${actions.length} ${actions.length===1?'client':'clients'} to action</b><span style="font-size:11.5px;color:var(--t3)">sorted by priority</span></div>
+      ${actions.length ? actions.map(row).join('') : '<p style="color:var(--t3);font-size:13px;padding:14px 0">Nothing needs action right now — the book is healthy.</p>'}
+    </div>`;
+}
 function renderDashboard(el){
-  // Round-2 brief — Pipeline now has a Deals | Groups toggle. When a group
   // is open (state.activeGroup), the detail screen for that group replaces
   // the list view. Both routes share the same el.
   if(state.activeGroup){
@@ -4171,6 +4269,10 @@ function renderDashboard(el){
   }
   if(state.pipelineView === 'groups'){
     renderPipelineGroups(el);
+    return;
+  }
+  if(state.pipelineView === 'retention'){
+    renderRetention(el);
     return;
   }
   const needsAction = DEALS.filter(d=>['BROKER_REVIEW','MORE_INFO','DOCS_PENDING'].includes(d.status)).length;
@@ -4236,16 +4338,12 @@ function renderDashboard(el){
    LENDING GROUPS — Pipeline rendering (Phase 2)
    ============================================================ */
 function pipelineViewToggleHTML(active){
-  const a = active==='groups' ? 'groups' : 'deals';
-  return `<div class="pipe-view-toggle" role="tablist" aria-label="Pipeline view">
-    <button type="button" class="${a==='deals'?'active':''}" role="tab" aria-selected="${a==='deals'}"
-      onclick="setPipelineView('deals')">Deals</button>
-    <button type="button" class="${a==='groups'?'active':''}" role="tab" aria-selected="${a==='groups'}"
-      onclick="setPipelineView('groups')">Groups</button>
-  </div>`;
+  const a = ['groups','retention'].includes(active) ? active : 'deals';
+  const btn = (v,l)=>`<button type="button" class="${a===v?'active':''}" role="tab" aria-selected="${a===v}" onclick="setPipelineView('${v}')">${l}</button>`;
+  return `<div class="pipe-view-toggle" role="tablist" aria-label="Pipeline view">${btn('deals','Deals')}${btn('groups','Groups')}${btn('retention','Retention')}</div>`;
 }
 function setPipelineView(view){
-  state.pipelineView = view==='groups' ? 'groups' : 'deals';
+  state.pipelineView = ['groups','retention'].includes(view) ? view : 'deals';
   state.activeGroup = null;
   saveLendingGroups();
   const el = document.getElementById('page-dashboard');
