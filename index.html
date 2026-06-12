@@ -2712,6 +2712,7 @@ const state = {
   // the signed-in user keeps full access to their own RLS-scoped deals.
   // The agent never creates real accounts, passwords, or secrets (guardrail 8).
   access:{
+    enabled:false,               // OPT-IN: off = solo mode (no role gating). Admin turns it on in Settings.
     orgId:'org_demo',
     orgName:'DebtIQ demo brokerage',
     currentUserId:'u_owner',     // who "I" am in the demo org
@@ -3187,6 +3188,9 @@ function effectiveRole(){
   return m ? m.role : 'readonly';
 }
 function can(cap){
+  // Team access control is OPT-IN. When disabled (solo mode) the single broker
+  // has full access to their own data — which is still RLS-isolated server-side.
+  if(!(state.access && state.access.enabled)) return true;
   // Live but RBAC not yet wired to Supabase → today's behaviour (full access).
   if(accessLive() && !(state.access && state.access._membershipWired)) return true;
   const role = effectiveRole();
@@ -3239,15 +3243,28 @@ function loadAccessState(){
       state.access.authLog = Array.isArray(obj.authLog) ? obj.authLog : [];
       if(obj.session) state.access.session = Object.assign(state.access.session, obj.session);
       if(typeof obj.currentUserId === 'string') state.access.currentUserId = obj.currentUserId;
+      if(typeof obj.enabled === 'boolean') state.access.enabled = obj.enabled;
     }
   }catch(e){}
+}
+// Master opt-in switch for team access control (owner/admin action when turning OFF).
+function setAccessEnabled(on){
+  on = !!on;
+  if(state.access.enabled && !on && !can('settings.edit')){
+    toast('Only an owner or admin can turn team access control off.', 'err'); return;
+  }
+  state.access.enabled = on;
+  authAudit(on?'ACCESS_CONTROL_ENABLED':'ACCESS_CONTROL_DISABLED', on?'Team roles & permissions now enforced':'Switched to solo mode', null);
+  saveAccessState();
+  if(typeof refreshSettings==='function') refreshSettings();
+  toast(on?'Team access control enabled — roles now apply.':'Solo mode — no role restrictions.', 'ok');
 }
 function saveAccessState(){
   try{
     const a = state.access;
     localStorage.setItem(ACCESS_LS_KEY, JSON.stringify({
       members:a.members, invitations:a.invitations, authLog:a.authLog,
-      session:a.session, currentUserId:a.currentUserId
+      session:a.session, currentUserId:a.currentUserId, enabled:a.enabled
     }));
   }catch(e){}
 }
@@ -3325,7 +3342,7 @@ function changeMemberRole(memberId, newRole){
     authAudit('ROLE_CHANGED', `${m.email}: ${ROLE_LABELS[prev]} → ${ROLE_LABELS[newRole]}`, m.id);
     saveAccessState();
     toast(`${m.name} is now ${ROLE_LABELS[newRole]}.`, 'ok');
-    if(document.getElementById('page-settings')) renderSettings(document.getElementById('page-settings'));
+    refreshSettings();
   });
 }
 function removeMember(memberId){
@@ -3339,7 +3356,7 @@ function removeMember(memberId){
     authAudit('MEMBER_REMOVED', `${m.email} (${ROLE_LABELS[m.role]})`, m.id);
     saveAccessState();
     toast(`${m.name} removed.`, 'ok');
-    if(document.getElementById('page-settings')) renderSettings(document.getElementById('page-settings'));
+    refreshSettings();
   });
 }
 
@@ -3426,7 +3443,7 @@ function exportPII(){
 function setSimulatedRole(role){
   state.access.simulateRole = (role && ROLE_RANK[role]) ? role : null;
   authAudit('VIEW_AS_ROLE', role ? ROLE_LABELS[role] : 'cleared', null);
-  if(document.getElementById('page-settings')) renderSettings(document.getElementById('page-settings'));
+  refreshSettings();
   if(typeof updateAccessBanner==='function') updateAccessBanner();
 }
 
@@ -7727,6 +7744,25 @@ function accessPane(){
   const manage = can('member.role.change');
   const idleM = sessionIdleMins();
 
+  // OPT-IN master switch — solo brokers aren't forced into team governance.
+  const enabled = !!a.enabled;
+  const toggleCard = `<div class="acc-note ${enabled?'steel':'amber'}" style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="max-width:60%"><b>Team access control is ${enabled?'ON':'OFF — solo mode'}.</b> ${enabled?'Roles &amp; permissions below are enforced for every member.':'You have full access to your own data. Turn this on only if you want teammates and to set who can do what.'}</div>
+      <button class="btn ${enabled?'':'primary'}" onclick="setAccessEnabled(${!enabled})">${enabled?'Switch to solo mode':'Enable team access'}</button>
+    </div>`;
+  if(!enabled){
+    return `
+      <div class="acc-head"><div><h3 class="acc-h3">Team &amp; access</h3><p class="acc-sub">${escHtml(a.orgName)} · solo mode</p></div></div>
+      ${toggleCard}
+      <h4 class="acc-section">What you get when you enable it</h4>
+      <ul style="margin:2px 0 0 18px;color:var(--t2);font-size:13px;line-height:1.7">
+        <li>Invite teammates and assign roles — Owner, Admin, Broker, Processor, Read-only.</li>
+        <li>Deny-by-default permissions (e.g. a Processor can't delete deals, Read-only can't edit, PII view/export gated by role).</li>
+        <li>Re-auth for sensitive actions, idle session timeout, and an append-only audit log.</li>
+      </ul>
+      <p class="acc-fineprint">Your client data is already isolated per account by row-level security — this adds <em>team</em> governance on top, only when you want it.</p>`;
+  }
+
   // Banner: live-unwired note OR demo "view as role" preview.
   const modeBanner = liveUnwired
     ? `<div class="acc-note amber"><b>Live mode.</b> Role enforcement turns on automatically the moment the <span class="mono">0002_access_control</span> tables are applied and you hold an active <span class="mono">membership</span> row — the app reads your real role on sign-in. Until then access follows the existing per-user row-level security (your deal data is already protected either way). See <span class="mono">supabase/APPLY.md</span> to apply it.</div>`
@@ -7778,7 +7814,7 @@ function accessPane(){
           </select>
         </div>
       </div>
-      <button class="btn primary" style="margin-top:10px" onclick="(function(){ inviteMember(document.getElementById('accInvEmail').value, document.getElementById('accInvRole').value); renderSettings(document.getElementById('page-settings')); })()">Send invite</button>
+      <button class="btn primary" style="margin-top:10px" onclick="(function(){ inviteMember(document.getElementById('accInvEmail').value, document.getElementById('accInvRole').value); refreshSettings(); })()">Send invite</button>
       <p class="acc-fineprint">An invite issues a scoped, time-limited token. The invitee completes their own credential setup through the normal sign-in path — DebtIQ never sets a password or creates the account for them. Owner cannot be granted by invite.</p>
     </div>` : `<p class="acc-muted">Only an Owner or Admin can invite members.</p>`;
 
@@ -7790,8 +7826,8 @@ function accessPane(){
         <td>${roleChip(i.role)}</td>
         <td class="mono acc-muted" title="Demo token — non-secret">${escHtml(i.token)}</td>
         <td class="acc-r">
-          ${!accessLive()?`<button class="acc-mini" onclick="acceptInviteDemo('${escArg(i.id)}');renderSettings(document.getElementById('page-settings'))">Simulate accept</button>`:''}
-          <button class="acc-mini danger" onclick="revokeInvite('${escArg(i.id)}');renderSettings(document.getElementById('page-settings'))">Revoke</button>
+          ${!accessLive()?`<button class="acc-mini" onclick="acceptInviteDemo('${escArg(i.id)}');refreshSettings()">Simulate accept</button>`:''}
+          <button class="acc-mini danger" onclick="revokeInvite('${escArg(i.id)}');refreshSettings()">Revoke</button>
         </td>
       </tr>`).join('')}</tbody>
     </table>` : `<p class="acc-muted" style="margin-top:8px">No pending invitations.</p>`;
@@ -7830,6 +7866,7 @@ function accessPane(){
         <p class="acc-sub">${escHtml(a.orgName)} · your effective role: ${roleChip(role||'owner')}</p>
       </div>
     </div>
+    ${toggleCard}
     ${modeBanner}
     ${viewAs}
 
@@ -7879,7 +7916,7 @@ function renderSettings(el){
     <div class="page-head"><h1>Settings</h1><p>Account, preferences, market, AI and commission defaults</p></div>
     <div class="tabs">
       ${[['account','Account'],['access','Team & Access'],['preferences','Preferences'],['market','Market'],['ai','AI'],['commission','Commission'],['lenders','Lenders']].map(([k,l])=>
-        `<div class="tab ${settingsTab===k?'active':''}" role="button" tabindex="0" onclick="settingsTab='${k}';renderSettings(document.getElementById('page-settings'))" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();settingsTab='${k}';renderSettings(document.getElementById('page-settings'))}">${l}</div>`).join('')}
+        `<div class="tab ${settingsTab===k?'active':''}" role="button" tabindex="0" onclick="settingsTab='${k}';refreshSettings()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();settingsTab='${k}';refreshSettings()}">${l}</div>`).join('')}
     </div>
     <div class="card" style="padding:24px;max-width:${settingsTab==='access'?'980px':'720px'}">${settingsPane()}</div>`;
 }
@@ -11373,11 +11410,18 @@ function renderSettingsOverlay(){
   if(!body) return;
   body.innerHTML = `
     <div class="tabs" style="margin-bottom:20px">
-      ${[['account','Account'],['preferences','Preferences'],['market','Market'],['ai','AI'],['commission','Commission'],['lenders','Lenders'],['billing','Billing']].map(([k,l])=>
+      ${[['account','Account'],['access','Team & Access'],['preferences','Preferences'],['market','Market'],['ai','AI'],['commission','Commission'],['lenders','Lenders'],['billing','Billing']].map(([k,l])=>
         `<div class="tab ${settingsTab===k?'active':''}" role="button" tabindex="0" onclick="settingsTab='${k}';renderSettingsOverlay()">${l}</div>`).join('')}
     </div>
     ${settingsTab==='billing' ? `<div id="settingsBilling"></div>` : settingsPane()}`;
   if(settingsTab==='billing') renderBilling(document.getElementById('settingsBilling'));
+}
+// Re-render settings in whichever surface is open (gear modal or full page).
+function refreshSettings(){
+  const ov = document.getElementById('settingsOverlay');
+  if(ov && ov.classList.contains('open')){ renderSettingsOverlay(); return; }
+  const p = document.getElementById('page-settings');
+  if(p) renderSettings(p);
 }
 
 /* ---------- Client tab ---------- */

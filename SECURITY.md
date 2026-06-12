@@ -33,6 +33,13 @@ Roles, highest → lowest privilege: **Owner → Admin → Broker → Processor 
 Read-only**. Deny-by-default: a capability is denied unless the role's
 capability list explicitly grants it.
 
+**Opt-in (solo by default).** Team access control is **off by default** — a solo
+broker has full access to their own (RLS-isolated) data with no role friction.
+An owner/admin turns it on in **Settings → Team & Access** ("Enable team access"),
+which begins enforcing the roles/permissions below; it can be switched back to
+solo mode (owner/admin only, logged). The choice persists per install. This lets
+each brokerage railguard the process to its own structure — or not at all.
+
 | Capability | Owner | Admin | Broker | Processor | Read-only |
 |---|:--:|:--:|:--:|:--:|:--:|
 | deal.create | ✓ | ✓ | ✓ | · | · |
