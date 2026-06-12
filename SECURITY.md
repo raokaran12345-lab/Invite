@@ -77,6 +77,43 @@ behaviour so nothing breaks.
 
 ## 4. Data access & PII
 
+### 4.0 Identity tiers (users · developers · founders)
+
+| Tier | In-app role | Where they get access | Data they can reach |
+|---|---|---|---|
+| **Founders** | `Owner` | Their own authenticated account | Only their organisation's deals (owner primacy; can transfer ownership) |
+| **Staff / users (brokers)** | `Broker` / `Processor` / `Read-only` | Invited account (deny-by-default RBAC) | **Only their own RLS-scoped rows** — never another tenant's |
+| **Developers** | *infra-level, not an in-app god-mode* | Cloudflare / Supabase consoles under **their own MFA'd, audited accounts** | Production customer PII access is exceptional, least-privilege, and logged; the app has **no "developer" super-role** that bypasses RLS |
+
+Key principle: **no tier — including founders and developers — can read another
+tenant's data through the application.** Cross-tenant separation is enforced by
+the database (RLS), not by the UI. Developers operate at the infrastructure
+layer with their own credentials; they do not get an in-app account that sees
+all customers.
+
+### 4.1 Why editing the URL / an ID can't reach another tenant's data (IDOR)
+
+This is enforced at three layers, server-side:
+
+1. **Row-Level Security.** `public.deals` has RLS enabled with
+   `auth.uid() = user_id` on **select / insert / update / delete**
+   (`supabase/schema.sql`). Postgres filters every query by the *caller's* user
+   id — a row you don't own is **invisible at the database**, not merely hidden.
+2. **Composite primary key `(user_id, id)`.** Deal ids like `D-891` are namespaced
+   *per user*. Two tenants can both have `D-891`; neither can address the other's.
+   There is no global, guessable, cross-tenant object id to tamper with.
+3. **JWT-verified API.** Every `/api/*` Pages Function runs
+   `requireSupabaseSession()` (`functions/api/_lib.js`): no valid Supabase access
+   token → `401`. The user is derived from the **verified token**, never from a
+   client-supplied id, so a forged id in a request body/URL changes nothing.
+
+Net effect: changing `…/D-891` to `…/D-890`, or POSTing another user's id,
+returns *your* row or nothing — never someone else's. (In static **demo mode**
+there is no backend and the seed deals are public sample data; isolation applies
+to the **live, signed-in** deployment.)
+
+### 4.2 Record-level scoping & PII
+
 - **Record-level scoping.** RLS scopes every new table to active org members;
   migration `0002` adds a nullable `deals.org_id` for org-level scoping
   (additive — existing own-rows-only policy stays in force).
@@ -95,21 +132,32 @@ behaviour is gated (it takes effect only on merge + deploy).
 - **Transport:** HTTPS everywhere (Cloudflare Pages default). Supabase + the
   Anthropic proxy are TLS-only.
 - **At rest:** Supabase (Postgres) encrypts data at rest by default.
-- `ARCH-REVIEW:` **Security headers / CSP.** Recommended Cloudflare Pages
-  `_headers` (not yet committed — review before enabling, as a strict CSP can
-  break the CDN font/script loads currently used):
+- **IMPLEMENTED — Security headers / CSP.** Committed in `/_headers` (Cloudflare
+  Pages) and validated against the running app (login, inline `onclick`
+  handlers, navigation — **no CSP violations**). The committed policy:
 
   ```
-  /*
-    Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co; img-src 'self' data:; frame-ancestors 'none'
-    X-Frame-Options: DENY
-    X-Content-Type-Options: nosniff
-    Referrer-Policy: strict-origin-when-cross-origin
-    Strict-Transport-Security: max-age=31536000; includeSubDomains
-    Permissions-Policy: geolocation=(), microphone=(), camera=()
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none';
+    frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:;
+    font-src 'self' https://fonts.gstatic.com data:;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+    worker-src 'self' blob: https://cdn.jsdelivr.net;
+    connect-src 'self' https://*.supabase.co https://cdn.jsdelivr.net;
+    upgrade-insecure-requests
+  X-Frame-Options: DENY                         (+ frame-ancestors 'none' — clickjacking)
+  X-Content-Type-Options: nosniff               (MIME-sniffing)
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Cross-Origin-Opener-Policy: same-origin
+  X-Permitted-Cross-Domain-Policies: none
   ```
-  Note the current inline scripts/styles require `'unsafe-inline'`; moving to
-  hashed/nonce'd assets would harden this further (larger refactor).
+  `connect-src` is locked to self + Supabase + jsDelivr, so even an injected
+  script cannot exfiltrate data to an arbitrary origin. `frame-ancestors 'none'`
+  blocks clickjacking. The inline app script/styles still require `'unsafe-inline'`;
+  moving to an external, nonce'd bundle would let us drop that (larger refactor,
+  tracked below).
 - `ARCH-REVIEW:` **CORS.** `functions/api/_lib.js` sets
   `Access-Control-Allow-Origin: '*'`. Tightening to the deployed origin(s) is a
   live `/api/*` contract change → gated.
@@ -126,6 +174,12 @@ behaviour is gated (it takes effect only on merge + deploy).
 handling · PEXA/Sympli subscriber eligibility · CDR accreditation · ADM
 disclosure wording · sub-processor DPAs.
 
+`DONE:` `_headers`/CSP + security headers committed (`/_headers`) and validated
+against the app (no CSP violations).
+
 `ARCH-REVIEW:` Apply `0001`/`0002` migrations · membership wiring · secret-store
-wiring · owner-account provisioning · `_headers`/CSP · CORS tightening · rate
-limiting · live re-auth + session revocation.
+wiring · owner-account provisioning · CORS tightening (lock `/api/*`
+`Access-Control-Allow-Origin` to the deployed origin — low risk today since the
+API is Bearer-token auth with no cookies) · rate limiting · live re-auth +
+session revocation · move inline app script to an external nonce'd bundle to drop
+`script-src 'unsafe-inline'`.
