@@ -2309,6 +2309,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
     <div class="ds-metrics" id="dsMetrics"></div>
     <button class="deal-back" onclick="goTab('documents')" title="Documents for this file" style="margin-left:auto;font-size:12px;font-weight:600">📎 Documents</button>
     <button class="deal-back" onclick="openApplyOnlinePack()" title="Generate an ApplyOnline pre-fill sheet" style="font-size:12px;font-weight:600">⇪ ApplyOnline</button>
+    <button class="deal-back" onclick="openBidNote()" title="Generate the BID/RLO compliance file note" style="font-size:12px;font-weight:600">🛡 BID note</button>
   </div>
 
   <!-- TAB STRIP -->
@@ -5479,6 +5480,7 @@ function renderWizStep(){
       ${reqs}
       <div class="assessed-note" style="background:rgba(5,150,105,.08);color:var(--green);margin:16px 0">✓ Application complete. Generate the ApplyOnline pre-fill, then lodge via ApplyOnline (NextGen) — no re-keying.</div>
       <button class="btn primary" style="width:100%;margin-bottom:8px" onclick="openApplyOnlinePack()">⇪ Generate ApplyOnline application</button>
+      <button class="btn" style="width:100%;margin-bottom:8px" onclick="openBidNote()">🛡 BID/RLO compliance file note</button>
       <button class="btn" style="width:100%;margin-bottom:10px" onclick="generateSubmissionPack()">📄 Credit submission pack (lender memo)</button>
       ${wizNav()}</div>`;
   }
@@ -8506,6 +8508,140 @@ function openApplyOnlinePack(){
   if(!state.activeDeal && !(DEALS[0])){ toast('Open a deal first', 'err'); return; }
   try { openPackWindow(buildApplyOnlineHTML(buildApplyOnlinePack())); logEvent('ApplyOnline pre-fill generated'); }
   catch(e){ toast('Could not build ApplyOnline pack: '+e.message, 'err'); }
+}
+
+/* ============================================================
+   BID / RLO COMPLIANCE FILE NOTE
+   Assembles the audit record proving Responsible Lending (NCCP
+   RG209) + Best Interests Duty (RG273) were met: requirements &
+   objectives, verified financial situation, inquiries, the
+   "not unsuitable" assessment, best-interests reasoning (with
+   alternatives considered), and disclosures/consents. Flags any
+   gaps so the broker knows the file isn't audit-complete.
+   ============================================================ */
+function buildBidNote(){
+  const deal = DEALS.find(x=>x.id===state.activeDeal) || DEALS[0] || {};
+  const c = state.calc || {};
+  const ap = deal.applicant || {};
+  const wd = state.wizData || {};
+  const reqs = deal.requirements || { features:wd.roFeatures||[], priority:wd.roPriority, foreseeable:wd.roForeseeable||[] };
+  const cons = deal.consents || { privacy:!!wd.consentPrivacy, creditGuide:!!wd.consentCreditGuide };
+  let r={}; try{ r=computeServiceability()||{}; }catch(e){}
+  let ranked=[]; try{ ranked=rankLenders()||[]; }catch(e){}
+  const money = v => fmtMoney(parseFloat(v)||0);
+  const nl = c.newLoan || {};
+  const recId = deal.lender || state.lender;
+  const rec = ranked.find(x=>x.l===recId) || ranked.find(x=>x.serviceable) || ranked[0] || null;
+  const alts = ranked.filter(x=>x!==rec).slice(0,3);
+  const applicantName = [ap.firstName||wd.firstName, ap.lastName||wd.lastName].filter(Boolean).join(' ') || deal.name || 'Applicant';
+  const purposeLabel = (CALC_PURPOSES.find(x=>x.id===(c.purpose||deal.purpose))||{}).label || deal.purpose || 'Purchase';
+  const dealDocs = (typeof DOCS!=='undefined'?DOCS:[]).filter(x=>x.deal===deal.id || x.deal==='NEW');
+  const verifiedDocs = dealDocs.filter(x=>x.status==='Verified').length;
+  const serviceable = !!(r.verdict && /pass|serv/i.test(r.verdict));
+  const upR = (deal.upfront_commission_rate!=null?deal.upfront_commission_rate:COMMISSION.upfront)*100;
+  const trR = (deal.trail_commission_rate!=null?deal.trail_commission_rate:COMMISSION.trail)*100;
+
+  const sections = [];
+  sections.push({ title:'1 · Requirements & objectives', reg:'NCCP s130 · RG209', rows:[
+    ['Loan purpose', purposeLabel],
+    ['Amount / term', money(nl.amount)+' over '+(nl.term||30)+' years'],
+    ['Features required', (reqs.features&&reqs.features.length)?reqs.features.join(', '):'None specified'],
+    ['Primary priority', reqs.priority||'—'],
+    ['Reasonably foreseeable changes', (reqs.foreseeable&&reqs.foreseeable.length)?reqs.foreseeable.join(', '):'None noted'],
+  ]});
+  sections.push({ title:'2 · Financial situation & verification', reg:'RG209 · verify', rows:[
+    ['Assessable income (p.a.)', r.shadedAnnual!=null?money(r.shadedAnnual):'—'],
+    ['Living expenses (HEM floor, p.a.)', r.HEM!=null?money(r.HEM*12):'—'],
+    ['Existing commitments (assessed /mo)', r.existingDebt!=null?money(r.existingDebt):'—'],
+    ['Securities (total value)', money(totalSecurityValue())],
+    ['Documents on file', dealDocs.length+' ('+verifiedDocs+' verified)'],
+  ]});
+  sections.push({ title:'3 · Inquiries made', reg:'RG209', notes:[
+    'Confirmed the loan purpose and objectives directly with the applicant.',
+    'Captured income, employment, living expenses, assets and liabilities; '+(verifiedDocs?('verified against '+verifiedDocs+' supplied document(s).'):'verification of supplied documents is pending.'),
+    'Assessed declared living expenses against the HEM benchmark (greater-of).',
+    cons.privacy ? 'Obtained privacy / credit-check consent and reviewed the applicant’s credit information.' : '⚠ Privacy / credit-check consent NOT recorded — obtain before relying on credit information.',
+  ]});
+  sections.push({ title:'4 · Assessment — “not unsuitable” (RLO)', reg:'NCCP s131 / s133', rows:[
+    ['Serviceability verdict', r.verdict||'—'],
+    ['Assessed rate (incl. buffer)', r.assessedRate!=null?r.assessedRate.toFixed(2)+'%':'—'],
+    ['DSR / DTI', (r.dsr!=null?r.dsr.toFixed(1)+'%':'—')+' / '+(r.dti!=null?r.dti.toFixed(1)+'×':'—')],
+    ['Net surplus (NDI /mo)', r.ndi!=null?money(r.ndi):'—'],
+    ['Conclusion', serviceable
+      ? 'The loan meets the applicant’s requirements and is assessed as NOT UNSUITABLE — repayments are serviceable at the assessed rate (incl. buffer) without substantial hardship.'
+      : '⚠ Does not currently pass serviceability — not yet demonstrably “not unsuitable”. Restructure the loan or document mitigants before proceeding.'],
+  ]});
+  sections.push({ title:'5 · Best interests — recommendation', reg:'Best Interests Duty · RG273',
+    notes:[
+      rec ? ('Recommended: '+rec.label+' at '+rec.rate.toFixed(2)+'%'+(rec.serviceable?' — approvable on the current figures.':' — subject to conditions.')) : 'Recommended lender not yet selected.',
+      ranked.length ? ('Assessed against '+ranked.length+' lender'+(ranked.length>1?'s':'')+'; '+ranked.filter(x=>x.serviceable).length+' would approve this deal on policy and price.') : '',
+      'The recommendation prioritises the applicant’s interests — approvability, suitability and overall cost — over broker remuneration. Commission does not influence the recommendation and is disclosed in the Credit Guide / Proposal.'
+    ].filter(Boolean),
+    subTable:{ head:'Alternatives considered', rows: alts.map(a=>[a.label, a.rate.toFixed(2)+'% · '+(a.serviceable?'would approve':'not serviceable')+(a.edge?(' · '+a.edge):'')]) } });
+  sections.push({ title:'6 · Disclosures & consents', reg:'Privacy Act · NCCP', rows:[
+    ['Credit Guide & BID disclosure', cons.creditGuide?'Provided ✓':'⚠ Not recorded'],
+    ['Privacy & credit-check consent', cons.privacy?'Provided ✓':'⚠ Not recorded'],
+    ['Commission disclosure', 'Upfront '+upR.toFixed(2)+'% · trail '+trR.toFixed(2)+'% p.a. (disclosed in Credit Proposal)'],
+  ]});
+
+  const gaps = [];
+  if(!(reqs.features&&reqs.features.length) && !reqs.priority) gaps.push('Requirements & objectives not captured');
+  if(!cons.privacy) gaps.push('Privacy / credit-check consent not recorded');
+  if(!cons.creditGuide) gaps.push('Credit Guide / BID disclosure not recorded');
+  if(!serviceable) gaps.push('Serviceability does not currently pass');
+  if(!rec) gaps.push('Recommended lender not selected');
+  if(!verifiedDocs) gaps.push('No documents verified on file');
+
+  return { meta:{ dealId:deal.id||'(new)', applicant:applicantName, broker:state.userName||'Broker', generated:(new Date()).toLocaleString('en-AU'), lender: rec?rec.label:(recId||'—') }, sections, gaps };
+}
+function buildBidNoteHTML(note){
+  const esc = s => String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const secHTML = sec => `<section class="sec"><div class="sh"><h2>${esc(sec.title)}</h2><span class="lx">${esc(sec.reg)}</span></div>
+    ${sec.rows?`<table>${sec.rows.map(r=>`<tr><td class="k">${esc(r[0])}</td><td class="v">${esc(r[1])}</td></tr>`).join('')}</table>`:''}
+    ${sec.notes?`<ul>${sec.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>`:''}
+    ${sec.subTable && sec.subTable.rows.length?`<div class="subh">${esc(sec.subTable.head)}</div><table>${sec.subTable.rows.map(r=>`<tr><td class="k">${esc(r[0])}</td><td class="v">${esc(r[1])}</td></tr>`).join('')}</table>`:''}
+  </section>`;
+  const gapsHTML = note.gaps.length
+    ? `<div class="banner warn"><b>⚠ File is NOT audit-complete</b> — outstanding: ${note.gaps.map(esc).join(' · ')}. Resolve these before the file is relied upon.</div>`
+    : `<div class="banner ok"><b>✓ File appears audit-complete</b> — all required RLO + BID elements are recorded. Broker to confirm accuracy.</div>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><title>BID/RLO file note — ${esc(note.meta.dealId)}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;color:#14203a;background:#f4f6fb;padding:30px;line-height:1.5}
+    .wrap{max-width:840px;margin:0 auto}
+    .top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1e3a8a;padding-bottom:14px;margin-bottom:8px}
+    .brand{font-size:21px;font-weight:800;color:#1e3a8a}.brand b{color:#2a50c8}
+    .sub{font-size:12px;color:#5a6178;margin-top:3px}
+    .meta{text-align:right;font-size:11.5px;color:#5a6178}
+    .banner{border-radius:9px;padding:11px 14px;font-size:12.5px;margin:14px 0 18px}
+    .banner.warn{background:#fbeeef;border:1px solid #f3c9cd;color:#8e1a26}
+    .banner.ok{background:#eaf4ee;border:1px solid #bfe2cd;color:#0f4c30}
+    .sec{background:#fff;border:1px solid #e5e7f0;border-radius:11px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(20,28,50,.05);break-inside:avoid}
+    .sh{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #eef1fb;padding-bottom:7px;margin-bottom:9px}
+    .sh h2{font-size:14px;color:#13265e}
+    .lx{font-size:10px;font-weight:700;letter-spacing:.04em;color:#2a50c8;background:#eef1fb;padding:2px 8px;border-radius:6px}
+    table{width:100%;border-collapse:collapse}
+    td{padding:5px 4px;font-size:12.5px;vertical-align:top;border-bottom:1px dotted #eef1fb}
+    td.k{color:#5a6178;width:40%}td.v{color:#14203a;font-weight:600}
+    ul{margin:2px 0 2px 18px}li{font-size:12.5px;margin:4px 0;color:#14203a}
+    .subh{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#5a6178;margin:11px 0 4px}
+    .actions{display:flex;gap:10px;margin:6px 0 4px}
+    button{font:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;border:none;cursor:pointer;background:#1e3a8a;color:#fff}
+    .foot{font-size:10.5px;color:#969bac;margin-top:14px;text-align:center}
+    @media print{ body{background:#fff;padding:0} .actions{display:none} .sec{box-shadow:none} }
+  </style></head><body><div class="wrap">
+    <div class="top"><div><div class="brand">Debt<b>IQ</b> · BID / RLO file note</div><div class="sub">Responsible Lending (RG209) + Best Interests Duty (RG273) compliance record</div></div>
+      <div class="meta">${esc(note.meta.dealId)} · ${esc(note.meta.applicant)}<br>Lender: ${esc(note.meta.lender)}<br>${esc(note.meta.broker)} · ${esc(note.meta.generated)}</div></div>
+    <div class="actions"><button onclick="window.print()">⎙ Print / Save PDF</button></div>
+    ${gapsHTML}
+    ${note.sections.map(secHTML).join('')}
+    <div class="foot">Generated by DebtIQ from the deal file. This is a broker working record to support RG209/RG273 compliance — the broker remains responsible for its accuracy and for retaining it on file.</div>
+  </div></body></html>`;
+}
+function openBidNote(){
+  if(!state.activeDeal && !(DEALS[0])){ toast('Open a deal first', 'err'); return; }
+  try { openPackWindow(buildBidNoteHTML(buildBidNote())); logEvent('BID/RLO file note generated'); }
+  catch(e){ toast('Could not build file note: '+e.message, 'err'); }
 }
 function buildBIDPrompt(r, pol, d){
   const lenderName = pol ? pol.label : (d.lender||'CBA');
