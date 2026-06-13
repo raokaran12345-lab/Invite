@@ -2,12 +2,19 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>DebtIQ v6 — Mortgage Broker Platform</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="DebtIQ">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23FBFAF6' stroke='%23E7E2D6'/%3E%3Cpath d='M9 5 L9 27 L17 27 C22.5 27 26 22.5 26 16 C26 9.5 22.5 5 17 5 Z' stroke='%231E2A44' stroke-width='1.6' fill='none' stroke-linejoin='miter'/%3E%3Cline x1='5.5' y1='5' x2='12.5' y2='5' stroke='%231E2A44' stroke-width='.8'/%3E%3Cline x1='5.5' y1='27' x2='12.5' y2='27' stroke='%231E2A44' stroke-width='.8'/%3E%3Cline x1='4' y1='29' x2='28' y2='29' stroke='%231E2A44' stroke-width='.6' opacity='.45'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
    DEBTIQ v6 — Design System
@@ -26,53 +33,67 @@
                        needs its own knob (e.g. --copilot-w).
      Raw hex/rgba live ONLY in the primitive layer.
      ============================================================ */
+  /* === DESIGN TOKENS v3 — "Sovereign" luxury: white · royal blue · emerald · crimson ===
+     Primitive layer remapped; the semantic + compat aliases below inherit,
+     so the whole app shifts language without touching component selectors. */
   /* Surfaces */
-  --page:#EEEAE1;
-  --paper:#FBFAF6;
+  --page:#F4F6FB;        /* cool light — app background */
+  --paper:#FFFFFF;       /* card / panel */
   --white:#FFFFFF;
+  --bone:#F4F6FB;
+  --card:#FFFFFF;
   /* Structure & interaction */
-  --ink:#1E2A44;
-  --steel:#3B6FB5;
-  --brass:#B08D4F;
+  --ink:#13265E;         /* royal navy — dark surfaces, brand, hero panels */
+  --steel:#2A50C8;       /* royal blue — informational / interactive */
+  --brass:#1E3A8A;       /* deep royal blue — replaces gold accent */
   /* Lines */
-  --line:#E7E2D6;
-  --line2:#EAEDF1;
+  --line:#E5E7F0;
+  --line2:#EEF1FB;
   /* Text */
-  --t1:#1A1A22;
-  --t2:#494C55;
-  --t3-warm:#8A8270;
-  --t3-cool:#6B7280;
-  /* Status (each means ONE thing) */
-  --green:#0B6B4F;
-  --amber:#9A5A00;
-  --red:#A92626;
-  --green-bg:rgba(11,107,79,.10);
-  --amber-bg:rgba(154,90,0,.12);
-  --red-bg:rgba(169,38,38,.10);
-  --steel-bg:rgba(59,111,181,.10);
-  --ink-bg:rgba(30,42,68,.06);
-  /* On-ink legibility variants — used on dark hero panels only */
-  --green-on-ink:#9FE0BB;
-  --steel-on-ink:#A7C2E8;
-  --amber-on-ink:#F4D193;
-  --red-on-ink:#F8B0B0;
-  /* Type */
-  --ui:'Plus Jakarta Sans',system-ui,sans-serif;
-  --mono:'DM Mono',ui-monospace,monospace;
-  --serif:'Newsreader',Georgia,serif;
+  --t1:#141C32;
+  --t2:#5A6178;
+  --t3-warm:#7A8194;
+  --t3-cool:#969BAC;
+  --muted:#969BAC;
+  /* Status (each means ONE thing) — palette-locked to white/blue/green/red */
+  --green:#1C7A4D;
+  --green-2:#0F4C30;
+  --amber:#1E3A8A;       /* caution → royal blue (palette-locked, no gold) */
+  --amber-2:#13265E;
+  --red:#B22230;
+  --red-2:#8E1A26;
+  --blue:#2A50C8;
+  --green-bg:#EAF4EE;
+  --amber-bg:#EEF1FB;
+  --red-bg:#FBEEEF;
+  --steel-bg:#EEF1FB;
+  --blue-bg:#EEF1FB;
+  --ink-bg:rgba(19,38,94,.06);
+  /* On-ink legibility variants — used on dark royal-navy hero panels only */
+  --green-on-ink:#7FE3B4;
+  --steel-on-ink:#AEC0FF;
+  --amber-on-ink:#AEC0FF;
+  --red-on-ink:#F4A8A8;
+  /* Type — Playfair display serif over Inter (luxury editorial) */
+  --ui:'Inter',system-ui,sans-serif;
+  --mono:'Inter',ui-monospace,monospace;
+  --serif:'Playfair Display',Georgia,serif;
   /* Shape */
-  --r-card:8px;
-  --r-input:8px;
-  --r-btn:8px;
-  --r-pill:100px;
-  /* Depth — hairlines over shadows */
-  --sh-1:0 1px 2px rgba(60,50,30,.05);
-  --sh-2:0 1px 2px rgba(60,50,30,.06);
+  --r:20px; --r-sm:11px; --pill:999px;
+  --r-card:20px;
+  --r-input:11px;
+  --r-btn:999px;
+  --r-pill:999px;
+  /* Depth — soft layered shadow with a lit white top edge */
+  --sh-card:0 1px 0 rgba(255,255,255,.9) inset, 0 18px 40px -26px rgba(20,28,50,.5), 0 2px 6px -3px rgba(20,28,50,.16);
+  --sh-lift:0 1px 0 rgba(255,255,255,.95) inset, 0 26px 54px -24px rgba(30,58,138,.5), 0 4px 12px -4px rgba(30,58,138,.24);
+  --sh-1:var(--sh-card);
+  --sh-2:var(--sh-card);
   /* === Compatibility aliases (mapped to brand tokens; do not extend) === */
   --bg:var(--page);
-  --surface:var(--white);
+  --surface:var(--card);
   --brand:var(--ink);
-  --border:var(--line2);
+  --border:var(--line);
   --t3:var(--t3-cool);
   --t4:var(--t3-cool);
   --teal:var(--steel);
@@ -114,7 +135,7 @@
   --status-fail-bg:var(--red-bg);
   --hairline:var(--line);
   --hairline-cool:var(--line2);
-  --focus-ring:0 0 0 3px rgba(59,111,181,.30);
+  --focus-ring:0 0 0 3px rgba(30,58,138,.38);
   /* Spacing scale (4·8·12·16·24·32·48·64·96) */
   --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px;
   --space-5:24px; --space-6:32px; --space-7:48px; --space-8:64px; --space-9:96px;
@@ -142,15 +163,31 @@ body.reduced-motion *{
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
+html{background:var(--page)}
 body{
   font-family:var(--ui);
-  background:var(--page);
+  background:transparent;
   color:var(--t1);
   font-size:14px;
   line-height:1.5;
   -webkit-font-smoothing:antialiased;
 }
-.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;font-feature-settings:"tnum";}
+/* One fixed, static, low-opacity ambient mesh behind everything (interior tool =
+   restrained depth — it must not move and must not reduce text contrast). */
+body::before{
+  content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.45;filter:blur(90px);
+  background:
+    radial-gradient(40% 40% at 12% 8%, rgba(28,122,77,.16), transparent 70%),
+    radial-gradient(38% 38% at 88% 12%, rgba(42,80,200,.16), transparent 70%),
+    radial-gradient(42% 42% at 80% 90%, rgba(30,58,138,.14), transparent 70%),
+    radial-gradient(40% 40% at 16% 92%, rgba(178,34,48,.08), transparent 70%);
+}
+/* Headings carry the page in Playfair Display; numbers in Inter tabular. */
+h1,h2,h3{font-family:var(--serif);letter-spacing:-.015em}
+.mono,.num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-feature-settings:"tnum";}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;scroll-behavior:auto !important}
+}
 button{font-family:inherit;cursor:pointer;border:none;background:none}
 input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
 ::-webkit-scrollbar{width:9px;height:9px}
@@ -217,7 +254,7 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
   width:100%;padding:11px 13px;border:1px solid var(--line2);
   border-radius:var(--r-input);background:var(--paper);font-size:14px;color:var(--t1);transition:border-color .12s,box-shadow .12s,background .12s;
 }
-.field input:focus{outline:none;border-color:var(--steel);background:#fff;box-shadow:0 0 0 4px rgba(59,111,181,.16)}
+.field input:focus{outline:none;border-color:var(--steel);background:#fff;box-shadow:0 0 0 4px rgba(75,87,214,.16)}
 .btn-grad{
   width:100%;padding:13px;border-radius:var(--r-btn);color:#fff;font-weight:700;font-size:14px;
   background:var(--ink);border:none;cursor:pointer;margin-top:6px;transition:filter .12s;
@@ -240,7 +277,7 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
 .role-opt .ro-sub{font-family:var(--serif);font-style:italic;font-size:11.5px;color:var(--t3-cool);line-height:1.3}
 .role-opt[aria-checked="true"]{background:var(--white);box-shadow:0 1px 2px rgba(15,23,42,.06)}
 .role-opt[aria-checked="true"] .ro-name{color:var(--ink)}
-.role-opt:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(59,111,181,.30)}
+.role-opt:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(75,87,214,.30)}
 .role-cap{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--t3-cool);margin-bottom:6px}
 /* Hero motif variants — broker visible by default, lender hidden; toggled by data-mode on #login. */
 .login-hero .lh-motif-lender,.login-hero .lh-proof-lender{display:none}
@@ -276,10 +313,10 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
 #app{display:none;flex-direction:column;height:100vh;overflow:hidden}
 .logo-mark{
   width:36px;height:36px;border-radius:var(--r-card);flex-shrink:0;
-  background:var(--paper);             /* paper ground for the ink monogram */
-  border:1px solid var(--line);
+  background:linear-gradient(145deg,var(--steel),var(--ink));  /* royal-blue brand mark */
+  border:none;
   display:flex;align-items:center;justify-content:center;
-  color:var(--ink);
+  color:#fff;box-shadow:0 6px 14px -6px rgba(30,58,138,.55);
 }
 .logo-mark svg{display:block}
 .wordmark{font-weight:800;font-size:18px;letter-spacing:-.4px}
@@ -299,6 +336,7 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
   height:54px;flex-shrink:0;background:var(--surface);
   border-bottom:1px solid var(--hairline);display:flex;align-items:center;
   padding:10px 18px;gap:14px;z-index:100;
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset, 0 6px 20px -16px rgba(45,34,12,.45);
 }
 /* Subtle separators rhyme with assessor's `.ac-cmd-sep` */
 .cmd-sep{display:inline-block;width:1px;height:18px;background:var(--hairline);margin:0 4px;flex-shrink:0}
@@ -318,7 +356,7 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--t1)}
   width:100%;padding:8px 14px;border:1.5px solid var(--border);
   border-radius:var(--r-pill);font-size:13.5px;background:var(--bg);outline:none;transition:.15s;
 }
-#globalSearch:focus{border-color:var(--steel);background:#fff;box-shadow:0 0 0 4px rgba(59,111,181,.16)}
+#globalSearch:focus{border-color:var(--steel);background:#fff;box-shadow:0 0 0 4px rgba(75,87,214,.16)}
 .cmd-right{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:auto}
 .btn-sm{padding:8px 14px;border-radius:var(--r-btn);font-size:13px}
 .cmd-icon-btn{
@@ -395,8 +433,9 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
   border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;transition:.13s;
   display:flex;align-items:center;gap:6px;
 }
-.os-tab:hover{color:var(--t1)}
-.os-tab.active{color:var(--brand);border-bottom-color:var(--brand)}
+.os-tab{border-radius:var(--r-sm) var(--r-sm) 0 0}
+.os-tab:hover{color:var(--t1);background:var(--ink-bg)}
+.os-tab.active{color:var(--steel);border-bottom-color:var(--steel);font-weight:700}
 .tab-badge{font-size:9px;font-weight:800;background:var(--amber-bg);color:var(--amber);padding:1px 5px;border-radius:5px;letter-spacing:.04em}
 .os-tab.tab-locked{opacity:.5}
 .os-tab.tab-locked::after{content:'🔒';font-size:9px;margin-left:5px;opacity:.8}
@@ -909,7 +948,7 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 
 .wf-stage{border:1px solid var(--line);border-radius:8px;background:var(--surface-clinical);margin-bottom:10px;overflow:hidden;transition:border-color .15s}
 .wf-stage.complete{border-color:rgba(11,107,79,.35)}
-.wf-stage.in-progress{border-color:rgba(59,111,181,.35)}
+.wf-stage.in-progress{border-color:rgba(75,87,214,.35)}
 .wf-stage-head{display:grid;grid-template-columns:36px 1fr 220px 22px;gap:14px;align-items:center;width:100%;text-align:left;padding:14px 18px;background:transparent;border:none;cursor:pointer;font-family:inherit;color:inherit;border-bottom:1px solid transparent;transition:background .12s,border-color .12s}
 .wf-stage-head:hover{background:var(--ink-bg)}
 .wf-stage-head:focus-visible{outline:none;box-shadow:var(--focus-ring) inset}
@@ -937,7 +976,7 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 
 .wf-task{border:1px solid var(--line);border-radius:6px;background:var(--surface-paper);margin:8px 0;overflow:hidden}
 .wf-task.complete{background:rgba(11,107,79,.04);border-color:rgba(11,107,79,.25)}
-.wf-task.in-progress{background:rgba(59,111,181,.04);border-color:rgba(59,111,181,.25)}
+.wf-task.in-progress{background:rgba(75,87,214,.04);border-color:rgba(75,87,214,.25)}
 .wf-task-head{display:grid;grid-template-columns:14px 1fr auto 22px;gap:10px;align-items:center;width:100%;text-align:left;padding:9px 14px;background:transparent;border:none;cursor:pointer;font-family:inherit;color:inherit}
 .wf-task-head:hover{background:var(--ink-bg)}
 .wf-task-head:focus-visible{outline:none;box-shadow:var(--focus-ring) inset}
@@ -1076,7 +1115,7 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 
 /* Docs tab — focused row highlight on openVerificationDoc() */
 #docBody tr.focused{background:var(--steel-bg);outline:2px solid var(--steel);outline-offset:-2px;animation:wfFocusPulse 2.4s ease}
-@keyframes wfFocusPulse{0%{background:rgba(59,111,181,.25)} 100%{background:var(--steel-bg)}}
+@keyframes wfFocusPulse{0%{background:rgba(75,87,214,.25)} 100%{background:var(--steel-bg)}}
 .wf-empty{padding:18px;text-align:center;color:var(--t3-cool);font-style:italic;font-family:var(--serif);font-size:13px}
 @media(max-width:720px){
   .wf-stage-head{grid-template-columns:30px 1fr 22px;row-gap:6px}
@@ -1189,7 +1228,7 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 
 /* Document intelligence */
 .bulk-drop{border:2px dashed var(--line2);border-radius:var(--r-card);padding:22px;text-align:center;cursor:pointer;color:var(--t2);transition:.15s;margin-bottom:16px;background:var(--paper)}
-.bulk-drop:hover,.bulk-drop.over{border-color:var(--steel);background:rgba(59,111,181,.06);color:var(--ink)}
+.bulk-drop:hover,.bulk-drop.over{border-color:var(--steel);background:rgba(75,87,214,.06);color:var(--ink)}
 .prov{cursor:pointer;color:var(--brand);font-size:11px;font-weight:700;vertical-align:super}
 .prov:hover{text-decoration:underline}
 .rev-split{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
@@ -1229,25 +1268,25 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 
 /* KPI grid */
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}
-.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);padding:18px;box-shadow:var(--sh-1);border-top:3px solid var(--brand);transition:.18s}
-.kpi:hover{transform:translateY(-2px);box-shadow:var(--sh-2)}
-.kpi .ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:12px}
-.kpi .num{font-size:26px;font-weight:800}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);padding:18px;box-shadow:var(--sh-1);border-top:3px solid var(--brand);transition:transform .2s cubic-bezier(.22,1,.36,1),box-shadow .2s ease}
+.kpi:hover{transform:translateY(-3px);box-shadow:var(--sh-lift)}
+.kpi .ico{width:38px;height:38px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:12px}
+.kpi .num{font-size:27px;font-weight:700;letter-spacing:-.01em}
 .kpi .cap{color:var(--t3);font-size:12.5px;font-weight:600;margin-top:2px}
 
 /* Deal grid */
 .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
 .search{flex:1;min-width:200px;position:relative}
 .search input{width:100%;padding:10px 14px 10px 38px;border:1.5px solid var(--border);border-radius:var(--r-input);background:#fff}
-.search input:focus{outline:none;border-color:var(--steel);box-shadow:0 0 0 4px rgba(59,111,181,.16)}
+.search input:focus{outline:none;border-color:var(--steel);box-shadow:0 0 0 4px rgba(75,87,214,.16)}
 .search .si-ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--t3)}
 .filters{display:flex;gap:6px}
 .chip{padding:8px 14px;border-radius:var(--r-pill);font-weight:600;font-size:12.5px;border:1px solid var(--border);background:#fff;color:var(--t2);transition:.13s}
 .chip:hover{border-color:var(--brand)}
 .chip.active{background:var(--brand);color:#fff;border-color:var(--brand)}
 .deal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(295px,1fr));gap:16px}
-.deal-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-card);padding:18px;cursor:pointer;transition:.18s;box-shadow:var(--sh-1)}
-.deal-card:hover{border-color:var(--brand);box-shadow:var(--sh-2);transform:translateY(-2px)}
+.deal-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-card);padding:18px;cursor:pointer;transition:transform .2s cubic-bezier(.22,1,.36,1),box-shadow .2s ease,border-color .2s ease;box-shadow:var(--sh-1)}
+.deal-card:hover{border-color:var(--brand);box-shadow:var(--sh-lift);transform:translateY(-3px)}
 .deal-card .dc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
 .deal-card .dc-name{font-weight:700;font-size:15px}
 .deal-card .dc-id{color:var(--t3);font-size:12px;margin-bottom:12px}
@@ -1302,7 +1341,7 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .inp{display:flex;flex-direction:column;gap:6px}
 .inp label{font-size:12px;font-weight:600;color:var(--t2)}
 .inp input,.inp select,.inp textarea{padding:11px 13px;border:1.5px solid var(--border);border-radius:var(--r-input);background:var(--paper);transition:.15s}
-.inp input:focus,.inp select:focus,.inp textarea:focus{outline:none;border-color:var(--steel);background:#fff;box-shadow:0 0 0 4px rgba(59,111,181,.16)}
+.inp input:focus,.inp select:focus,.inp textarea:focus{outline:none;border-color:var(--steel);background:#fff;box-shadow:0 0 0 4px rgba(75,87,214,.16)}
 .upload-zone{border:2px dashed var(--line2);border-radius:var(--r-input);padding:22px;text-align:center;cursor:pointer;transition:.18s;color:var(--t3);font-weight:600}
 .upload-zone:hover{border-color:var(--brand);color:var(--brand)}
 .upload-zone.done{border-style:solid;border-color:var(--green);background:rgba(5,150,105,.06);color:var(--green)}
@@ -1335,9 +1374,12 @@ button.avatar:focus-visible{outline:none;box-shadow:var(--focus-ring)}
 .subsec{font-size:12px;font-weight:700;color:var(--t2);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.5px}
 .slider-row{margin-bottom:14px}
 .slider-row label{display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:7px}
-input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:6px;border-radius:5px;background:var(--line2)}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--brand);box-shadow:var(--sh-brand);cursor:pointer}
-input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-radius:50%;background:var(--brand);box-shadow:var(--sh-brand);cursor:pointer}
+input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:6px;border-radius:var(--pill);background:var(--line2)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--steel);box-shadow:0 2px 6px -1px rgba(45,34,12,.3);cursor:pointer;transition:box-shadow .15s ease}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-radius:50%;background:var(--steel);box-shadow:0 2px 6px -1px rgba(45,34,12,.3);cursor:pointer}
+input[type=range]:focus-visible{outline:none}
+input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:var(--focus-ring)}
+input[type=range]:focus-visible::-moz-range-thumb{box-shadow:var(--focus-ring)}
 .assessed-note{background:rgba(217,119,6,.08);color:var(--amber);border-radius:11px;padding:10px 13px;font-weight:600;font-size:12.5px;margin-top:10px}
 
 /* Results panel */
@@ -1385,8 +1427,8 @@ tr:last-child td{border-bottom:none}
 .conf-bar{width:80px;height:7px;border-radius:5px;background:var(--line2);overflow:hidden;display:inline-block;vertical-align:middle}
 .conf-bar>span{display:block;height:100%;background:var(--brand-grad)}
 
-/* Lender compare */
-.best-row td{background:rgba(5,150,105,.07)}
+/* Lender compare — best serviceable match gets the PASS-green wash (consistent with verdict semantics). */
+.best-row td{background:rgba(21,122,82,.08)}
 
 /* Client portal */
 .portal-split{display:grid;grid-template-columns:300px 1fr;gap:24px;align-items:start}
@@ -1400,7 +1442,7 @@ tr:last-child td{border-bottom:none}
   .phone{width:100%;max-width:360px;height:auto;min-height:520px;justify-self:center}
 }
 .dz{border:2px dashed var(--line2);border-radius:14px;padding:16px;text-align:center;margin-bottom:11px;font-size:12px;font-weight:600;color:var(--t3);cursor:pointer;transition:.18s}
-.dz.done{border-style:solid;border-color:var(--green);background:rgba(5,150,105,.07);color:var(--green)}
+.dz.done{border-style:solid;border-color:var(--green);background:rgba(21,122,82,.08);color:var(--green)}
 .toggle-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}
 .switch{width:42px;height:24px;border-radius:var(--r-pill);background:var(--line2);position:relative;cursor:pointer;transition:.18s;flex-shrink:0}
 .switch.on{background:var(--brand)}
@@ -1467,7 +1509,7 @@ tr:last-child td{border-bottom:none}
 .pilot-step.running{border-color:var(--brand);box-shadow:var(--sh-brand)}
 .pilot-step.done{border-color:var(--green)}
 .pilot-ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;background:var(--line2);color:var(--t3)}
-.pilot-step.running .pilot-ico{background:rgba(59,111,181,.10);color:var(--steel)}
+.pilot-step.running .pilot-ico{background:rgba(75,87,214,.10);color:var(--steel)}
 .pilot-step.done .pilot-ico{background:rgba(5,150,105,.12);color:var(--green)}
 .pilot-step .pt{font-weight:700;font-size:14px}
 .pilot-step .pd{font-size:12px;color:var(--t3)}
@@ -1545,17 +1587,23 @@ tr:last-child td{border-bottom:none}
 .rule{height:1px;background:var(--line);margin:14px 0}
 .rule-cool{height:1px;background:var(--line2);margin:14px 0}
 
-/* VerdictHero — the editorial signature */
-.verdict-hero{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-card);padding:20px 22px;margin-bottom:18px}
-.verdict-hero .vh-cap{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--t3-warm);padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:14px}
-.verdict-hero .vh-statement{font-family:var(--serif);font-weight:400;font-size:32px;line-height:1.1;letter-spacing:-.005em;color:var(--t1)}
-.verdict-hero .vh-statement.pass{color:var(--green)}
-.verdict-hero .vh-statement.borderline{color:var(--amber)}
-.verdict-hero .vh-statement.fail{color:var(--red)}
-.verdict-hero .vh-note{font-family:var(--serif);font-style:italic;font-size:15px;color:var(--t2);margin-top:6px;line-height:1.45}
-.verdict-hero .vh-feature{display:flex;align-items:baseline;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
-.verdict-hero .vh-feature .vh-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t3-warm)}
-.verdict-hero .vh-feature .vh-value{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:28px;font-weight:500;color:var(--t1)}
+/* VerdictHero — the hero moment: state-driven gradient fill + a state-matched soft glow.
+   Inner text flips to light because the panel is now a saturated colour field. */
+.verdict-hero{position:relative;overflow:hidden;border:1px solid transparent;border-radius:var(--r-card);padding:22px 24px;margin-bottom:18px;color:#fff;background:linear-gradient(135deg,#3a4452,#222a35);box-shadow:var(--sh-card);transition:box-shadow .45s ease}
+/* Faint radial highlight blob, top-right. */
+.verdict-hero::after{content:"";position:absolute;top:-45%;right:-12%;width:62%;height:130%;background:radial-gradient(circle at 70% 30%,rgba(255,255,255,.20),transparent 62%);pointer-events:none}
+.verdict-hero.pass{background:linear-gradient(135deg,#1C8A5E,#0E5538);box-shadow:0 18px 48px -22px rgba(14,85,56,.85)}
+.verdict-hero.borderline{background:linear-gradient(135deg,#C68A2A,#8E5E12);box-shadow:0 18px 48px -22px rgba(142,94,18,.8)}
+.verdict-hero.fail{background:linear-gradient(135deg,#C04A38,#86281B);box-shadow:0 18px 48px -22px rgba(134,40,27,.8)}
+.verdict-hero .vh-cap{position:relative;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.72);padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.22);margin-bottom:14px}
+.verdict-hero .vh-statement{position:relative;font-family:var(--serif);font-weight:400;font-size:32px;line-height:1.1;letter-spacing:-.005em;color:#fff;transform-origin:left center}
+.verdict-hero .vh-statement.pulse{animation:vhPulse .45s cubic-bezier(.22,1,.36,1)}
+@keyframes vhPulse{0%{transform:scale(.82)}60%{transform:scale(1.04)}100%{transform:scale(1)}}
+body.reduced-motion .verdict-hero .vh-statement.pulse{animation:none}
+.verdict-hero .vh-note{position:relative;font-family:var(--serif);font-style:italic;font-size:15px;color:rgba(255,255,255,.86);margin-top:6px;line-height:1.45}
+.verdict-hero .vh-feature{position:relative;display:flex;align-items:baseline;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.22)}
+.verdict-hero .vh-feature .vh-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.72)}
+.verdict-hero .vh-feature .vh-value{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:28px;font-weight:500;color:#fff}
 
 /* MetricGauge — hairline track + fill + ceiling tick */
 .metric-gauge{padding:12px 14px;background:var(--white);border:1px solid var(--line2);border-radius:var(--r-card)}
@@ -1606,7 +1654,7 @@ tr:last-child td{border-bottom:none}
 .conf2>span{display:block;height:100%;background:var(--ink)}
 
 /* Buttons — flat ink primary, calm rest */
-.btn.primary{background:var(--ink);color:#fff;border:none;box-shadow:none}
+.btn.primary{background:linear-gradient(145deg,var(--steel),var(--ink));color:#fff;border:none;box-shadow:0 8px 20px -8px rgba(30,58,138,.5)}
 .btn.primary:hover{filter:brightness(1.08);transform:none}
 .btn:hover{filter:none;transform:none;box-shadow:none}
 
@@ -1707,7 +1755,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
 .ent-compact{border:1px solid var(--line2);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:#fff}
 .ent-compact .ec-row{display:grid;grid-template-columns:140px 1fr 140px auto;gap:8px;align-items:center}
 .ent-compact select,.ent-compact input{padding:6px 9px;border:1px solid var(--line2);border-radius:6px;background:#fff;font-size:13px;color:var(--t1);font-family:inherit}
-.ent-compact input:focus,.ent-compact select:focus{outline:none;border-color:var(--steel);box-shadow:0 0 0 3px rgba(59,111,181,.14)}
+.ent-compact input:focus,.ent-compact select:focus{outline:none;border-color:var(--steel);box-shadow:0 0 0 3px rgba(75,87,214,.14)}
 .ent-compact .ec-rm{background:none;border:none;color:var(--t3-cool);font-size:18px;cursor:pointer;padding:0 6px;line-height:1}
 .ent-compact .ec-rm:hover{color:var(--red)}
 .ent-compact .ec-meta{display:flex;align-items:center;gap:14px;margin-top:8px;font-size:12.5px;color:var(--t2);flex-wrap:wrap}
@@ -1780,13 +1828,13 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
 .ac-q-filters{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
 .ac-q-chip{appearance:none;background:transparent;border:1px solid var(--line2);color:var(--t2);padding:4px 9px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .12s,color .12s,border-color .12s;}
 .ac-q-chip[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink);}
-.ac-q-chip:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(59,111,181,.30);}
+.ac-q-chip:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(75,87,214,.30);}
 .ac-q-chip .ac-q-n{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:10.5px;opacity:.78;}
 .ac-q-list{flex:1;overflow-y:auto;padding:8px;min-height:0;}
 .ac-q-empty{padding:18px;color:var(--t3-cool);font-family:var(--serif);font-style:italic;font-size:12.5px;}
 .ac-q-item{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:flex-start;padding:11px 12px;border-radius:8px;cursor:pointer;border:1px solid transparent;margin-bottom:2px;transition:background .12s,border-color .12s;}
 .ac-q-item:hover{background:var(--page);}
-.ac-q-item:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(59,111,181,.30);}
+.ac-q-item:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(75,87,214,.30);}
 .ac-q-item[aria-current="true"]{background:var(--page);border-color:var(--line2);}
 .ac-q-sq{width:10px;height:10px;border-radius:2px;margin-top:5px;background:var(--steel);}
 .ac-q-sq.new{background:var(--steel);} .ac-q-sq.review{background:var(--amber);} .ac-q-sq.referred{background:var(--red);} .ac-q-sq.approved{background:var(--green);} .ac-q-sq.declined{background:var(--red);}
@@ -1795,7 +1843,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
 .ac-q-meta{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:11px;color:var(--t2);margin-top:2px;}
 .ac-q-purpose{font-family:var(--serif);font-style:italic;font-size:11.5px;color:var(--t3-cool);}
 .ac-q-stage{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--t3-cool);padding:3px 7px;border:1px solid var(--line2);border-radius:4px;align-self:flex-start;white-space:nowrap;}
-.ac-q-stage.new{color:var(--steel);border-color:rgba(59,111,181,.40);}
+.ac-q-stage.new{color:var(--steel);border-color:rgba(75,87,214,.40);}
 .ac-q-stage.review{color:var(--amber);border-color:rgba(154,90,0,.40);}
 .ac-q-stage.referred{color:var(--red);border-color:rgba(169,38,38,.40);}
 .ac-q-stage.approved{color:var(--green);border-color:rgba(11,107,79,.40);}
@@ -1839,7 +1887,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
 .ac-sev{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:3px;}
 .ac-sev.high{color:var(--red);background:rgba(169,38,38,.08);}
 .ac-sev.med{color:var(--amber);background:rgba(154,90,0,.08);}
-.ac-sev.low{color:var(--steel);background:rgba(59,111,181,.08);}
+.ac-sev.low{color:var(--steel);background:rgba(75,87,214,.08);}
 
 .ac-rt-cat{font-family:var(--mono);font-size:28px;font-weight:500;color:var(--ink);line-height:1;}
 .ac-rt-seg{display:flex;gap:3px;margin-top:10px;}
@@ -1859,7 +1907,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
 
 .ac-actions{display:flex;gap:10px;margin-top:16px;}
 .ac-actions button{flex:1;padding:12px 14px;border-radius:var(--r-btn);font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;border:1px solid;background:var(--white);transition:background .12s,color .12s;}
-.ac-actions button:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(59,111,181,.30);}
+.ac-actions button:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(75,87,214,.30);}
 .ac-actions .ac-act-approve{color:var(--green);border-color:rgba(11,107,79,.50);}
 .ac-actions .ac-act-approve:hover{background:rgba(11,107,79,.06);}
 .ac-actions .ac-act-refer{color:var(--amber);border-color:rgba(154,90,0,.50);}
@@ -1874,7 +1922,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
 .ac-c4-name{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);}
 .ac-c4-rating{font-family:var(--mono);font-size:10.5px;font-weight:700;text-transform:uppercase;padding:2px 7px;border-radius:3px;}
 .ac-c4-rating.strong{color:var(--green);background:rgba(11,107,79,.10);}
-.ac-c4-rating.adequate{color:var(--steel);background:rgba(59,111,181,.10);}
+.ac-c4-rating.adequate{color:var(--steel);background:rgba(75,87,214,.10);}
 .ac-c4-rating.weak{color:var(--red);background:rgba(169,38,38,.10);}
 .ac-c4-basis{font-family:var(--serif);font-style:italic;font-size:12px;color:var(--t2);line-height:1.4;}
 
@@ -1904,7 +1952,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
 .ac-integrity.clear{color:var(--green);border-color:rgba(11,107,79,.50);}
 .ac-integrity.caution{color:var(--amber);border-color:rgba(154,90,0,.50);}
 .ac-integrity.review{color:var(--red);border-color:rgba(169,38,38,.50);}
-.ac-integrity.scanning{color:var(--steel);border-color:rgba(59,111,181,.50);}
+.ac-integrity.scanning{color:var(--steel);border-color:rgba(75,87,214,.50);}
 
 @media (max-width:1100px){
   .ac-queue{width:260px;}
@@ -1922,7 +1970,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
 .ac-view{display:inline-flex;gap:0;border:1px solid var(--line2);border-radius:6px;padding:3px;background:var(--page);}
 .ac-view button{appearance:none;background:transparent;border:none;font:inherit;cursor:pointer;padding:5px 11px;border-radius:4px;font-size:11.5px;font-weight:600;color:var(--t2);}
 .ac-view button[aria-pressed="true"]{background:var(--white);color:var(--ink);box-shadow:0 1px 2px rgba(15,23,42,.06);}
-.ac-view button:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(59,111,181,.30);}
+.ac-view button:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(75,87,214,.30);}
 
 /* ============================================================
    SERVICEABILITY WORKSHEET (Pass 3)
@@ -2040,7 +2088,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
 /* Inline broker-side "Show working" expansion. */
 .calc-show-working-btn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--line2);color:var(--ink);padding:9px 14px;border-radius:var(--r-btn);font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;transition:background .12s,border-color .12s;}
 .calc-show-working-btn:hover{background:var(--paper);border-color:var(--ink);}
-.calc-show-working-btn:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(59,111,181,.30);}
+.calc-show-working-btn:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(75,87,214,.30);}
 #calcWorking{margin-top:18px;display:none;}
 #calcWorking.open{display:block;}
 
@@ -2051,12 +2099,12 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
    Pure-CSS popover so the same markup also drops into the
    self-contained Submission Pack document.
    ============================================================ */
-.prov-reveal{position:relative;display:inline;cursor:help;border-bottom:1px dotted rgba(59,111,181,.45);}
+.prov-reveal{position:relative;display:inline;cursor:help;border-bottom:1px dotted rgba(75,87,214,.45);}
 .prov-reveal.system{border-bottom-color:rgba(138,130,112,.45);}
 .prov-reveal .prov-ind{font-family:var(--mono);font-size:9.5px;color:var(--steel);margin-left:3px;opacity:.65;font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:0;}
 .prov-reveal.system .prov-ind{color:var(--t3);}
 .prov-reveal:focus{outline:none;}
-.prov-reveal:focus-visible{box-shadow:0 0 0 2px rgba(59,111,181,.35);border-radius:2px;background:rgba(59,111,181,.06);}
+.prov-reveal:focus-visible{box-shadow:0 0 0 2px rgba(75,87,214,.35);border-radius:2px;background:rgba(75,87,214,.06);}
 .prov-pop{
   position:absolute;bottom:100%;left:50%;transform:translateX(-50%) translateY(-8px);
   background:var(--ink);color:#fff;padding:11px 14px;border-radius:6px;
@@ -2101,6 +2149,54 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
   .panel{transition:none !important}
   .login-hero,.login-card,.workspace-page{animation:none !important}
 }
+
+/* ============================================================
+   MOBILE / PWA — phone layout (installable app on iOS + Android)
+   ============================================================ */
+@media (max-width: 680px){
+  /* Single-column app: hide the side dock, go full-width. */
+  #rightDock{ display:none !important; }
+  #canvas{ display:block; }
+  #workspace{ width:100%; }
+  /* Command bar: compact, notch-safe, no overflow. */
+  #cmdBar{ height:auto; min-height:52px; padding:8px 12px; gap:8px;
+    padding-top:calc(8px + env(safe-area-inset-top)); }
+  .cmd-left{ gap:6px; }
+  .cmd-centre{ min-width:0; }
+  .wordmark{ display:none; }                 /* keep the logo mark, drop the wordmark */
+  .cmd-sep{ display:none; }
+  #cmdUserName{ display:none; }
+  .btn.btn-sm{ padding:8px 11px; }
+  /* Tabs + deal strip scroll horizontally instead of wrapping. */
+  #tabStrip{ padding:0 8px; }
+  #dealStrip{ overflow-x:auto; -webkit-overflow-scrolling:touch; white-space:nowrap; }
+  .ds-metrics{ flex-wrap:nowrap; }
+  /* Comfortable workspace padding + bottom safe-area. */
+  .main, .page-head, .workspace-page{ padding-left:14px; padding-right:14px; }
+  #workspace{ padding-bottom:env(safe-area-inset-bottom); }
+  /* Forms/grids collapse to one column on phones. */
+  .form-grid{ grid-template-columns:1fr !important; }
+  .kpi-grid{ grid-template-columns:1fr 1fr; }
+  /* Roomier tap targets. */
+  .os-tab{ padding:10px 14px; }
+  .btn{ min-height:40px; }
+  input, select, textarea{ font-size:16px; }   /* iOS: avoid zoom-on-focus */
+  /* Login: stack + fit the card; shrink the hero so nothing overflows width. */
+  #login{ overflow-x:hidden; }
+  .login-hero{ padding:24px 20px; }
+  .login-hero .lh-positioning{ font-size:23px; max-width:100%; }
+  .login-hero .lh-proof{ grid-template-columns:1fr 1fr; }
+  .login-hero .lh-motif, .login-hero .lh-foot{ display:none; }
+  .login-form-col{ padding:16px; }
+  .login-card{ width:100%; padding:24px 20px; }
+}
+/* Install pill (Android/Chrome — appears only when installable). */
+#installPill{ position:fixed; left:50%; transform:translateX(-50%);
+  bottom:calc(16px + env(safe-area-inset-bottom)); z-index:1200; display:none;
+  align-items:center; gap:8px; padding:10px 16px; border-radius:999px;
+  background:linear-gradient(145deg,#2a50c8,#13265e); color:#fff; font-weight:600;
+  font-size:13px; border:none; cursor:pointer; box-shadow:0 10px 26px -8px rgba(30,58,138,.6); }
+#installPill.show{ display:inline-flex; }
 
 </style>
 </head>
@@ -2153,42 +2249,48 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
         <div class="lp"><div class="lp-num">A–D</div><div class="lp-label">Routing with coded reasons</div></div>
         <div class="lp"><div class="lp-num">100%</div><div class="lp-label">Audited, attributable</div></div>
       </div>
-      <div class="lh-foot">For mortgage brokers and credit assessors across Australia.</div>
+      <div class="lh-foot">For mortgage brokers across Australia.</div>
     </div>
   </aside>
   <div class="login-form-col">
     <div class="login-card" role="form" aria-label="Sign in">
-      <div class="lc-cap">Sign in</div>
-      <h1>Welcome back.</h1>
-      <p class="sub">Pick up where you left off — or open a new file.</p>
+      <div class="lc-cap" id="lcCap">Sign in</div>
+      <h1 id="lcHead">Welcome back.</h1>
+      <p class="sub" id="lcSub">Pick up where you left off — or open a new file.</p>
 
-      <div class="role-cap">I'm signing in as</div>
-      <div class="role-select" role="radiogroup" aria-label="Sign-in role">
-        <button type="button" class="role-opt" id="roleOptBroker" role="radio" aria-checked="true" onclick="setLoginRole('broker')">
-          <span class="ro-name">Broker</span>
-          <span class="ro-sub">Pipeline, deals, calculator</span>
+      <div id="ssoBlock" style="display:flex;flex-direction:column;gap:9px;margin-bottom:14px">
+        <button type="button" class="btn" onclick="ssoLogin('google')" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;background:#fff;border:1px solid var(--border);color:var(--t1);font-weight:600">
+          <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.1-5.1l-6.5-5.5C29.6 35 26.9 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.4l6.5 5.5C41.4 36.3 44 30.7 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+          Continue with Google
         </button>
-        <button type="button" class="role-opt" id="roleOptLender" role="radio" aria-checked="false" onclick="setLoginRole('lender')">
-          <span class="ro-name">Lender / Assessor</span>
-          <span class="ro-sub">Assessment console, decisioning</span>
+        <button type="button" class="btn" onclick="ssoLogin('azure')" style="display:flex;align-items:center;justify-content:center;gap:9px;width:100%;background:#fff;border:1px solid var(--border);color:var(--t1);font-weight:600">
+          <svg width="15" height="15" viewBox="0 0 23 23" aria-hidden="true"><path fill="#f25022" d="M1 1h10v10H1z"/><path fill="#7fba00" d="M12 1h10v10H12z"/><path fill="#00a4ef" d="M1 12h10v10H1z"/><path fill="#ffb900" d="M12 12h10v10H12z"/></svg>
+          Continue with Microsoft
         </button>
       </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;color:var(--t3);font-size:11px;text-transform:uppercase;letter-spacing:.08em">
+        <div style="flex:1;height:1px;background:var(--line)"></div> or <div style="flex:1;height:1px;background:var(--line)"></div>
+      </div>
 
+      <div id="signupFields" style="display:none">
+        <div class="field"><label for="suName">Full name</label><input id="suName" type="text" placeholder="e.g. Jordan Banks" autocomplete="name"></div>
+        <div class="field"><label for="suFirm">Brokerage / aggregator</label><input id="suFirm" type="text" placeholder="Your business" autocomplete="organization"></div>
+        <div class="field"><label for="suAcl">ACL or Credit Rep number <span style="color:var(--t3);font-weight:400">(optional)</span></label><input id="suAcl" type="text" placeholder="e.g. 389201 — add now or later in Settings" inputmode="numeric"></div>
+        <label style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--t2);margin:2px 0 8px;cursor:pointer"><input type="checkbox" id="suTerms" style="margin-top:2px">I agree to the <a href="#" onclick="event.preventDefault();toast('Terms of Service — placeholder for demo','info')" style="color:var(--steel);font-weight:600">Terms of Service</a> and <a href="#" onclick="event.preventDefault();toast('Privacy Policy — placeholder for demo','info')" style="color:var(--steel);font-weight:600">Privacy Policy</a>.</label>
+      </div>
       <div class="field">
         <label for="loginEmail">Email</label>
         <input id="loginEmail" type="email" value="broker@debtiq.com" placeholder="you@brokerage.com" autocomplete="username">
-      </div>
-      <div class="field" id="loginOrgField" style="display:none">
-        <label for="loginOrg">Lending institution</label>
-        <input id="loginOrg" type="text" value="Commonwealth Bank" placeholder="e.g. Commonwealth Bank" autocomplete="organization">
       </div>
       <div class="field">
         <label for="loginPass">Password</label>
         <input id="loginPass" type="password" value="demo1234" placeholder="••••••••" autocomplete="current-password">
       </div>
-      <button class="btn-grad" id="loginBtn" onclick="doLogin()">Enter broker workspace</button>
+      <div id="forgotRow" style="text-align:right;margin:-6px 0 12px"><a onclick="doForgotPassword()" style="font-size:12px;color:var(--steel);cursor:pointer;font-weight:600">Forgot password?</a></div>
+      <button class="btn-grad" id="loginBtn" onclick="doAuth()">Enter broker workspace</button>
       <div id="authExtra"></div>
-      <div class="demo-creds">
+      <div id="authToggle" style="text-align:center;font-size:12.5px;color:var(--t2);margin-top:14px">New to DebtIQ? <a onclick="setAuthMode('signup')" style="color:var(--steel);font-weight:600;cursor:pointer">Create an account</a></div>
+      <div class="demo-creds" id="demoCreds">
         <b>Demo credentials</b><br>
         Email: <span class="mono">broker@debtiq.com</span><br>
         Password: <span class="mono">demo1234</span>
@@ -2224,12 +2326,6 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
       <div id="searchResults" class="search-results"></div>
     </div>
     <div class="cmd-right">
-      <div class="role-toggle" role="tablist" aria-label="Role">
-        <button id="roleBroker" class="active" type="button" onclick="setRole('broker')" aria-pressed="true">Broker</button>
-        <button id="roleAssessor" type="button" onclick="setRole('assessor')" aria-pressed="false">Assessor</button>
-      </div>
-      <button class="btn btn-sm" onclick="startDemoTour()" title="Guided demo walkthrough" style="font-weight:700">▶ Demo</button>
-      <span id="tierBadge" class="tier-badge" onclick="navigate('billing')" title="Your plan — click to manage"></span>
       <button class="btn primary btn-sm" onclick="startNewDeal()">+ New Deal</button>
       <button onclick="openSettings()" class="cmd-icon-btn" aria-label="Settings">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -2266,6 +2362,9 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
     <span id="dsAmt" class="ds-amt mono"></span>
     <span id="dsStatus" class="ds-status"></span>
     <div class="ds-metrics" id="dsMetrics"></div>
+    <button class="deal-back" onclick="goTab('documents')" title="Documents for this file" style="margin-left:auto;font-size:12px;font-weight:600">📎 Documents</button>
+    <button class="deal-back" onclick="openApplyOnlinePack()" title="Generate an ApplyOnline pre-fill sheet" style="font-size:12px;font-weight:600">⇪ ApplyOnline</button>
+    <button class="deal-back" onclick="openBidNote()" title="Generate the BID/RLO compliance file note" style="font-size:12px;font-weight:600">🛡 BID note</button>
   </div>
 
   <!-- TAB STRIP -->
@@ -2273,12 +2372,7 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
     <button class="os-tab active" data-tab="pipeline" onclick="goTab('pipeline',this)">Pipeline</button>
     <button class="os-tab" data-tab="client" onclick="goTab('client',this)">Client</button>
     <button class="os-tab" data-tab="loan" onclick="goTab('loan',this)">Loan</button>
-    <button class="os-tab" data-tab="documents" onclick="goTab('documents',this)">Documents</button>
     <button class="os-tab" data-tab="calculate" onclick="goTab('calculate',this)">Calculate</button>
-    <button class="os-tab" data-tab="commercial" onclick="goTab('commercial',this)">Commercial</button>
-    <button class="os-tab" data-tab="aipilot" onclick="goTab('aipilot',this)">AI Pilot<span class="tab-badge" id="aipilotBadge">DEMO</span></button>
-    <button class="os-tab" data-tab="settlement" onclick="goTab('settlement',this)">Settlement</button>
-    <button class="os-tab" data-tab="assessment" onclick="goTab('assessment',this)">Assessment</button>
   </div>
 
   <!-- MAIN CANVAS -->
@@ -2592,7 +2686,11 @@ const state = {
   dealSearch:'',
   wizStep:1,
   // Wizard shares state.calc — only non-calc wizard inputs live here.
-  wizData:{lender:null, dealType:null, propValue:1000000, firstName:'', lastName:'', email:'', phone:'', dob:''},
+  wizData:{lender:null, dealType:null, loanClass:'home', propValue:1000000, firstName:'', lastName:'', email:'', phone:'', dob:'',
+    address:'', residency:'Australian citizen', relationship:'Single', idType:'Driver licence', idNumber:'',
+    employment:'PAYG (full-time)', employer:'', occupation:'', yearsEmployed:'',
+    roFeatures:[], roPriority:'Lowest overall cost', roForeseeable:[],
+    consentPrivacy:false, consentCreditGuide:false},
   calc:{
     // Purpose (Phase 3 Step 1) — shapes everything after it. Hydrated from
     // state.wizData.dealType on deal creation (see startNewDeal / setActiveDeal).
@@ -2669,6 +2767,7 @@ const state = {
   // the signed-in user keeps full access to their own RLS-scoped deals.
   // The agent never creates real accounts, passwords, or secrets (guardrail 8).
   access:{
+    enabled:false,               // OPT-IN: off = solo mode (no role gating). Admin turns it on in Settings.
     orgId:'org_demo',
     orgName:'DebtIQ demo brokerage',
     currentUserId:'u_owner',     // who "I" am in the demo org
@@ -3144,6 +3243,9 @@ function effectiveRole(){
   return m ? m.role : 'readonly';
 }
 function can(cap){
+  // Team access control is OPT-IN. When disabled (solo mode) the single broker
+  // has full access to their own data — which is still RLS-isolated server-side.
+  if(!(state.access && state.access.enabled)) return true;
   // Live but RBAC not yet wired to Supabase → today's behaviour (full access).
   if(accessLive() && !(state.access && state.access._membershipWired)) return true;
   const role = effectiveRole();
@@ -3196,15 +3298,28 @@ function loadAccessState(){
       state.access.authLog = Array.isArray(obj.authLog) ? obj.authLog : [];
       if(obj.session) state.access.session = Object.assign(state.access.session, obj.session);
       if(typeof obj.currentUserId === 'string') state.access.currentUserId = obj.currentUserId;
+      if(typeof obj.enabled === 'boolean') state.access.enabled = obj.enabled;
     }
   }catch(e){}
+}
+// Master opt-in switch for team access control (owner/admin action when turning OFF).
+function setAccessEnabled(on){
+  on = !!on;
+  if(state.access.enabled && !on && !can('settings.edit')){
+    toast('Only an owner or admin can turn team access control off.', 'err'); return;
+  }
+  state.access.enabled = on;
+  authAudit(on?'ACCESS_CONTROL_ENABLED':'ACCESS_CONTROL_DISABLED', on?'Team roles & permissions now enforced':'Switched to solo mode', null);
+  saveAccessState();
+  if(typeof refreshSettings==='function') refreshSettings();
+  toast(on?'Team access control enabled — roles now apply.':'Solo mode — no role restrictions.', 'ok');
 }
 function saveAccessState(){
   try{
     const a = state.access;
     localStorage.setItem(ACCESS_LS_KEY, JSON.stringify({
       members:a.members, invitations:a.invitations, authLog:a.authLog,
-      session:a.session, currentUserId:a.currentUserId
+      session:a.session, currentUserId:a.currentUserId, enabled:a.enabled
     }));
   }catch(e){}
 }
@@ -3282,7 +3397,7 @@ function changeMemberRole(memberId, newRole){
     authAudit('ROLE_CHANGED', `${m.email}: ${ROLE_LABELS[prev]} → ${ROLE_LABELS[newRole]}`, m.id);
     saveAccessState();
     toast(`${m.name} is now ${ROLE_LABELS[newRole]}.`, 'ok');
-    if(document.getElementById('page-settings')) renderSettings(document.getElementById('page-settings'));
+    refreshSettings();
   });
 }
 function removeMember(memberId){
@@ -3296,7 +3411,7 @@ function removeMember(memberId){
     authAudit('MEMBER_REMOVED', `${m.email} (${ROLE_LABELS[m.role]})`, m.id);
     saveAccessState();
     toast(`${m.name} removed.`, 'ok');
-    if(document.getElementById('page-settings')) renderSettings(document.getElementById('page-settings'));
+    refreshSettings();
   });
 }
 
@@ -3383,7 +3498,7 @@ function exportPII(){
 function setSimulatedRole(role){
   state.access.simulateRole = (role && ROLE_RANK[role]) ? role : null;
   authAudit('VIEW_AS_ROLE', role ? ROLE_LABELS[role] : 'cleared', null);
-  if(document.getElementById('page-settings')) renderSettings(document.getElementById('page-settings'));
+  refreshSettings();
   if(typeof updateAccessBanner==='function') updateAccessBanner();
 }
 
@@ -3750,7 +3865,7 @@ const WS_RENDERERS = {
   serviceability:renderServiceability, aipilot:renderAIPilot, compliance:renderCompliance,
   commentary:renderCommentary, compare:renderLenders, intel:renderIntel, portal:renderPortal,
   markets:renderMarkets, billing:renderBilling, review:renderReview, assessment:renderAssessment,
-  settlement:renderSettlement, commercial:renderCommercial
+  settlement:renderSettlement, commercial:renderCommercial, methodology:renderMethodology
 };
 
 /* ============================================================
@@ -3980,6 +4095,14 @@ function updateStatusStrip(){ updateDealStrip(); updateCopilot(); renderPolicyDr
    ============================================================ */
 const ENTITY_KINDS = { individual:'Individual', joint:'Joint', company:'Company', trust:'Trust', smsf:'SMSF', partnership:'Partnership' };
 const ENTITY_ROLES = { borrower:'Borrower', 'co-borrower':'Co-borrower', guarantor:'Guarantor', trustee:'Trustee', director:'Director' };
+// LIXI CAL / ApplyOnline-aligned option sets for the regulated applicant fact-find.
+const RESIDENCY_OPTS = ['Australian citizen','Permanent resident','New Zealand citizen','Temporary visa (e.g. 482/491)','Foreign / non-resident'];
+const RELATIONSHIP_OPTS = ['Single','Married','De facto','Separated','Divorced','Widowed'];
+const ID_TYPES = ['Driver licence','Passport','Medicare card','Proof of Age card'];
+const EMPLOYMENT_TYPES = ['PAYG (full-time)','PAYG (part-time)','PAYG (casual)','Self-employed','Contractor','Retired','Home duties','Other'];
+const LOAN_FEATURES = ['Offset account','Redraw','Fixed rate','Extra repayments','Split loan','Interest-only period'];
+const PRIORITY_OPTS = ['Lowest overall cost','Lowest repayments','Maximum borrowing','Flexibility / features','Fast approval','Rate certainty'];
+const FORESEEABLE_OPTS = ['Retiring during loan term','Growing family / new dependants','Expected income change','Large one-off expense planned','Intend to sell within term','No anticipated changes'];
 const PROP_TYPES = ['House','Unit/Apartment','Townhouse','Land','Rural','Commercial','Off-the-plan'];
 const PROP_PURPOSES = ['Owner Occupied','Investment'];
 const PROP_TXN = ['Purchasing','Refinancing','Owned (additional security)'];
@@ -3995,12 +4118,14 @@ function newEntity(kind){
     liabilities:[], assets:[] };
 }
 function newAsset(){ return { type:'savings', label:'', value:0, notes:'' }; }
+// Guarantee is a property of the security (who/what backs it beyond the mortgage).
+const GUARANTEE_TYPES = ['None','Family pledge (security guarantee)','Limited guarantee','Unlimited guarantee','Servicing (income) guarantee','Director / company guarantee'];
 function newSecurity(){
   return { id:'s_'+Math.random().toString(36).slice(2,8), address:'', suburb:'', state:'NSW', postcode:'',
     property_type:'House', purpose:'Owner Occupied', transaction:'Purchasing',
     value:0, value_basis:'Applicant Estimate', zoning:'Residential',
     first_mortgage:true, existing_mortgage:0, existing_lender:'',
-    rental_income:0, rental_frequency:'Weekly',
+    rental_income:0, rental_frequency:'Weekly', guarantee_type:'None', guarantor:'',
     owner_entity_id:null, title:{ folio:'', section:'', block:'' } };
 }
 // Each entity contributes a weight: 0 if excluded, else ownership_pct/100 (default 100%).
@@ -4015,6 +4140,17 @@ function totalSecurityValue(){
 function existingPropertyDebt(){
   return (state.calc.securities||[]).reduce((s,x)=>s+(parseFloat(x.existing_mortgage)||0),0);
 }
+// Liabilities can be linked to a security via liability.security_id — so the broker
+// can see the true secured position (and LVR) on each property.
+function linkedLiabDebt(secId){
+  let sum=0;
+  (state.calc.entities||[]).forEach(e=>(e.liabilities||[]).forEach(l=>{ if(l.security_id && l.security_id===secId) sum += parseFloat(l.balance)||0; }));
+  return sum;
+}
+// Total debt already secured against a property = its existing mortgage + any linked liabilities.
+function securityDebt(sec){ return (parseFloat(sec.existing_mortgage)||0) + linkedLiabDebt(sec.id); }
+function securityLVR(sec){ const v=parseFloat(sec.value)||0; return v>0 ? securityDebt(sec)/v*100 : 0; }
+function totalExistingSecuredDebt(){ return (state.calc.securities||[]).reduce((s,x)=>s+securityDebt(x),0); }
 
 /* ============================================================
    SERVICEABILITY COMPUTATION
@@ -4098,8 +4234,106 @@ function trendHTML(t){
   const arr = t.dir==='up'?'▲':t.dir==='down'?'▼':'─';
   return `<div style="font-size:11px;font-weight:700;color:${col};margin-top:3px">${arr} ${t.d} vs last month</div>`;
 }
+/* ============================================================
+   RETENTION / REPRICING + CLAWBACK RADAR
+   Turns the trail book into a proactive worklist: who to reprice,
+   who to review, and where refinancing would trigger a clawback.
+   Settlement date + current rate are derived deterministically per
+   deal for the demo book (real values come from the loan record).
+   ============================================================ */
+const RETENTION = { clawbackMonths:24, benchmarkRate:5.99, repriceThresholdBps:25, reviewDueMonths:12, flightRiskBps:40 };
+function buildRetentionBook(){
+  const today = (typeof TODAY!=='undefined' && TODAY) ? new Date(TODAY) : new Date();
+  return (DEALS||[]).map(d=>{
+    const idn = parseInt((d.id||'').replace(/\D/g,''),10) || 0;
+    const settledMonthsAgo = (idn*7) % 31;                              // 0..30 months, deterministic
+    const settled = new Date(today.getTime() - settledMonthsAgo*30.4*864e5);
+    const currentRate = +(5.8 + ((idn*13)%160)/100).toFixed(2);        // ~5.80..7.39%
+    const gapBps = Math.round((currentRate - RETENTION.benchmarkRate)*100);
+    const upfront = (d.amount||0) * (d.upfront_commission_rate||0);
+    const trailAnnual = (d.amount||0) * (d.trail_commission_rate||0);
+    const clawFactor = settledMonthsAgo<12 ? 1 : settledMonthsAgo<24 ? 0.5 : 0;
+    const inClawback = settledMonthsAgo < RETENTION.clawbackMonths;
+    const clawbackExposure = Math.round(upfront*clawFactor);
+    const reviewDue = settledMonthsAgo >= RETENTION.reviewDueMonths;
+    const repriceOpp = gapBps >= RETENTION.repriceThresholdBps;
+    const monthlySaving = repriceOpp ? Math.round((d.amount||0)*(gapBps/10000)/12) : 0;
+    const flightRisk = gapBps >= RETENTION.flightRiskBps;
+    let priority = 0;
+    if(flightRisk && inClawback) priority = 3;        // top alarm: likely to refinance AND would claw back
+    else if(repriceOpp) priority = 2;
+    else if(reviewDue) priority = 1;
+    return { deal:d, settledMonthsAgo, settled, currentRate, gapBps, upfront, trailAnnual, clawFactor, inClawback, clawbackExposure, reviewDue, repriceOpp, monthlySaving, flightRisk, priority };
+  });
+}
+function retentionSummary(book){
+  const inClaw = book.filter(x=>x.inClawback && x.clawbackExposure>0);
+  const reprice = book.filter(x=>x.repriceOpp);
+  return {
+    trailBook: book.reduce((s,x)=>s+x.trailAnnual,0),
+    inClawCount: inClaw.length,
+    clawExposure: inClaw.reduce((s,x)=>s+x.clawbackExposure,0),
+    repriceCount: reprice.length,
+    clientSavingsAnnual: reprice.reduce((s,x)=>s+x.monthlySaving*12,0),
+    reviewsDue: book.filter(x=>x.reviewDue).length
+  };
+}
+function seasonalNote(){
+  const mth = ((typeof TODAY!=='undefined'&&TODAY)?new Date(TODAY):new Date()).getMonth();
+  if(mth===4||mth===5) return '🗓 EOFY: self-employed clients have fresh financials — prime time for reviews and repricing.';
+  if(mth===8||mth===9||mth===10) return '🌸 Spring peak — origination is busy; keep these reviews short and proactive so the book doesn’t leak.';
+  if(mth===11) return '🎄 December — settle-before-Christmas crunch; reprice flight-risk clients early before they shop.';
+  if(mth===0) return '🧹 January lull — the ideal window to clear these book reviews and repricings.';
+  return '📈 Proactive repricing protects trail and pre-empts refinance churn.';
+}
+function callClient(phone, name){
+  if(phone){ try{ window.location.href='tel:'+String(phone).replace(/[^0-9+]/g,''); }catch(e){} toast('Calling '+(name||'client')+'…','info'); }
+  else toast('No phone on file for '+(name||'this client'),'err');
+}
+function callClientByDeal(id){ const d=(DEALS||[]).find(x=>x.id===id)||{}; callClient(d.primary_phone, d.name); }
+function renderRetention(el){
+  const book = buildRetentionBook();
+  const sum = retentionSummary(book);
+  const money = v => fmtMoney(Math.round(v||0));
+  const actions = book.filter(x=>x.priority>0).sort((a,b)=> b.priority-a.priority || b.gapBps-a.gapBps);
+  const kpi = (val,cap,color)=>`<div class="card" style="padding:16px;border-top:3px solid ${color}"><div style="font-family:var(--serif);font-size:30px;font-weight:600;line-height:1">${val}</div><div style="font-size:11.5px;color:var(--t2);margin-top:6px">${cap}</div></div>`;
+  const chip = (txt,kind)=>{ const c={warn:['var(--red-bg)','var(--red-2)'],mute:['var(--ink-bg)','var(--t2)'],pass:['var(--green-bg)','var(--green-2)'],info:['var(--steel-bg)','var(--steel)']}[kind]||['var(--ink-bg)','var(--t2)'];
+    return `<span style="display:inline-block;font-size:11px;font-weight:600;padding:3px 9px;border-radius:7px;margin:3px 6px 0 0;background:${c[0]};color:${c[1]}">${txt}</span>`; };
+  const row = x => { const d=x.deal; const chips=[];
+    if(x.flightRisk && x.inClawback) chips.push(chip('⚠ Clawback window · '+money(x.clawbackExposure)+' at risk if they refinance','warn'));
+    else if(x.inClawback && x.clawbackExposure>0) chips.push(chip('Clawback '+money(x.clawbackExposure)+' ('+(x.settledMonthsAgo<12?'year 1':'year 2')+')','mute'));
+    if(x.repriceOpp) chips.push(chip('Reprice '+x.gapBps+'bps · saves client '+money(x.monthlySaving)+'/mo','pass'));
+    if(x.reviewDue) chips.push(chip('Annual review due','info'));
+    const action = (x.flightRisk&&x.inClawback) ? 'Reprice now — a refinance would claw back '+money(x.clawbackExposure)
+                 : x.repriceOpp ? 'Call to reprice '+x.gapBps+'bps and retain the client'
+                 : 'Book the annual review';
+    return `<div style="display:flex;gap:12px;align-items:center;padding:13px 4px;border-bottom:1px solid var(--line)">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:14px">${escHtml(d.name||'')}</div>
+        <div style="font-size:12px;color:var(--t2);margin-top:1px">${escHtml(d.lender||'—')} · ${fmtMoney(d.amount)} · settled ${x.settledMonthsAgo}mo ago · <span class="mono">${x.currentRate}%</span> vs <span class="mono">${RETENTION.benchmarkRate}%</span> market</div>
+        <div style="margin-top:5px">${chips.join('')}</div>
+        <div style="font-size:12px;color:var(--t1);margin-top:6px">→ ${action}</div>
+      </div>
+      <button class="btn primary btn-sm" onclick="callClientByDeal('${d.id}')">📞 Call</button>
+    </div>`; };
+  el.innerHTML = `
+    <div class="page-head" style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap">
+      <div><h1>Retention radar</h1><p>Protect your trail book — reprice and review before clients refinance.</p></div>
+      ${pipelineViewToggleHTML('retention')}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px">
+      ${kpi(money(sum.trailBook),'Trail book p.a.','var(--green)')}
+      ${kpi(sum.inClawCount,'In clawback window · '+money(sum.clawExposure)+' at risk','var(--red)')}
+      ${kpi(sum.repriceCount,'Reprice now · '+money(sum.clientSavingsAnnual)+'/yr client savings','var(--steel)')}
+      ${kpi(sum.reviewsDue,'Annual reviews due','var(--amber)')}
+    </div>
+    <div class="card" style="padding:12px 14px;margin-bottom:14px;background:var(--steel-bg);border:1px solid var(--line);font-size:12.5px;color:var(--t1)">${seasonalNote()}</div>
+    <div class="card" style="padding:6px 16px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 2px"><b style="font-size:13px">Worklist — ${actions.length} ${actions.length===1?'client':'clients'} to action</b><span style="font-size:11.5px;color:var(--t3)">sorted by priority</span></div>
+      ${actions.length ? actions.map(row).join('') : '<p style="color:var(--t3);font-size:13px;padding:14px 0">Nothing needs action right now — the book is healthy.</p>'}
+    </div>`;
+}
 function renderDashboard(el){
-  // Round-2 brief — Pipeline now has a Deals | Groups toggle. When a group
   // is open (state.activeGroup), the detail screen for that group replaces
   // the list view. Both routes share the same el.
   if(state.activeGroup){
@@ -4108,6 +4342,10 @@ function renderDashboard(el){
   }
   if(state.pipelineView === 'groups'){
     renderPipelineGroups(el);
+    return;
+  }
+  if(state.pipelineView === 'retention'){
+    renderRetention(el);
     return;
   }
   const needsAction = DEALS.filter(d=>['BROKER_REVIEW','MORE_INFO','DOCS_PENDING'].includes(d.status)).length;
@@ -4173,16 +4411,12 @@ function renderDashboard(el){
    LENDING GROUPS — Pipeline rendering (Phase 2)
    ============================================================ */
 function pipelineViewToggleHTML(active){
-  const a = active==='groups' ? 'groups' : 'deals';
-  return `<div class="pipe-view-toggle" role="tablist" aria-label="Pipeline view">
-    <button type="button" class="${a==='deals'?'active':''}" role="tab" aria-selected="${a==='deals'}"
-      onclick="setPipelineView('deals')">Deals</button>
-    <button type="button" class="${a==='groups'?'active':''}" role="tab" aria-selected="${a==='groups'}"
-      onclick="setPipelineView('groups')">Groups</button>
-  </div>`;
+  const a = ['groups','retention'].includes(active) ? active : 'deals';
+  const btn = (v,l)=>`<button type="button" class="${a===v?'active':''}" role="tab" aria-selected="${a===v}" onclick="setPipelineView('${v}')">${l}</button>`;
+  return `<div class="pipe-view-toggle" role="tablist" aria-label="Pipeline view">${btn('deals','Deals')}${btn('groups','Groups')}${btn('retention','Retention')}</div>`;
 }
 function setPipelineView(view){
-  state.pipelineView = view==='groups' ? 'groups' : 'deals';
+  state.pipelineView = ['groups','retention'].includes(view) ? view : 'deals';
   state.activeGroup = null;
   saveLendingGroups();
   const el = document.getElementById('page-dashboard');
@@ -5074,7 +5308,7 @@ function advanceDeal(id){
 /* ============================================================
    PAGE: WIZARD (8 steps)
    ============================================================ */
-const WIZ_STEPS = ['Lender','Borrower','Entities','Loan','Documents','Extract','Commentary','Submit'];
+const WIZ_STEPS = ['Type','Applicant','Parties','Loan','Documents','Extract','Commentary','Submit'];
 function renderWizard(el){
   el.innerHTML = `
     <div class="wiz-head">
@@ -5099,7 +5333,19 @@ function wizNav(){
     ${state.wizStep<8?`<button class="btn primary" onclick="wizGo(1)">Continue →</button>`:`<button class="btn primary" onclick="submitDeal()">Submit Deal ✓</button>`}
   </div>`;
 }
+function wizToggleArr(field, val){
+  const arr = (state.wizData[field] = state.wizData[field]||[]);
+  const i = arr.indexOf(val); if(i>=0) arr.splice(i,1); else arr.push(val);
+  const host = document.getElementById('wizModalContent') || document.getElementById('page-wizard');
+  if(host) renderWizard(host);
+}
 function wizGo(dir){
+  // Can't move past the applicant step without the regulated minimum: a named applicant.
+  if(dir>0 && state.wizStep===2){
+    if(!(state.wizData.firstName||'').trim() || !(state.wizData.lastName||'').trim()){
+      toast('Enter the applicant’s first and last name to continue.','err'); return;
+    }
+  }
   state.wizStep = Math.min(8, Math.max(1, state.wizStep+dir));
   // Sync entity 0's name from the borrower fields so the calculator entity matches the wizard inputs.
   const bn=[state.wizData.firstName,state.wizData.lastName].filter(Boolean).join(' ').trim();
@@ -5119,10 +5365,11 @@ function filterLenderTiles(q){
 /* Update LVR badge in place so the input keeps focus while typing */
 function updateWizLVR(){
   const tv = totalSecurityValue(), amt = parseFloat(state.calc.newLoan.amount)||0;
-  const lvr = tv>0 ? (amt/tv*100) : 0;
+  const exist = totalExistingSecuredDebt();
+  const lvr = tv>0 ? ((amt+exist)/tv*100) : 0;
   const color = lvr<=80?'var(--green)':lvr<=90?'var(--amber)':'var(--red)';
   const el = document.getElementById('wizLvr');
-  if(el){ el.textContent='LVR '+lvr.toFixed(1)+'% · Loan '+fmtMoney(amt)+' / Security '+fmtMoney(tv); el.style.background=color+'1a'; el.style.color=color; }
+  if(el){ el.textContent='LVR '+lvr.toFixed(1)+'% · Loan '+fmtMoney(amt)+(exist>0?' + existing '+fmtMoney(exist):'')+' / Security '+fmtMoney(tv); el.style.background=color+'1a'; el.style.color=color; }
 }
 // Checklist generator — selected lender's required docs, extended by deal type.
 function lenderChecklist(id, dealType){
@@ -5138,56 +5385,66 @@ function renderWizStep(){
   const d = state.wizData;
   let html='';
   if(state.wizStep===1){
-    const useDB = state.market==='AU' && Object.keys(lenderDB()).length;
-    const lenderIds = useDB ? Object.keys(lenderDB()) : m().lenders;
-    // Show ALL lenders here — accreditation filtering belongs in the calculator/compare, not deal creation.
-    const tileFor = (l)=>{
-      const p = useDB ? lenderDB()[l] : null;
-      const type = p ? (p.apra_regulated?'ADI':'Non-bank') : '';
-      const buffer = p ? (p.buffer*100).toFixed(0)+'%' : '';
-      const maxLvr = p ? (p.max_lvr_owner_occ_pi||p.max_lvr_owner_occ||'')+'%' : '';
-      const tag = (type+' '+(p?(p.label||l):l)+' '+l).toLowerCase();
-      const meta = p ? `<div class="ts">${type} · <span title="Buffer = % added to the rate to stress-test repayments">${buffer} buffer</span> · max LVR ${maxLvr}</div>` : '';
-      return `<div class="tile lender-tile ${d.lender===l?'sel':''}" data-lender-tag="${escHtml(tag)}" data-lender-type="${type.toLowerCase()}" onclick="state.wizData.lender='${l}';state.lender='${l}';renderWizStep()"><div class="tt">${escHtml(p?(p.label||l):l)}</div>${meta}</div>`;
-    };
-    const adiIds = useDB ? lenderIds.filter(l=> lenderDB()[l] && lenderDB()[l].apra_regulated) : lenderIds;
-    const nbIds  = useDB ? lenderIds.filter(l=> lenderDB()[l] && !lenderDB()[l].apra_regulated) : [];
-    const sortByLabel = (a,b)=> ((lenderDB()[a]||{}).label||a).localeCompare((lenderDB()[b]||{}).label||b);
-    adiIds.sort(sortByLabel); nbIds.sort(sortByLabel);
-    const groupsHtml = useDB
-      ? `<div class="lender-group-head">Banks (ADI)</div><div class="tile-grid lender-group">${adiIds.map(tileFor).join('')}</div>
-         <div class="lender-group-head">Non-bank lenders</div><div class="tile-grid lender-group">${nbIds.map(tileFor).join('')}</div>`
-      : `<div class="tile-grid">${lenderIds.map(tileFor).join('')}</div>`;
-    const pol = useDB ? lenderDB()[d.lender] : null;
-    const reqCard = pol ? `<div class="card" style="padding:16px;margin-top:16px;border-left:4px solid ${pol.lender_color||'var(--brand)'}">
-        <div style="font-weight:700;margin-bottom:8px">${escHtml(pol.label)} — lender requirements</div>
-        <div class="detail-row"><span class="dl">Submission</span><span class="dv">${escHtml(pol.submission_channel||'—')}</span></div>
-        <div class="detail-row"><span class="dl">Conditional SLA</span><span class="dv">${pol.sla_conditional?pol.sla_conditional+' business days':'—'}</span></div>
-        <div class="detail-row"><span class="dl">Buffer / Max DSR</span><span class="dv mono">${(pol.buffer*100).toFixed(0)}% / ${pol.dsr_max}%</span></div>
-        <div class="detail-row"><span class="dl">Max LVR (OO P&I)</span><span class="dv mono">${pol.max_lvr_owner_occ_pi||'—'}%</span></div>
-        <div class="detail-row"><span class="dl">Genuine savings</span><span class="dv">${pol.genuine_savings_required?('Required >'+(pol.genuine_savings_threshold_lvr||85)+'% LVR'):'Not required'}</span></div>
-        <ul style="margin:10px 0 0;padding-left:18px;color:var(--t2);font-size:12.5px">${(pol.notes||[]).slice(0,4).map(n=>`<li style="margin-bottom:3px">${escHtml(n)}</li>`).join('')}</ul>
-      </div>` : '';
-    html = `<div class="wiz-card active"><h3>Select Lender & Deal Type</h3><p class="desc">Choose the lender and product — policy loads from the lender database. All ${useDB?Object.keys(lenderDB()).length:lenderIds.length} ${useDB?'Australian ':''}lenders are shown.</p>
-      <div class="subsec">Lender</div>
-      <p style="font-size:12px;color:var(--t3);margin:-4px 0 10px;line-height:1.5"><b>Buffer</b> = the % added to the actual interest rate to stress-test repayments. APRA requires 3% for banks; some non-banks use 1–2%. <b>Lower buffer = higher borrowing capacity.</b></p>
-      <div style="margin-bottom:12px"><input id="lenderSearch" placeholder="Search lenders (e.g. CBA, Liberty, non-bank)…" oninput="filterLenderTiles(this.value)" style="width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:var(--r-pill);font-size:13.5px;background:var(--bg)"></div>
-      <div id="lenderTiles">${groupsHtml}</div>
-      <div class="subsec">Deal Type</div>
-      <div class="tile-grid">${['Owner Occupier','Investment','First Home','SMSF','Commercial','Refinance'].map(t=>`<div class="tile ${d.dealType===t?'sel':''}" onclick="state.wizData.dealType='${t}';renderWizStep()"><div class="tt">${t}</div></div>`).join('')}</div>
-      ${reqCard}
+    if(!d.loanClass) d.loanClass = 'home';
+    // Loan class drives which purpose tiles make sense. No lender is chosen here —
+    // DebtIQ finds the right lenders for the broker in the Calculate & Compare steps.
+    const classTile = (id,label,desc)=>`<div class="tile ${d.loanClass===id?'sel':''}" onclick="state.wizData.loanClass='${id}';state.wizData.dealType='';renderWizStep()"><div class="tt">${label}</div><div class="ts">${desc}</div></div>`;
+    const HOME_TYPES = ['Owner Occupier','Investment','First Home','Refinance','SMSF'];
+    const BIZ_TYPES  = ['Commercial','SME / Business','Self-employed','Refinance'];
+    const types = d.loanClass==='business' ? BIZ_TYPES : d.loanClass==='both' ? [...HOME_TYPES, ...BIZ_TYPES.filter(t=>!HOME_TYPES.includes(t))] : HOME_TYPES;
+    html = `<div class="wiz-card active"><h3>What kind of loan is this?</h3>
+      <p class="desc">This shapes the assessment. You don't choose a lender here — DebtIQ ranks the lenders that will actually approve this deal in the <b>Calculate</b> &amp; <b>Compare</b> steps.</p>
+      <div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--steel-bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin:6px 0 14px">
+        <div style="font-size:12.5px;color:var(--t2);max-width:60%"><b style="color:var(--t1)">📄 Have the client's documents?</b> Upload payslips, statements, ID &amp; contract — DebtIQ pre-fills the whole application and you review &amp; amend every field.</div>
+        <button class="btn primary" onclick="startDocFirst()">Upload &amp; auto-fill →</button>
+      </div>
+      <div class="subsec">Loan type</div>
+      <div class="tile-grid">
+        ${classTile('home','🏠 Home loan','Owner-occupied or investment property')}
+        ${classTile('business','🏢 Business loan','Commercial · SME · self-employed')}
+        ${classTile('both','🏠 + 🏢 Both','Home and business lending together')}
+      </div>
+      <div class="subsec">Purpose</div>
+      <div class="tile-grid">${types.map(t=>`<div class="tile ${d.dealType===t?'sel':''}" onclick="state.wizData.dealType='${t}';renderWizStep()"><div class="tt">${t}</div></div>`).join('')}</div>
       ${wizNav()}</div>`;
   } else if(state.wizStep===2){
     const wd = state.wizData;
-    html = `<div class="wiz-card active"><h3>Borrower Details</h3><p class="desc">Primary applicant information.</p>
+    const chip = (field,f)=>{ const on=(wd[field]||[]).includes(f); return `<label onclick="wizToggleArr('${field}','${f}')" style="display:inline-block;cursor:pointer;padding:5px 11px;border-radius:999px;font-size:12px;margin:0 6px 6px 0;border:1px solid ${on?'var(--steel)':'var(--border)'};background:${on?'var(--steel-bg)':'#fff'};color:${on?'var(--steel)':'var(--t2)'};font-weight:${on?600:500}">${f}</label>`; };
+    const regTag = t=>`<span style="font-size:10px;font-weight:600;color:var(--steel);background:var(--steel-bg);padding:2px 7px;border-radius:6px;margin-left:8px;vertical-align:middle">${t}</span>`;
+    const consent = (f,txt)=>`<label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--t2);margin:7px 0;cursor:pointer"><input type="checkbox" ${wd[f]?'checked':''} onchange="state.wizData.${f}=this.checked" style="margin-top:2px">${txt}</label>`;
+    html = `<div class="wiz-card active"><h3>Primary applicant</h3>
+      <p class="desc">The regulated fact-find — identity, situation and requirements &amp; objectives (NCCP responsible lending + Best Interests Duty). Fields map to <b>ApplyOnline / LIXI&nbsp;CAL</b> so the data lifts straight into lodgement.</p>
+      <div class="subsec">Identity ${regTag('LIXI Person · AML/CTF VOI')}</div>
       <div class="form-grid">
-        <div class="inp"><label for="wzFn">First Name</label><input id="wzFn" value="${esc(wd.firstName||'')}" oninput="state.wizData.firstName=this.value"></div>
-        <div class="inp"><label for="wzLn">Last Name</label><input id="wzLn" value="${esc(wd.lastName||'')}" oninput="state.wizData.lastName=this.value"></div>
-        <div class="inp"><label for="wzEm">Email</label><input id="wzEm" type="email" value="${esc(wd.email||'')}" oninput="state.wizData.email=this.value"></div>
-        <div class="inp"><label for="wzPh">Phone</label><input id="wzPh" value="${esc(wd.phone||'')}" oninput="state.wizData.phone=this.value"></div>
-        <div class="inp"><label for="wzDob">Date of Birth</label><input id="wzDob" type="date" value="${esc(wd.dob||'')}" oninput="state.wizData.dob=this.value"></div>
-        <div class="inp"><label for="wzDep">Dependants</label><input id="wzDep" type="number" min="0" value="${state.calc.dependants||0}" oninput="state.calc.dependants=Math.max(0,+this.value||0)"></div>
-      </div>${wizNav()}</div>`;
+        <div class="inp"><label>First name *</label><input value="${esc(wd.firstName||'')}" oninput="state.wizData.firstName=this.value"></div>
+        <div class="inp"><label>Last name *</label><input value="${esc(wd.lastName||'')}" oninput="state.wizData.lastName=this.value"></div>
+        <div class="inp"><label>Date of birth</label><input type="date" value="${esc(wd.dob||'')}" oninput="state.wizData.dob=this.value"></div>
+        <div class="inp"><label>Residency status</label><select onchange="state.wizData.residency=this.value">${RESIDENCY_OPTS.map(o=>`<option ${wd.residency===o?'selected':''}>${o}</option>`).join('')}</select></div>
+        <div class="inp" style="grid-column:1/-1"><label>Residential address</label><input value="${esc(wd.address||'')}" oninput="state.wizData.address=this.value" placeholder="Current home address"></div>
+        <div class="inp"><label>Email</label><input type="email" value="${esc(wd.email||'')}" oninput="state.wizData.email=this.value"></div>
+        <div class="inp"><label>Phone</label><input value="${esc(wd.phone||'')}" oninput="state.wizData.phone=this.value"></div>
+        <div class="inp"><label>Relationship status</label><select onchange="state.wizData.relationship=this.value">${RELATIONSHIP_OPTS.map(o=>`<option ${wd.relationship===o?'selected':''}>${o}</option>`).join('')}</select></div>
+        <div class="inp"><label>Dependants</label><input type="number" min="0" value="${state.calc.dependants||0}" oninput="state.calc.dependants=Math.max(0,+this.value||0)"></div>
+        <div class="inp"><label>ID type (VOI)</label><select onchange="state.wizData.idType=this.value">${ID_TYPES.map(o=>`<option ${wd.idType===o?'selected':''}>${o}</option>`).join('')}</select></div>
+        <div class="inp"><label>ID number</label><input value="${esc(wd.idNumber||'')}" oninput="state.wizData.idNumber=this.value"></div>
+      </div>
+      <div class="subsec" style="margin-top:14px">Employment ${regTag('LIXI Employment · RLO verification')}</div>
+      <div class="form-grid">
+        <div class="inp"><label>Employment type</label><select onchange="state.wizData.employment=this.value">${EMPLOYMENT_TYPES.map(o=>`<option ${wd.employment===o?'selected':''}>${o}</option>`).join('')}</select></div>
+        <div class="inp"><label>Employer</label><input value="${esc(wd.employer||'')}" oninput="state.wizData.employer=this.value"></div>
+        <div class="inp"><label>Occupation</label><input value="${esc(wd.occupation||'')}" oninput="state.wizData.occupation=this.value"></div>
+        <div class="inp"><label>Years in role</label><input type="number" min="0" step="0.5" value="${esc(wd.yearsEmployed||'')}" oninput="state.wizData.yearsEmployed=this.value"></div>
+      </div>
+      <div class="subsec" style="margin-top:14px">Requirements &amp; objectives ${regTag('NCCP RG209 · Best Interests Duty')}</div>
+      <div class="inp"><label style="display:block;margin-bottom:6px">Features the client wants</label><div>${LOAN_FEATURES.map(f=>chip('roFeatures',f)).join('')}</div></div>
+      <div class="form-grid" style="margin-top:8px">
+        <div class="inp"><label>Primary priority</label><select onchange="state.wizData.roPriority=this.value">${PRIORITY_OPTS.map(o=>`<option ${wd.roPriority===o?'selected':''}>${o}</option>`).join('')}</select></div>
+      </div>
+      <div class="inp" style="margin-top:10px"><label style="display:block;margin-bottom:6px">Reasonably foreseeable changes</label><div>${FORESEEABLE_OPTS.map(f=>chip('roForeseeable',f)).join('')}</div></div>
+      <div class="subsec" style="margin-top:14px">Consents ${regTag('Privacy Act · CCR')}</div>
+      ${consent('consentPrivacy','Client consents to privacy collection &amp; a credit check.')}
+      ${consent('consentCreditGuide','Credit Guide &amp; Best Interests Duty disclosure provided to the client.')}
+      ${wizNav()}</div>`;
   } else if(state.wizStep===3){
     const ents = state.calc.entities;
     const entCard = (ent, idx)=>{
@@ -5232,7 +5489,8 @@ function renderWizStep(){
   } else if(state.wizStep===4){
     const nl = state.calc.newLoan;
     const tv = totalSecurityValue(), amt = parseFloat(nl.amount)||0;
-    const lvr = tv>0 ? (amt/tv*100) : 0;
+    const exist = totalExistingSecuredDebt();
+    const lvr = tv>0 ? ((amt+exist)/tv*100) : 0;
     const lvrColor = lvr<=80?'var(--green)':lvr<=90?'var(--amber)':'var(--red)';
     html = `<div class="wiz-card active"><h3>Securities &amp; loan</h3><p class="desc">Part A captures every property securing the loan (multi-security supported, like AOL). Part B is the loan structure. LVR uses the aggregate security value.</p>
       <div class="subsec">Part A — Securities</div>
@@ -5243,7 +5501,7 @@ function renderWizStep(){
         <div class="inp"><label for="wzRate">Interest rate (%)</label><input id="wzRate" type="number" step="0.01" value="${nl.rate}" oninput="state.calc.newLoan.rate=+this.value;updateStatusStrip()"></div>
         <div class="inp"><label for="wzTerm">Term (years)</label><input id="wzTerm" type="number" value="${nl.term}" oninput="state.calc.newLoan.term=+this.value;updateStatusStrip()"></div>
       </div>
-      <div class="lvr-badge" id="wizLvr" style="background:${lvrColor}1a;color:${lvrColor}">LVR ${lvr.toFixed(1)}% · Loan ${fmtMoney(amt)} / Security ${fmtMoney(tv)}</div>
+      <div class="lvr-badge" id="wizLvr" style="background:${lvrColor}1a;color:${lvrColor}">LVR ${lvr.toFixed(1)}% · Loan ${fmtMoney(amt)}${exist>0?' + existing '+fmtMoney(exist):''} / Security ${fmtMoney(tv)}</div>
       ${wizNav()}</div>`;
   } else if(state.wizStep===5){
     const docs = lenderChecklist(d.lender, d.dealType);
@@ -5253,12 +5511,24 @@ function renderWizStep(){
         ${docs.map((doc,i)=>`<div class="upload-zone" id="wizUp${i}" onclick="wizUpload(${i},this.dataset.doc,0)" data-doc="${doc.replace(/"/g,'&quot;')}">⬆ ${doc}</div>`).join('')}
       </div>${wizNav()}</div>`;
   } else if(state.wizStep===6){
-    html = `<div class="wiz-card active"><h3>AI Data Extraction</h3><p class="desc">Extracted fields from uploaded documents.</p>
-      <table><thead><tr><th>Field</th><th>Value</th><th>Confidence</th></tr></thead><tbody>
-      ${[['Gross Income','$142,000','98%'],['Employer','Acme Corp Pty Ltd','96%'],['Net Monthly','$8,420','94%'],['Credit Card Limit','$15,000','99%'],['Account Conduct','Satisfactory','89%']].map(r=>
-        `<tr><td>${r[0]}</td><td class="mono">${r[1]}</td><td><div class="conf-bar"><span style="width:${r[2]}"></span></div> ${r[2]}</td></tr>`).join('')}
+    const rows=[];
+    (state.calc.entities||[]).forEach((e,ei)=>{
+      const who = e.name || ('Applicant '+(ei+1));
+      (e.incomes||[]).forEach(inc=>rows.push({who, item:(INCOME_TYPES[inc.type]||inc.type), val:fmtMoney(inc.amount_y1||inc.amount||0)+' / yr', prov:inc._prov}));
+      (e.liabilities||[]).forEach(l=>rows.push({who, item:(LIAB_TYPES[l.type]||l.type), val:fmtMoney(l.balance||0), prov:l._prov}));
+      (e.assets||[]).forEach(a=>rows.push({who, item:(a.label||a.type||'Asset'), val:fmtMoney(a.value||0), prov:a._prov}));
+    });
+    if(state.wizData.firstName||state.wizData.lastName) rows.unshift({who:'Applicant', item:'Name', val:[state.wizData.firstName,state.wizData.lastName].filter(Boolean).join(' '), prov:state.wizData._autofilled?{verified:false}:null});
+    const statusCell = p => p ? (p.verified?'<span style="font-size:10px;color:var(--green);font-weight:700">VERIFIED</span>':'<span style="font-size:10px;color:var(--amber);font-weight:700">REVIEW</span>') : '<span style="font-size:10px;color:var(--t3)">manual</span>';
+    html = `<div class="wiz-card active"><h3>Review extracted data</h3>
+      <p class="desc">${rows.length?`Pre-filled from your documents and inputs. <b>Unverified values are flagged REVIEW — amend each to match your assessment</b> before you proceed.`:'Nothing captured yet. Upload documents on the previous step (or use “Upload &amp; auto-fill”), or key financials into the calculator.'}</p>
+      ${rows.length?`<table><thead><tr><th>Who</th><th>Item</th><th>Value</th><th>Status</th></tr></thead><tbody>
+        ${rows.map(r=>`<tr><td>${escHtml(r.who)}</td><td>${escHtml(r.item)}</td><td class="mono">${escHtml(r.val)}</td><td>${statusCell(r.prov)}</td></tr>`).join('')}
       </tbody></table>
-      <button class="btn primary" style="margin-top:16px" onclick="callExtract()">↻ Re-run AI Extraction</button>
+      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn" onclick="state.wizStep=2;renderWizard(document.getElementById('wizModalContent')||document.getElementById('page-wizard'))">← Review applicant fields</button>
+        <button class="btn" onclick="closeWizardModal();state.svcTab='detailed';navigate('serviceability')">Amend financials in calculator →</button>
+      </div>`:''}
       ${wizNav()}</div>`;
   } else if(state.wizStep===7){
     html = `<div class="wiz-card active"><h3>AI Commentary</h3><p class="desc">Generated submission notes — edit inline.</p>
@@ -5280,8 +5550,10 @@ function renderWizStep(){
       ${[['Lender selected', lenderName],['Deal type', d.dealType||'Owner Occupier'],['Applicants/entities', state.calc.entities.length],['Securities', (state.calc.securities||[]).length||'1 implicit'],['Loan amount', fmtMoney(state.calc.newLoan.amount)],['LVR', ((parseFloat(state.calc.newLoan.amount)||0)/(totalSecurityValue()||1)*100).toFixed(1)+'%'],['Documents requested', lenderChecklist(d.lender,d.dealType).length+' items'],['Commentary generated','Complete']].map(r=>
         `<div class="detail-row"><span class="dl">✓ ${r[0]}</span><span class="dv">${r[1]}</span></div>`).join('')}
       ${reqs}
-      <div class="assessed-note" style="background:rgba(5,150,105,.08);color:var(--green);margin:16px 0">✓ All requirements satisfied. Ready to submit to ${lenderName}${pol?(' via '+(pol.submission_channel||'broker portal')):''}.</div>
-      <button class="btn" style="width:100%;margin-bottom:10px" onclick="generateSubmissionPack()">📄 Generate AOL-Ready Submission Pack</button>
+      <div class="assessed-note" style="background:rgba(5,150,105,.08);color:var(--green);margin:16px 0">✓ Application complete. Generate the ApplyOnline pre-fill, then lodge via ApplyOnline (NextGen) — no re-keying.</div>
+      <button class="btn primary" style="width:100%;margin-bottom:8px" onclick="openApplyOnlinePack()">⇪ Generate ApplyOnline application</button>
+      <button class="btn" style="width:100%;margin-bottom:8px" onclick="openBidNote()">🛡 BID/RLO compliance file note</button>
+      <button class="btn" style="width:100%;margin-bottom:10px" onclick="generateSubmissionPack()">📄 Credit submission pack (lender memo)</button>
       ${wizNav()}</div>`;
   }
   c.innerHTML = html;
@@ -5316,8 +5588,35 @@ function wizExtract(name, entityIdx=0){
   if(/payslip/.test(n) && !ent.incomes.some(x=>x._payslip)){ ent.incomes.push({type:'salary_ft', amount:142000, amount_y1:142000, amount_y2:138000, use_average:false, evidence_years:2, _payslip:true, _sample:true, _prov:prov('gross_period')}); added='a sample salary'; }
   else if(/tax/.test(n) && !ent.incomes.some(x=>x._tax)){ ent.incomes.push({type:'self_emp', amount:90000, amount_y1:90000, amount_y2:84000, use_average:false, evidence_years:2, _tax:true, _sample:true, _prov:prov('self_emp')}); added='a sample self-employed income'; }
   else if(/(liabilit|statement)/.test(n) && !ent.liabilities.some(x=>x._stmt)){ ent.liabilities.push({type:'credit_card', balance:15000, rate:21.9, term:0, _stmt:true, _sample:true, _prov:prov('credit_card_limit')}); added='a sample credit-card liability'; }
+  // Document-first: also pre-fill applicant identity + a sample loan/security so the broker
+  // reviews a COMPLETE (unverified) application instead of a blank form. Honest demo: every
+  // value is a flagged sample to be amended — real OCR replaces this when aiLive().
+  if(state.wizData._docFirst){
+    const wd = state.wizData;
+    if(/payslip|licence|license|\bid\b|passport|medicare/.test(n) && !wd.firstName && !wd.lastName){
+      Object.assign(wd, {firstName:'Jordan', lastName:'Banks', dob:'1986-04-12', residency:'Australian citizen',
+        email:'jordan.banks@email.com', phone:'0412 345 678', address:'12 Sample Street, Carlton VIC 3053',
+        employment:'PAYG (full-time)', employer:'Acme Corp Pty Ltd', occupation:'Operations Manager', yearsEmployed:'4', _autofilled:true});
+      added = added || 'sample applicant details';
+    }
+    if(/contract|valuation|purchase|security/.test(n) && !(state.calc.securities||[]).length){
+      const s = newSecurity(); Object.assign(s, {address:'12 Sample Street', suburb:'Carlton', state:'VIC', postcode:'3053', value:900000, value_basis:'Contract of Sale'});
+      state.calc.securities = [s];
+      state.calc.newLoan.amount = state.calc.newLoan.amount || 720000;
+      state.calc.newLoan.rate = state.calc.newLoan.rate || 6.14;
+      state.calc.newLoan.term = state.calc.newLoan.term || 30;
+      added = added || 'sample loan & security';
+    }
+  }
   if(added) toast('Demo: loaded '+added+' (unverified) — confirm against the document before submitting', 'info');
   if(state.page==='serviceability') updateStatusStrip();
+}
+function startDocFirst(){
+  state.wizData._docFirst = true;
+  state.wizStep = 5;   // jump straight to document upload; the rest pre-fills from there
+  const host = document.getElementById('wizModalContent') || document.getElementById('page-wizard');
+  if(host) renderWizard(host);
+  toast('Upload the client documents — DebtIQ pre-fills the application for you to review & amend.','info');
 }
 function submitDeal(){
   if(!requirePermission('deal.submit','submit a deal')) return;   // Phase 5 RBAC gate
@@ -5333,7 +5632,11 @@ function submitDeal(){
       || (state.calc.entities[0] && state.calc.entities[0].name) || 'New Application';
     // Phase 3 — seed the calc.purpose from wizard dealType so Step 1 is pre-filled.
     state.calc.purpose = wizDealTypeToPurpose(wd.dealType);
-    const newDeal = mkDeal({id, name:borrowerName, lender:wd.lender||'CBA', amount:amt, status:'SUBMITTED', lvr:+(amt/pv*100).toFixed(1), progress:null, type:wd.dealType||'Owner Occupier', primary_email:wd.email||'', primary_phone:wd.phone||''});
+    const defaultType = wd.loanClass==='business' ? 'Commercial' : 'Owner Occupier';
+    const applicant = { firstName:wd.firstName, lastName:wd.lastName, dob:wd.dob, residency:wd.residency, address:wd.address, email:wd.email, phone:wd.phone, relationship:wd.relationship, dependants:state.calc.dependants||0, idType:wd.idType, idNumber:wd.idNumber, employment:wd.employment, employer:wd.employer, occupation:wd.occupation, yearsEmployed:wd.yearsEmployed };
+    const requirements = { features:wd.roFeatures||[], priority:wd.roPriority, foreseeable:wd.roForeseeable||[] };
+    const consents = { privacy:!!wd.consentPrivacy, creditGuide:!!wd.consentCreditGuide };
+    const newDeal = mkDeal({id, name:borrowerName, lender:wd.lender||'CBA', amount:amt, status:'SUBMITTED', lvr:+(amt/pv*100).toFixed(1), progress:null, type:wd.dealType||defaultType, loanClass:wd.loanClass||'home', purpose:state.calc.purpose, applicant, requirements, consents, primary_email:wd.email||'', primary_phone:wd.phone||''});
     persistDealIntel(id);  // persist entities + securities + provenance onto the new deal
     DEALS.unshift(newDeal);
     DOCS.forEach(x=>{ if(x.deal==='NEW') x.deal=id; });   // retag wizard docs to the new deal
@@ -5466,13 +5769,15 @@ function dealSpineBanner(){
   </div>`;
 }
 
-// Map DebtIQ lender ids → CDR bank keys (functions/api/cdr-rates.js).
+// CDR bank key now lives in the lender data model (lenders.js `cdr_bank`); this map
+// is a fallback only. cdrBankFor() is the single source of truth the UI reads.
 const CDR_BANK_KEY = { CBA:'cba', ANZ:'anz', NAB:'nab', Westpac:'westpac', Macquarie:'macquarie' };
+function cdrBankFor(id){ const p=(typeof lenderDB==='function')&&lenderDB()[id]; return (p&&p.cdr_bank) || CDR_BANK_KEY[id] || null; }
 // Pull the lender's current carded rate from public CDR data and apply it to the calc.
 // Honest: carded (advertised) rate, not the discounted/assessed rate. Works once the
 // backend is deployed (the /api/cdr-rates function + CDR egress); fails soft otherwise.
 async function applyLiveCdrRate(){
-  const key = CDR_BANK_KEY[state.lender];
+  const key = cdrBankFor(state.lender);
   if(!key){ toast('Live CDR rate isn’t mapped for this lender yet.', 'info'); return; }
   showLoader('Fetching live CDR rate…');
   try{
@@ -5489,6 +5794,20 @@ async function applyLiveCdrRate(){
     }
   }catch(e){ hideLoader(); toast('Live CDR rates activate once the backend is deployed.', 'info'); }
 }
+function renderMethodology(el){
+  const card=(title,body)=>`<div class="card" style="padding:16px 18px;margin-bottom:12px"><h3 style="font-size:14px;font-weight:700;margin-bottom:6px">${title}</h3><div style="font-size:13px;color:var(--t2);line-height:1.65">${body}</div></div>`;
+  el.innerHTML=`
+    <div class="page-head"><h1>How our numbers work</h1><p>Exactly what's real, what's indicative, and where to confirm — so you can trust the output and know its limits.</p></div>
+    <div class="acc-note steel" style="margin-bottom:16px"><b>Honest by design.</b> DebtIQ is an <b>indicative cross-check</b> — it tells you which lenders are likely to fit and roughly how much, fast. It is <b>not</b> a replica of each lender's internal servicing calculator (that logic is accreditation-gated). Always confirm against the lender's own calc before lodgement.</div>
+    ${card('Assessment buffer — REAL', 'The +3% serviceability buffer is the APRA minimum (Prudential Standard <b>APS 220</b>, guidance <b>APG 223</b>) — uniform for ADIs; non-bank lenders legitimately run lower buffers. We apply a buffer <b>per lender</b>, not a blanket figure.')}
+    ${card('Interest rates — INDICATIVE, with a LIVE option', 'By default we use indicative carded rates. On the Calculator, <b>↻ Live rate (CDR)</b> pulls a lender\'s <b>current carded rate from public Consumer Data Right APIs</b> (free, no login) for the majors. Note: carded ≠ the discounted/assessed rate a specific borrower gets.')}
+    ${card('Living expenses (HEM) — INDICATIVE "HEM-style" floor', 'We apply an indicative HEM-style expense floor derived from public ABS/benchmark data. This is <b>not</b> the licensed Melbourne Institute HEM tables (those require a commercial licence). Treat the floor as a sanity check, and verify declared expenses with evidence.')}
+    ${card('Income shading & policy — INDICATIVE', 'We apply the published APG 223 floors (e.g. ≥20% haircut on non-salary income, ≥20% on rental) plus per-lender policy from public credit guides. Each lender\'s <b>exact</b> shading grid and add-backs are confidential, so those cells are indicative and flagged for verification.')}
+    ${card('DTI & HECS — current conventions', 'High DTI (≥6×) is treated as a per-lender appetite <b>flag</b>, not a hard fail (consistent with APRA\'s macroprudential framing). HECS and negative-gearing rules are changing in 2025–26 and we track the published conventions.')}
+    ${card('Realistic accuracy', 'For vanilla PAYG, single-applicant, standard purchase, a public-data engine like this typically lands within a few percent of a major lender\'s capacity figure. It can diverge meaningfully on complex income (self-employed, overtime/bonus/commission, rental, foreign income) where confidential lender grids dominate. <b>Use it to shortlist and sanity-check, not to quote the lender\'s number.</b>')}
+    <p style="font-size:11px;color:var(--t3);margin-top:8px">Sources: APRA APG 223 / APS 220 (apra.gov.au); Consumer Data Right (cdr.gov.au); ABS Household Expenditure Survey; lender public credit guides. Not legal or credit advice.</p>
+    <div style="margin-top:14px"><button class="btn" onclick="navigate('serviceability')">← Back to the calculator</button></div>`;
+}
 function renderServiceability(el){
   const auLender = state.market==='AU' && Object.keys(lenderDB()).length
     ? `<div class="card" style="padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -5497,7 +5816,7 @@ function renderServiceability(el){
            ${Object.keys(lenderDB()).filter(id=> state.accreditedLenders.length===0 || state.accreditedLenders.includes(id)).map(id=>`<option value="${id}" ${state.lender===id?'selected':''}>${lenderDB()[id].label||id} — ${lenderDB()[id].apra_regulated?'ADI':'Non-bank'} ${(lenderDB()[id].buffer*100).toFixed(0)}% buffer</option>`).join('')}
          </select>
          ${activePolicy()?`<span class="pill ${activePolicy().apra_regulated?'gray':'amber'}">${activePolicy().apra_regulated?'ADI':'Non-bank'}</span><span class="pill neutral">${(activeBuffer()*100).toFixed(0)}% buffer</span><span class="pill gray">DSR &lt; ${activeDsrMax()}%</span><span class="pill gray">Max LVR ${activePolicy().max_lvr_owner_occ_pi||'—'}%</span>`:''}
-         ${CDR_BANK_KEY[state.lender]?`<button class="btn btn-sm" onclick="applyLiveCdrRate()" title="Fetch this lender's current carded rate from public CDR data">↻ Live rate (CDR)</button>`:''}
+         ${cdrBankFor(state.lender)?`<button class="btn btn-sm" onclick="applyLiveCdrRate()" title="Fetch this lender's current carded rate from public CDR data">↻ Live rate (CDR)</button>`:''}
        </div>` : '';
   const tabs = `<div class="tabs" style="margin-bottom:16px">
       <div class="tab ${state.svcTab==='detailed'?'active':''}" onclick="state.svcTab='detailed';renderServiceability(document.getElementById('page-serviceability'))">Detailed (verified)</div>
@@ -5505,7 +5824,7 @@ function renderServiceability(el){
     </div>`;
   el.innerHTML = `
     <div class="page-head"><h1>Serviceability Calculator</h1><p>Live assessment — updates on every keystroke · ${m().flag} ${m().label}</p></div>
-    <div class="acc-note steel" style="margin-bottom:14px"><b>Indicative.</b> Figures use DebtIQ's own engine with indicative rates and per-lender policy — a fast sanity check, <b>not a replica of each lender's live servicing calculator</b>. Confirm against the lender's own calc before lodgement.</div>
+    <div class="acc-note steel" style="margin-bottom:14px"><b>Indicative.</b> Figures use DebtIQ's own engine with indicative rates and per-lender policy — a fast sanity check, <b>not a replica of each lender's live servicing calculator</b>. Confirm against the lender's own calc before lodgement. <a href="#" onclick="navigate('methodology');return false" style="color:var(--brand);font-weight:600">How our numbers work →</a></div>
     ${dealSpineBanner()}
     ${tabs}
     ${auLender}
@@ -5605,6 +5924,13 @@ function renderCalcEditor(){
                  <input type="number" aria-label="HECS monthly deduction" value="${l.monthly_deduction||0}" oninput="state.calc.entities[${ei}].liabilities[${li}].monthly_deduction=+this.value;updateCalc()" style="width:84px;padding:4px 7px;border:1px solid var(--border);border-radius:7px" title="From the latest payslip — used for CBA's 12-month exclusion rule">
                  <span style="opacity:.7">(from payslip)</span></div>`
             : (noTerm ? `<div style="margin:-1px 0 9px;padding-left:2px;font-size:11px;color:var(--amber)">⚠ Term must be &gt; 0 for accurate assessment (defaulting to ${defaultTerm(l.type)}yr).</div>` : '');
+          const securable = !['credit_card','hecs','bnpl'].includes(l.type);
+          const _secs = state.calc.securities||[];
+          const securedSel = (securable && _secs.length) ? `<div style="margin:-1px 0 9px;padding-left:2px;font-size:11px;color:var(--t3);display:flex;gap:6px;align-items:center">Secured against
+              <select aria-label="Secured against property" onchange="state.calc.entities[${ei}].liabilities[${li}].security_id=this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()" style="padding:4px 7px;border:1px solid var(--border);border-radius:7px">
+                <option value="" ${!l.security_id?'selected':''}>Unsecured</option>
+                ${_secs.map((s,si)=>`<option value="${escHtml(s.id)}" ${l.security_id===s.id?'selected':''}>Security ${si+1}${s.address?' — '+escHtml(s.address):''}</option>`).join('')}
+              </select><span style="opacity:.7">(feeds property LVR)</span></div>` : '';
           return `<div class="row-line liab">
             <select aria-label="Liability type" onchange="state.calc.entities[${ei}].liabilities[${li}].type=this.value;renderCalcEditor();renderCalcResults();updateStatusStrip()">${Object.entries(LIAB_TYPES).map(([k,v])=>`<option value="${k}" ${l.type===k?'selected':''}>${v}</option>`).join('')}</select>
             <input type="number" aria-label="Balance or limit" value="${l.balance}" oninput="state.calc.entities[${ei}].liabilities[${li}].balance=+this.value;updateCalc()">
@@ -5612,7 +5938,7 @@ function renderCalcEditor(){
             <input type="number" aria-label="Term" value="${l.term}" oninput="state.calc.entities[${ei}].liabilities[${li}].term=+this.value;updateCalc()">
             <span class="computed mono" id="liabAss-${ei}-${li}">${fmtMoney(assessed)}${provBadge(l._prov)}</span>
             <span class="row-x" role="button" tabindex="0" aria-label="Remove liability" onclick="removeLiab(${ei},${li})">×</span>
-          </div>${extra}`;}).join('')}
+          </div>${extra}${securedSel}`;}).join('')}
         <button class="add-row" onclick="addLiab(${ei})">+ Add liability</button>
       </div>`:''}
     </div>`).join('');
@@ -5889,6 +6215,8 @@ function securitiesBuilderHTML(){
       <div class="inp"><label>Value (${m().sym})</label><input type="number" value="${sec.value||0}" oninput="updateSecurityField(${idx},'value',+this.value)"></div>
       <div class="inp"><label>Value basis</label><select onchange="updateSecurityField(${idx},'value_basis',this.value)">${PROP_BASIS.map(t=>`<option ${sec.value_basis===t?'selected':''}>${t}</option>`).join('')}</select></div>
       <div class="inp"><label>Owner entity</label><select onchange="updateSecurityField(${idx},'owner_entity_id',this.value||null)"><option value="">— select —</option>${ents.map(e=>`<option value="${escHtml(e.id)}" ${sec.owner_entity_id===e.id?'selected':''}>${escHtml(e.name||(ENTITY_KINDS[e.kind]||'Entity'))}</option>`).join('')}</select></div>
+      <div class="inp"><label>Guarantee type</label><select onchange="updateSecurityField(${idx},'guarantee_type',this.value)">${GUARANTEE_TYPES.map(t=>`<option ${(sec.guarantee_type||'None')===t?'selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="inp"><label>Guarantor (if any)</label><input value="${escHtml(sec.guarantor||'')}" oninput="updateSecurityField(${idx},'guarantor',this.value)" placeholder="Name / entity"></div>
     </div>
     ${(sec.purpose==='Investment' || sec.transaction==='Refinancing' || sec.transaction==='Owned (additional security)') ? `<div class="form-grid" style="margin-bottom:8px">
       <div class="inp"><label>Existing mortgage (${m().sym})</label><input type="number" value="${sec.existing_mortgage||0}" oninput="updateSecurityField(${idx},'existing_mortgage',+this.value)"></div>
@@ -5896,6 +6224,13 @@ function securitiesBuilderHTML(){
       <div class="inp"><label>Rental income (gross)</label><input type="number" value="${sec.rental_income||0}" oninput="updateSecurityField(${idx},'rental_income',+this.value)"></div>
       <div class="inp"><label>Rental frequency</label><select onchange="updateSecurityField(${idx},'rental_frequency',this.value)">${FREQ_OPTS.map(t=>`<option ${sec.rental_frequency===t?'selected':''}>${t}</option>`).join('')}</select></div>
     </div>`:''}
+    ${(()=>{ const debt=securityDebt(sec), v=parseFloat(sec.value)||0, lvr=v>0?debt/v*100:0, linked=linkedLiabDebt(sec.id), guar=sec.guarantee_type&&sec.guarantee_type!=='None';
+      return (debt>0||guar) ? `<div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin:2px 0 10px;padding:8px 11px;background:var(--blue-bg);border-radius:9px;font-size:12px">
+        <span>Secured debt <b class="mono">${fmtMoney(debt)}</b></span>
+        <span>Current LVR <b class="mono" style="color:${lvr<=80?'var(--green)':lvr<=90?'var(--amber)':'var(--red)'}">${lvr.toFixed(1)}%</b></span>
+        ${linked>0?`<span style="color:var(--t3)">incl. ${fmtMoney(linked)} linked liabilities</span>`:''}
+        ${guar?`<span style="color:var(--t3)">🛡 ${escHtml(sec.guarantee_type)}${sec.guarantor?' · '+escHtml(sec.guarantor):''}</span>`:''}
+      </div>` : ''; })()}
     <button class="mini-btn" onclick="toggleSecurityTitle(${idx})">${sec._titleOpen?'▾':'▸'} Title details (Torrens)</button>
     ${sec._titleOpen?`<div class="form-grid" style="margin-top:8px">
       <div class="inp"><label>Folio</label><input value="${escHtml((sec.title||{}).folio||'')}" oninput="updateSecurityTitle(${idx},'folio',this.value)"></div>
@@ -5909,7 +6244,7 @@ function securitiesBuilderHTML(){
 }
 function addIncome(ei){ state.calc.entities[ei].incomes.push({type:'salary_ft',amount:0}); renderCalcEditor();renderCalcResults();updateStatusStrip(); logEvent('Income line added'); }
 function removeIncome(ei,ii){ state.calc.entities[ei].incomes.splice(ii,1); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
-function addLiab(ei){ state.calc.entities[ei].liabilities.push({type:'credit_card',balance:0,rate:0,term:0}); renderCalcEditor();renderCalcResults();updateStatusStrip(); logEvent('Liability added'); }
+function addLiab(ei){ state.calc.entities[ei].liabilities.push({type:'credit_card',balance:0,rate:0,term:0,security_id:''}); renderCalcEditor();renderCalcResults();updateStatusStrip(); logEvent('Liability added'); }
 function removeLiab(ei,li){ state.calc.entities[ei].liabilities.splice(li,1); renderCalcEditor();renderCalcResults();updateStatusStrip(); }
 
 function setText(id,v){ const e=document.getElementById(id); if(e) e.textContent=v; }
@@ -6346,7 +6681,7 @@ function renderDocuments(el){
     ${pipelineSummaryHTML(state.activeDeal)}
     <div class="kpi-grid">
       <div class="kpi" style="border-top-color:var(--green)"><div class="ico" style="background:rgba(5,150,105,.1);color:var(--green)">${svgIcon('check',20)}</div><div class="num">${verified}</div><div class="cap">Verified</div></div>
-      <div class="kpi" style="border-top-color:var(--ink)"><div class="ico" style="background:rgba(59,111,181,.10);color:var(--steel)">⟳</div><div class="num">${processing}</div><div class="cap">Processing</div></div>
+      <div class="kpi" style="border-top-color:var(--ink)"><div class="ico" style="background:rgba(75,87,214,.10);color:var(--steel)">⟳</div><div class="num">${processing}</div><div class="cap">Processing</div></div>
       <div class="kpi" style="border-top-color:var(--amber)"><div class="ico" style="background:rgba(217,119,6,.1);color:var(--amber)">👁</div><div class="num">${review}</div><div class="cap">Needs Review</div></div>
       <div class="kpi" style="border-top-color:var(--red)"><div class="ico" style="background:rgba(220,38,38,.1);color:var(--red)">🛡</div><div class="num">${flagged}</div><div class="cap">Integrity flags</div></div>
     </div>
@@ -7464,6 +7799,25 @@ function accessPane(){
   const manage = can('member.role.change');
   const idleM = sessionIdleMins();
 
+  // OPT-IN master switch — solo brokers aren't forced into team governance.
+  const enabled = !!a.enabled;
+  const toggleCard = `<div class="acc-note ${enabled?'steel':'amber'}" style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="max-width:60%"><b>Team access control is ${enabled?'ON':'OFF — solo mode'}.</b> ${enabled?'Roles &amp; permissions below are enforced for every member.':'You have full access to your own data. Turn this on only if you want teammates and to set who can do what.'}</div>
+      <button class="btn ${enabled?'':'primary'}" onclick="setAccessEnabled(${!enabled})">${enabled?'Switch to solo mode':'Enable team access'}</button>
+    </div>`;
+  if(!enabled){
+    return `
+      <div class="acc-head"><div><h3 class="acc-h3">Team &amp; access</h3><p class="acc-sub">${escHtml(a.orgName)} · solo mode</p></div></div>
+      ${toggleCard}
+      <h4 class="acc-section">What you get when you enable it</h4>
+      <ul style="margin:2px 0 0 18px;color:var(--t2);font-size:13px;line-height:1.7">
+        <li>Invite teammates and assign roles — Owner, Admin, Broker, Processor, Read-only.</li>
+        <li>Deny-by-default permissions (e.g. a Processor can't delete deals, Read-only can't edit, PII view/export gated by role).</li>
+        <li>Re-auth for sensitive actions, idle session timeout, and an append-only audit log.</li>
+      </ul>
+      <p class="acc-fineprint">Your client data is already isolated per account by row-level security — this adds <em>team</em> governance on top, only when you want it.</p>`;
+  }
+
   // Banner: live-unwired note OR demo "view as role" preview.
   const modeBanner = liveUnwired
     ? `<div class="acc-note amber"><b>Live mode.</b> Role enforcement turns on automatically the moment the <span class="mono">0002_access_control</span> tables are applied and you hold an active <span class="mono">membership</span> row — the app reads your real role on sign-in. Until then access follows the existing per-user row-level security (your deal data is already protected either way). See <span class="mono">supabase/APPLY.md</span> to apply it.</div>`
@@ -7515,7 +7869,7 @@ function accessPane(){
           </select>
         </div>
       </div>
-      <button class="btn primary" style="margin-top:10px" onclick="(function(){ inviteMember(document.getElementById('accInvEmail').value, document.getElementById('accInvRole').value); renderSettings(document.getElementById('page-settings')); })()">Send invite</button>
+      <button class="btn primary" style="margin-top:10px" onclick="(function(){ inviteMember(document.getElementById('accInvEmail').value, document.getElementById('accInvRole').value); refreshSettings(); })()">Send invite</button>
       <p class="acc-fineprint">An invite issues a scoped, time-limited token. The invitee completes their own credential setup through the normal sign-in path — DebtIQ never sets a password or creates the account for them. Owner cannot be granted by invite.</p>
     </div>` : `<p class="acc-muted">Only an Owner or Admin can invite members.</p>`;
 
@@ -7527,8 +7881,8 @@ function accessPane(){
         <td>${roleChip(i.role)}</td>
         <td class="mono acc-muted" title="Demo token — non-secret">${escHtml(i.token)}</td>
         <td class="acc-r">
-          ${!accessLive()?`<button class="acc-mini" onclick="acceptInviteDemo('${escArg(i.id)}');renderSettings(document.getElementById('page-settings'))">Simulate accept</button>`:''}
-          <button class="acc-mini danger" onclick="revokeInvite('${escArg(i.id)}');renderSettings(document.getElementById('page-settings'))">Revoke</button>
+          ${!accessLive()?`<button class="acc-mini" onclick="acceptInviteDemo('${escArg(i.id)}');refreshSettings()">Simulate accept</button>`:''}
+          <button class="acc-mini danger" onclick="revokeInvite('${escArg(i.id)}');refreshSettings()">Revoke</button>
         </td>
       </tr>`).join('')}</tbody>
     </table>` : `<p class="acc-muted" style="margin-top:8px">No pending invitations.</p>`;
@@ -7567,6 +7921,7 @@ function accessPane(){
         <p class="acc-sub">${escHtml(a.orgName)} · your effective role: ${roleChip(role||'owner')}</p>
       </div>
     </div>
+    ${toggleCard}
     ${modeBanner}
     ${viewAs}
 
@@ -7616,7 +7971,7 @@ function renderSettings(el){
     <div class="page-head"><h1>Settings</h1><p>Account, preferences, market, AI and commission defaults</p></div>
     <div class="tabs">
       ${[['account','Account'],['access','Team & Access'],['preferences','Preferences'],['market','Market'],['ai','AI'],['commission','Commission'],['lenders','Lenders']].map(([k,l])=>
-        `<div class="tab ${settingsTab===k?'active':''}" role="button" tabindex="0" onclick="settingsTab='${k}';renderSettings(document.getElementById('page-settings'))" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();settingsTab='${k}';renderSettings(document.getElementById('page-settings'))}">${l}</div>`).join('')}
+        `<div class="tab ${settingsTab===k?'active':''}" role="button" tabindex="0" onclick="settingsTab='${k}';refreshSettings()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();settingsTab='${k}';refreshSettings()}">${l}</div>`).join('')}
     </div>
     <div class="card" style="padding:24px;max-width:${settingsTab==='access'?'980px':'720px'}">${settingsPane()}</div>`;
 }
@@ -8092,13 +8447,301 @@ function openPackWindow(html){
   if(!w){ toast('Please allow popups for DebtIQ', 'err'); return; }
   w.document.write(html); w.document.close();
 }
+
+/* ============================================================
+   APPLYONLINE / LIXI CAL PRE-FILL EXPORT
+   Maps the active deal + calculator into ApplyOnline (NextGen)
+   section order so a broker fills ApplyOnline without re-keying
+   (~90 min/deal). The pack is structured (section -> rows) so the
+   same data layer can emit a LIXI CAL XML payload / API push later.
+   ============================================================ */
+function buildApplyOnlinePack(){
+  const deal = DEALS.find(x=>x.id===state.activeDeal) || DEALS[0] || {};
+  const c = state.calc || {};
+  const ap = deal.applicant || {};
+  const wd = state.wizData || {};
+  let r = {}; try { r = computeServiceability() || {}; } catch(e){}
+  const purposeLabel = (CALC_PURPOSES.find(x=>x.id===(c.purpose||deal.purpose))||{}).label || deal.purpose || 'Purchase';
+  const money = v => fmtMoney(parseFloat(v)||0);
+  const fmt = v => (v===0 || v) ? String(v) : '—';
+  const ents = c.entities || [];
+  const nl = c.newLoan || {};
+  const secs = c.securities || [];
+  const reqs = deal.requirements || { features:wd.roFeatures||[], priority:wd.roPriority, foreseeable:wd.roForeseeable||[] };
+  const cons = deal.consents || { privacy:!!wd.consentPrivacy, creditGuide:!!wd.consentCreditGuide };
+  const secLabel = id => { const i = secs.findIndex(s=>s.id===id); return i<0 ? 'Unsecured' : ('Security '+(i+1)+(secs[i].address?' — '+secs[i].address:'')); };
+  const S = [];
+
+  S.push({ title:'Application', lixi:'LoanDetails · Purpose', rows:[
+    ['Deal ID', deal.id||'(new)'],
+    ['Loan class', wd.loanClass||deal.loanClass||'home'],
+    ['Application type', deal.type||wd.dealType||'Owner Occupier'],
+    ['Loan purpose', purposeLabel],
+    ['Loan amount', money(nl.amount)],
+    ['Term', (nl.term||30)+' years'],
+    ['Interest rate', (parseFloat(nl.rate)||0).toFixed(2)+'%'],
+    ['Assessed rate (incl. buffer)', r.assessedRate!=null ? r.assessedRate.toFixed(2)+'%' : '—'],
+    ['Target lender', (typeof lenderLabel==='function') ? lenderLabel(deal.lender||state.lender) : (deal.lender||state.lender||'—')],
+  ]});
+
+  S.push({ title:'Primary applicant', lixi:'Person · AML/CTF VOI', rows:[
+    ['Name', [ap.firstName||wd.firstName, ap.lastName||wd.lastName].filter(Boolean).join(' ') || (ents[0]&&ents[0].name) || deal.name || '—'],
+    ['Date of birth', fmt(ap.dob||wd.dob)],
+    ['Residency', fmt(ap.residency||wd.residency)],
+    ['Residential address', fmt(ap.address||wd.address)],
+    ['Email', fmt(ap.email||wd.email||deal.primary_email)],
+    ['Phone', fmt(ap.phone||wd.phone||deal.primary_phone)],
+    ['Relationship status', fmt(ap.relationship||wd.relationship)],
+    ['Dependants', fmt(ap.dependants!=null?ap.dependants:c.dependants)],
+    ['Identification (VOI)', [ap.idType||wd.idType, ap.idNumber||wd.idNumber].filter(Boolean).join(' · ')||'—'],
+  ]});
+
+  S.push({ title:'Parties / entities', lixi:'Person · Company · Trust', rows:
+    (ents.length?ents:[{name:deal.name,kind:'individual',role:'borrower',ownership_pct:100}]).map(e=>[
+      (e.name||'Unnamed'),
+      [ (ENTITY_KINDS[e.kind]||'Individual'), (ENTITY_ROLES[e.role]||'Borrower'), 'ownership '+(e.ownership_pct==null?100:e.ownership_pct)+'%', e.abn?('ABN '+e.abn):'', e.trustee_name?('Trustee/dir '+e.trustee_name):'' ].filter(Boolean).join(' · ')
+    ]) });
+
+  S.push({ title:'Employment', lixi:'Employment · RLO verification', rows:[
+    ['Employment type', fmt(ap.employment||wd.employment)],
+    ['Employer', fmt(ap.employer||wd.employer)],
+    ['Occupation', fmt(ap.occupation||wd.occupation)],
+    ['Years in role', fmt(ap.yearsEmployed||wd.yearsEmployed)],
+  ]});
+
+  const incRows=[]; ents.forEach(e=>(e.incomes||[]).forEach(i=>{
+    const gross = (i.use_average&&i.amount_y2)?(((+i.amount_y1||0)+(+i.amount_y2||0))/2):(parseFloat(i.amount_y1||i.amount)||0);
+    let assessable = gross; try{ assessable = getShadedIncome(i, state.lender); }catch(e2){}
+    incRows.push([ (e.name||'Applicant')+' — '+(INCOME_TYPES[i.type]||i.type), money(gross)+' gross · '+money(assessable)+' assessable'+(i._prov&&!i._prov.verified?' · REVIEW':'') ]);
+  }));
+  S.push({ title:'Income', lixi:'Income (employment / business / rental)', rows: incRows.length?incRows:[['—','No income lines captured']] });
+
+  S.push({ title:'Expenses', lixi:'Expenses · HEM floor', rows:[
+    ['HEM floor (monthly)', r.HEM!=null?money(r.HEM):'—'],
+    ['Net disposable income (monthly)', r.ndi!=null?money(r.ndi):'—'],
+  ]});
+
+  const assetRows=[]; ents.forEach(e=>(e.assets||[]).forEach(a=>assetRows.push([ (e.name||'Applicant')+' — '+(a.label||a.type||'Asset'), money(a.value) ])));
+  S.push({ title:'Assets', lixi:'Real-estate & non-real-estate assets', rows: assetRows.length?assetRows:[['—','No assets captured']] });
+
+  const liabRows=[]; ents.forEach(e=>(e.liabilities||[]).forEach(l=>liabRows.push([
+    (e.name||'Applicant')+' — '+(LIAB_TYPES[l.type]||l.type),
+    money(l.balance)+(l.type==='credit_card'?' limit':' balance')+(l.security_id?(' · secured to '+secLabel(l.security_id)):'')
+  ])));
+  S.push({ title:'Liabilities', lixi:'Liability (linked to securities)', rows: liabRows.length?liabRows:[['—','No liabilities captured']] });
+
+  S.push({ title:'Securities', lixi:'Security (property)', rows:
+    (secs.length?secs:[]).map((s,i)=>[ 'Security '+(i+1)+(s.address?' — '+s.address:''),
+      [ (s.property_type||''), (s.purpose||''), 'value '+money(s.value), securityDebt(s)>0?('debt '+money(securityDebt(s))+' · LVR '+securityLVR(s).toFixed(1)+'%'):'', (s.guarantee_type&&s.guarantee_type!=='None')?('guarantee: '+s.guarantee_type+(s.guarantor?' ('+s.guarantor+')':'')):'' ].filter(Boolean).join(' · ')
+    ]).concat(secs.length?[]:[['—','No securities captured']]) });
+
+  S.push({ title:'Loan / facilities', lixi:'LoanAccount', rows:[
+    ['Loan amount', money(nl.amount)],
+    ['Repayment / term', (nl.term||30)+' years'],
+    ['Rate', (parseFloat(nl.rate)||0).toFixed(2)+'%'],
+    ['LVR (incl. existing secured debt)', r.lvr!=null?(r.lvr.toFixed(1)+'%'):'—'],
+  ]});
+
+  S.push({ title:'Requirements & objectives', lixi:'NCCP RG209 · BID', rows:[
+    ['Features requested', (reqs.features&&reqs.features.length)?reqs.features.join(', '):'—'],
+    ['Primary priority', fmt(reqs.priority)],
+    ['Reasonably foreseeable changes', (reqs.foreseeable&&reqs.foreseeable.length)?reqs.foreseeable.join(', '):'—'],
+  ]});
+
+  S.push({ title:'Declarations', lixi:'Privacy Act · CCR · BID', rows:[
+    ['Privacy & credit-check consent', cons.privacy?'Provided ✓':'Not recorded'],
+    ['Credit Guide & BID disclosure', cons.creditGuide?'Provided ✓':'Not recorded'],
+  ]});
+
+  S.push({ title:'Serviceability snapshot', lixi:'(DebtIQ assessment)', rows:[
+    ['Verdict', r.verdict||'—'],
+    ['DSR', r.dsr!=null?r.dsr.toFixed(1)+'%':'—'],
+    ['DTI', r.dti!=null?r.dti.toFixed(1)+'×':'—'],
+    ['NDI (monthly)', r.ndi!=null?money(r.ndi):'—'],
+  ]});
+
+  return { meta:{ dealId:deal.id||'(new)', applicant:S[1].rows[0][1], broker:state.userName||'Broker', generated:(new Date()).toLocaleString('en-AU') }, sections:S };
+}
+function buildApplyOnlineHTML(pack){
+  const esc = s => String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const secHTML = sec => `<section class="sec"><div class="sh"><h2>${esc(sec.title)}</h2><span class="lx">LIXI: ${esc(sec.lixi)}</span></div>
+    <table>${sec.rows.map(r=>`<tr><td class="k">${esc(r[0])}</td><td class="v">${esc(r[1])}</td></tr>`).join('')}</table></section>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><title>ApplyOnline pre-fill — ${esc(pack.meta.dealId)}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;color:#14203a;background:#f4f6fb;padding:30px;line-height:1.45}
+    .wrap{max-width:860px;margin:0 auto}
+    .top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1e3a8a;padding-bottom:14px;margin-bottom:8px}
+    .brand{font-size:22px;font-weight:800;color:#1e3a8a}
+    .brand b{color:#2a50c8}
+    .sub{font-size:12px;color:#5a6178;margin-top:3px}
+    .meta{text-align:right;font-size:11.5px;color:#5a6178}
+    .note{background:#eef1fb;border:1px solid #d5d8e6;border-radius:8px;padding:10px 13px;font-size:12px;color:#454c5f;margin:14px 0 18px}
+    .sec{background:#fff;border:1px solid #e5e7f0;border-radius:11px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(20,28,50,.05);break-inside:avoid}
+    .sh{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #eef1fb;padding-bottom:7px;margin-bottom:8px}
+    .sh h2{font-size:14px;color:#13265e}
+    .lx{font-size:10px;font-weight:700;letter-spacing:.04em;color:#2a50c8;background:#eef1fb;padding:2px 8px;border-radius:6px}
+    table{width:100%;border-collapse:collapse}
+    td{padding:5px 4px;font-size:12.5px;vertical-align:top;border-bottom:1px dotted #eef1fb}
+    td.k{color:#5a6178;width:42%} td.v{color:#14203a;font-weight:600}
+    .actions{display:flex;gap:10px;margin:6px 0 16px}
+    button{font:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;border:none;cursor:pointer;background:#1e3a8a;color:#fff}
+    button.sec-btn{background:#fff;color:#14203a;border:1px solid #d5d8e6}
+    @media print{ body{background:#fff;padding:0} .actions{display:none} .sec{box-shadow:none} }
+  </style></head><body><div class="wrap">
+    <div class="top"><div><div class="brand">Debt<b>IQ</b> → ApplyOnline</div><div class="sub">Field-mapped pre-fill · copy into ApplyOnline (NextGen) · LIXI CAL section order</div></div>
+      <div class="meta">${esc(pack.meta.dealId)} · ${esc(pack.meta.applicant)}<br>${esc(pack.meta.broker)} · ${esc(pack.meta.generated)}</div></div>
+    <div class="actions"><button onclick="window.print()">⎙ Print / Save PDF</button></div>
+    <div class="note"><b>How to use:</b> fields below are laid out in ApplyOnline's section order. Values marked <b>REVIEW</b> were pre-filled from documents and must be verified before lodgement. This sheet is a pre-fill aid, not a lodged application.</div>
+    ${pack.sections.map(secHTML).join('')}
+  </div></body></html>`;
+}
+function openApplyOnlinePack(){
+  if(!state.activeDeal && !(DEALS[0])){ toast('Open a deal first', 'err'); return; }
+  try { openPackWindow(buildApplyOnlineHTML(buildApplyOnlinePack())); logEvent('ApplyOnline pre-fill generated'); }
+  catch(e){ toast('Could not build ApplyOnline pack: '+e.message, 'err'); }
+}
+
+/* ============================================================
+   BID / RLO COMPLIANCE FILE NOTE
+   Assembles the audit record proving Responsible Lending (NCCP
+   RG209) + Best Interests Duty (RG273) were met: requirements &
+   objectives, verified financial situation, inquiries, the
+   "not unsuitable" assessment, best-interests reasoning (with
+   alternatives considered), and disclosures/consents. Flags any
+   gaps so the broker knows the file isn't audit-complete.
+   ============================================================ */
+function buildBidNote(){
+  const deal = DEALS.find(x=>x.id===state.activeDeal) || DEALS[0] || {};
+  const c = state.calc || {};
+  const ap = deal.applicant || {};
+  const wd = state.wizData || {};
+  const reqs = deal.requirements || { features:wd.roFeatures||[], priority:wd.roPriority, foreseeable:wd.roForeseeable||[] };
+  const cons = deal.consents || { privacy:!!wd.consentPrivacy, creditGuide:!!wd.consentCreditGuide };
+  let r={}; try{ r=computeServiceability()||{}; }catch(e){}
+  let ranked=[]; try{ ranked=rankLenders()||[]; }catch(e){}
+  const money = v => fmtMoney(parseFloat(v)||0);
+  const nl = c.newLoan || {};
+  const recId = deal.lender || state.lender;
+  const rec = ranked.find(x=>x.l===recId) || ranked.find(x=>x.serviceable) || ranked[0] || null;
+  const alts = ranked.filter(x=>x!==rec).slice(0,3);
+  const applicantName = [ap.firstName||wd.firstName, ap.lastName||wd.lastName].filter(Boolean).join(' ') || deal.name || 'Applicant';
+  const purposeLabel = (CALC_PURPOSES.find(x=>x.id===(c.purpose||deal.purpose))||{}).label || deal.purpose || 'Purchase';
+  const dealDocs = (typeof DOCS!=='undefined'?DOCS:[]).filter(x=>x.deal===deal.id || x.deal==='NEW');
+  const verifiedDocs = dealDocs.filter(x=>x.status==='Verified').length;
+  const serviceable = !!(r.verdict && /pass|serv/i.test(r.verdict));
+  const upR = (deal.upfront_commission_rate!=null?deal.upfront_commission_rate:COMMISSION.upfront)*100;
+  const trR = (deal.trail_commission_rate!=null?deal.trail_commission_rate:COMMISSION.trail)*100;
+
+  const sections = [];
+  sections.push({ title:'1 · Requirements & objectives', reg:'NCCP s130 · RG209', rows:[
+    ['Loan purpose', purposeLabel],
+    ['Amount / term', money(nl.amount)+' over '+(nl.term||30)+' years'],
+    ['Features required', (reqs.features&&reqs.features.length)?reqs.features.join(', '):'None specified'],
+    ['Primary priority', reqs.priority||'—'],
+    ['Reasonably foreseeable changes', (reqs.foreseeable&&reqs.foreseeable.length)?reqs.foreseeable.join(', '):'None noted'],
+  ]});
+  sections.push({ title:'2 · Financial situation & verification', reg:'RG209 · verify', rows:[
+    ['Assessable income (p.a.)', r.shadedAnnual!=null?money(r.shadedAnnual):'—'],
+    ['Living expenses (HEM floor, p.a.)', r.HEM!=null?money(r.HEM*12):'—'],
+    ['Existing commitments (assessed /mo)', r.existingDebt!=null?money(r.existingDebt):'—'],
+    ['Securities (total value)', money(totalSecurityValue())],
+    ['Documents on file', dealDocs.length+' ('+verifiedDocs+' verified)'],
+  ]});
+  sections.push({ title:'3 · Inquiries made', reg:'RG209', notes:[
+    'Confirmed the loan purpose and objectives directly with the applicant.',
+    'Captured income, employment, living expenses, assets and liabilities; '+(verifiedDocs?('verified against '+verifiedDocs+' supplied document(s).'):'verification of supplied documents is pending.'),
+    'Assessed declared living expenses against the HEM benchmark (greater-of).',
+    cons.privacy ? 'Obtained privacy / credit-check consent and reviewed the applicant’s credit information.' : '⚠ Privacy / credit-check consent NOT recorded — obtain before relying on credit information.',
+  ]});
+  sections.push({ title:'4 · Assessment — “not unsuitable” (RLO)', reg:'NCCP s131 / s133', rows:[
+    ['Serviceability verdict', r.verdict||'—'],
+    ['Assessed rate (incl. buffer)', r.assessedRate!=null?r.assessedRate.toFixed(2)+'%':'—'],
+    ['DSR / DTI', (r.dsr!=null?r.dsr.toFixed(1)+'%':'—')+' / '+(r.dti!=null?r.dti.toFixed(1)+'×':'—')],
+    ['Net surplus (NDI /mo)', r.ndi!=null?money(r.ndi):'—'],
+    ['Conclusion', serviceable
+      ? 'The loan meets the applicant’s requirements and is assessed as NOT UNSUITABLE — repayments are serviceable at the assessed rate (incl. buffer) without substantial hardship.'
+      : '⚠ Does not currently pass serviceability — not yet demonstrably “not unsuitable”. Restructure the loan or document mitigants before proceeding.'],
+  ]});
+  sections.push({ title:'5 · Best interests — recommendation', reg:'Best Interests Duty · RG273',
+    notes:[
+      rec ? ('Recommended: '+rec.label+' at '+rec.rate.toFixed(2)+'%'+(rec.serviceable?' — approvable on the current figures.':' — subject to conditions.')) : 'Recommended lender not yet selected.',
+      ranked.length ? ('Assessed against '+ranked.length+' lender'+(ranked.length>1?'s':'')+'; '+ranked.filter(x=>x.serviceable).length+' would approve this deal on policy and price.') : '',
+      'The recommendation prioritises the applicant’s interests — approvability, suitability and overall cost — over broker remuneration. Commission does not influence the recommendation and is disclosed in the Credit Guide / Proposal.'
+    ].filter(Boolean),
+    subTable:{ head:'Alternatives considered', rows: alts.map(a=>[a.label, a.rate.toFixed(2)+'% · '+(a.serviceable?'would approve':'not serviceable')+(a.edge?(' · '+a.edge):'')]) } });
+  sections.push({ title:'6 · Disclosures & consents', reg:'Privacy Act · NCCP', rows:[
+    ['Credit Guide & BID disclosure', cons.creditGuide?'Provided ✓':'⚠ Not recorded'],
+    ['Privacy & credit-check consent', cons.privacy?'Provided ✓':'⚠ Not recorded'],
+    ['Commission disclosure', 'Upfront '+upR.toFixed(2)+'% · trail '+trR.toFixed(2)+'% p.a. (disclosed in Credit Proposal)'],
+  ]});
+
+  const gaps = [];
+  if(!(reqs.features&&reqs.features.length) && !reqs.priority) gaps.push('Requirements & objectives not captured');
+  if(!cons.privacy) gaps.push('Privacy / credit-check consent not recorded');
+  if(!cons.creditGuide) gaps.push('Credit Guide / BID disclosure not recorded');
+  if(!serviceable) gaps.push('Serviceability does not currently pass');
+  if(!rec) gaps.push('Recommended lender not selected');
+  if(!verifiedDocs) gaps.push('No documents verified on file');
+
+  return { meta:{ dealId:deal.id||'(new)', applicant:applicantName, broker:state.userName||'Broker', generated:(new Date()).toLocaleString('en-AU'), lender: rec?rec.label:(recId||'—') }, sections, gaps };
+}
+function buildBidNoteHTML(note){
+  const esc = s => String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const secHTML = sec => `<section class="sec"><div class="sh"><h2>${esc(sec.title)}</h2><span class="lx">${esc(sec.reg)}</span></div>
+    ${sec.rows?`<table>${sec.rows.map(r=>`<tr><td class="k">${esc(r[0])}</td><td class="v">${esc(r[1])}</td></tr>`).join('')}</table>`:''}
+    ${sec.notes?`<ul>${sec.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>`:''}
+    ${sec.subTable && sec.subTable.rows.length?`<div class="subh">${esc(sec.subTable.head)}</div><table>${sec.subTable.rows.map(r=>`<tr><td class="k">${esc(r[0])}</td><td class="v">${esc(r[1])}</td></tr>`).join('')}</table>`:''}
+  </section>`;
+  const gapsHTML = note.gaps.length
+    ? `<div class="banner warn"><b>⚠ File is NOT audit-complete</b> — outstanding: ${note.gaps.map(esc).join(' · ')}. Resolve these before the file is relied upon.</div>`
+    : `<div class="banner ok"><b>✓ File appears audit-complete</b> — all required RLO + BID elements are recorded. Broker to confirm accuracy.</div>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><title>BID/RLO file note — ${esc(note.meta.dealId)}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;color:#14203a;background:#f4f6fb;padding:30px;line-height:1.5}
+    .wrap{max-width:840px;margin:0 auto}
+    .top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1e3a8a;padding-bottom:14px;margin-bottom:8px}
+    .brand{font-size:21px;font-weight:800;color:#1e3a8a}.brand b{color:#2a50c8}
+    .sub{font-size:12px;color:#5a6178;margin-top:3px}
+    .meta{text-align:right;font-size:11.5px;color:#5a6178}
+    .banner{border-radius:9px;padding:11px 14px;font-size:12.5px;margin:14px 0 18px}
+    .banner.warn{background:#fbeeef;border:1px solid #f3c9cd;color:#8e1a26}
+    .banner.ok{background:#eaf4ee;border:1px solid #bfe2cd;color:#0f4c30}
+    .sec{background:#fff;border:1px solid #e5e7f0;border-radius:11px;padding:14px 16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(20,28,50,.05);break-inside:avoid}
+    .sh{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid #eef1fb;padding-bottom:7px;margin-bottom:9px}
+    .sh h2{font-size:14px;color:#13265e}
+    .lx{font-size:10px;font-weight:700;letter-spacing:.04em;color:#2a50c8;background:#eef1fb;padding:2px 8px;border-radius:6px}
+    table{width:100%;border-collapse:collapse}
+    td{padding:5px 4px;font-size:12.5px;vertical-align:top;border-bottom:1px dotted #eef1fb}
+    td.k{color:#5a6178;width:40%}td.v{color:#14203a;font-weight:600}
+    ul{margin:2px 0 2px 18px}li{font-size:12.5px;margin:4px 0;color:#14203a}
+    .subh{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#5a6178;margin:11px 0 4px}
+    .actions{display:flex;gap:10px;margin:6px 0 4px}
+    button{font:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;border:none;cursor:pointer;background:#1e3a8a;color:#fff}
+    .foot{font-size:10.5px;color:#969bac;margin-top:14px;text-align:center}
+    @media print{ body{background:#fff;padding:0} .actions{display:none} .sec{box-shadow:none} }
+  </style></head><body><div class="wrap">
+    <div class="top"><div><div class="brand">Debt<b>IQ</b> · BID / RLO file note</div><div class="sub">Responsible Lending (RG209) + Best Interests Duty (RG273) compliance record</div></div>
+      <div class="meta">${esc(note.meta.dealId)} · ${esc(note.meta.applicant)}<br>Lender: ${esc(note.meta.lender)}<br>${esc(note.meta.broker)} · ${esc(note.meta.generated)}</div></div>
+    <div class="actions"><button onclick="window.print()">⎙ Print / Save PDF</button></div>
+    ${gapsHTML}
+    ${note.sections.map(secHTML).join('')}
+    <div class="foot">Generated by DebtIQ from the deal file. This is a broker working record to support RG209/RG273 compliance — the broker remains responsible for its accuracy and for retaining it on file.</div>
+  </div></body></html>`;
+}
+function openBidNote(){
+  if(!state.activeDeal && !(DEALS[0])){ toast('Open a deal first', 'err'); return; }
+  try { openPackWindow(buildBidNoteHTML(buildBidNote())); logEvent('BID/RLO file note generated'); }
+  catch(e){ toast('Could not build file note: '+e.message, 'err'); }
+}
 function buildBIDPrompt(r, pol, d){
   const lenderName = pol ? pol.label : (d.lender||'CBA');
   return `You are a senior Australian mortgage broker writing a Requirements & Objectives statement per ASIC RG209 and the NCCP Act 2009.
 LOAN: ${fmtMoney(parseFloat(state.calc.newLoan.amount)||0)} ${d.dealType||'Owner Occupier'} loan with ${lenderName}.
 ASSESSED RATE: ${((parseFloat(state.calc.newLoan.rate)||0)+(pol?pol.buffer:0.03)*100).toFixed(2)}%
 TERM: ${state.calc.newLoan.term||30} years P&I
-PURPOSE: ${d.purpose||'Purchase — Owner Occupied'}
+PURPOSE: ${(CALC_PURPOSES.find(x=>x.id===(state.calc.purpose||d.purpose))||{}).label || d.purpose || 'Purchase — Owner Occupied'}
 LVR: ${(((parseFloat(state.calc.newLoan.amount)||0)/(totalSecurityValue()||1))*100).toFixed(1)+'%'} (over ${(state.calc.securities||[]).length||1} security/securities)
 SERVICEABILITY: DSR ${r.dsr.toFixed(1)}% vs ceiling ${pol?pol.dsr_max:45}%
 NDI: ${fmtMoney(r.ndi)}/month
@@ -8149,7 +8792,7 @@ function buildPackHTML(r, pol, d, nl, ent, deal, bidText, servicingText){
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>DebtIQ Submission Pack — ${esc(lenderName)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --ink:#1E2A44;--steel:#3B6FB5;--brass:#B08D4F;
@@ -8189,12 +8832,12 @@ tr:last-child td{border-bottom:none}
 tr.total td{border-top:1.5px solid var(--ink);border-bottom:none;font-weight:700;color:var(--t1);padding-top:9px}
 
 /* Provenance reveals — same primitive used in the live worksheet. */
-.prov-reveal{position:relative;display:inline;cursor:help;border-bottom:1px dotted rgba(59,111,181,.45);}
+.prov-reveal{position:relative;display:inline;cursor:help;border-bottom:1px dotted rgba(75,87,214,.45);}
 .prov-reveal.system{border-bottom-color:rgba(138,130,112,.45);}
 .prov-reveal .prov-ind{font-family:var(--mono);font-size:8pt;color:var(--steel);margin-left:3px;opacity:.65;font-weight:600;}
 .prov-reveal.system .prov-ind{color:var(--t3);}
 .prov-reveal:focus{outline:none;}
-.prov-reveal:focus-visible{box-shadow:0 0 0 2px rgba(59,111,181,.35);border-radius:2px;background:rgba(59,111,181,.06);}
+.prov-reveal:focus-visible{box-shadow:0 0 0 2px rgba(75,87,214,.35);border-radius:2px;background:rgba(75,87,214,.06);}
 .prov-pop{position:absolute;bottom:100%;left:50%;transform:translateX(-50%) translateY(-8px);
   background:var(--ink);color:#fff;padding:11px 14px;border-radius:6px;font-style:normal;
   font-family:var(--ui);font-size:10pt;line-height:1.45;
@@ -8307,8 +8950,8 @@ td,th{overflow:visible;}
   <div class="section-head"><span class="section-num">01</span><span class="section-title">Application Summary</span></div>
   <div class="kv">
     <div>
-      <div class="kv-row"><span class="kv-k">Application type</span><span class="kv-v text">${esc(d.dealType||'Owner Occupier')}</span></div>
-      <div class="kv-row"><span class="kv-k">Loan purpose</span><span class="kv-v text">${esc(d.purpose||'Purchase')}</span></div>
+      <div class="kv-row"><span class="kv-k">Application type</span><span class="kv-v text">${esc(d.type||d.dealType||'Owner Occupier')}</span></div>
+      <div class="kv-row"><span class="kv-k">Loan purpose</span><span class="kv-v text">${esc((CALC_PURPOSES.find(x=>x.id===(state.calc.purpose||d.purpose))||{}).label || d.purpose || 'Purchase')}</span></div>
       <div class="kv-row"><span class="kv-k">LVR (over ${((state.calc.securities||[]).length||1)} security/ies)</span><span class="kv-v">${lvr}%</span></div>
       <div class="kv-row"><span class="kv-k">Contract rate</span><span class="kv-v">${(parseFloat(nl.rate)||0).toFixed(2)}%</span></div>
       <div class="kv-row"><span class="kv-k">Lender</span><span class="kv-v text">${esc(lenderName)}</span></div>
@@ -10822,11 +11465,18 @@ function renderSettingsOverlay(){
   if(!body) return;
   body.innerHTML = `
     <div class="tabs" style="margin-bottom:20px">
-      ${[['account','Account'],['preferences','Preferences'],['market','Market'],['ai','AI'],['commission','Commission'],['lenders','Lenders'],['billing','Billing']].map(([k,l])=>
+      ${[['account','Account'],['access','Team & Access'],['preferences','Preferences'],['market','Market'],['ai','AI'],['commission','Commission'],['lenders','Lenders'],['billing','Billing']].map(([k,l])=>
         `<div class="tab ${settingsTab===k?'active':''}" role="button" tabindex="0" onclick="settingsTab='${k}';renderSettingsOverlay()">${l}</div>`).join('')}
     </div>
     ${settingsTab==='billing' ? `<div id="settingsBilling"></div>` : settingsPane()}`;
   if(settingsTab==='billing') renderBilling(document.getElementById('settingsBilling'));
+}
+// Re-render settings in whichever surface is open (gear modal or full page).
+function refreshSettings(){
+  const ov = document.getElementById('settingsOverlay');
+  if(ov && ov.classList.contains('open')){ renderSettingsOverlay(); return; }
+  const p = document.getElementById('page-settings');
+  if(p) renderSettings(p);
 }
 
 /* ---------- Client tab ---------- */
@@ -10939,12 +11589,14 @@ function renderLoanStructureSection(){
 function renderPropertySection(){
   const nl = state.calc.newLoan;
   const tv = totalSecurityValue(), amt = parseFloat(nl.amount)||0;
-  const lvr = tv>0 ? (amt/tv*100) : 0;
+  const exist = totalExistingSecuredDebt();
+  const lvr = tv>0 ? ((amt+exist)/tv*100) : 0;
   const col = lvr<=80?'var(--green)':lvr<=90?'var(--amber)':'var(--red)';
   return `<div class="card" style="padding:18px">
     <h3 style="font-size:15px;font-weight:700;margin-bottom:12px">Securities (${(state.calc.securities||[]).length||'1 implicit'})</h3>
     ${securitiesBuilderHTML()}
-    <div class="lvr-badge" style="background:${col}1a;color:${col};margin-top:12px">LVR ${lvr.toFixed(1)}% · Loan ${fmtMoney(amt)} / Security ${fmtMoney(tv)}</div>
+    <div class="lvr-badge" style="background:${col}1a;color:${col};margin-top:12px">LVR ${lvr.toFixed(1)}% · Loan ${fmtMoney(amt)}${exist>0?' + existing '+fmtMoney(exist):''} / Security ${fmtMoney(tv)}</div>
+    ${exist>0?`<p style="font-size:11px;color:var(--t3);text-align:center;margin-top:6px">Includes ${fmtMoney(exist)} debt already secured against these properties.</p>`:''}
   </div>`;
 }
 function renderLoanTab(el){
@@ -11094,16 +11746,70 @@ async function doLogin(){
     enterApp();   // static demo mode
   }
 }
+// Swap the auth card between Sign in and Create account / free trial.
+function setAuthMode(mode){
+  state.authMode = (mode==='signup') ? 'signup' : 'signin';
+  const su = state.authMode==='signup';
+  const setTxt=(id,t)=>{ const e=document.getElementById(id); if(e) e.textContent=t; };
+  const show=(id,on)=>{ const e=document.getElementById(id); if(e) e.style.display = on?'':'none'; };
+  show('signupFields', su); show('demoCreds', !su); show('forgotRow', !su);
+  setTxt('lcCap', su?'Create account':'Sign in');
+  setTxt('lcHead', su?'Start your free trial.':'Welcome back.');
+  setTxt('lcSub', su?'About two minutes to set up. No card required.':'Pick up where you left off — or open a new file.');
+  setTxt('loginBtn', su?'Create account & start':'Enter broker workspace');
+  const tog=document.getElementById('authToggle');
+  if(tog) tog.innerHTML = su
+    ? `Already have an account? <a onclick="setAuthMode('signin')" style="color:var(--steel);font-weight:600;cursor:pointer">Sign in</a>`
+    : `New to DebtIQ? <a onclick="setAuthMode('signup')" style="color:var(--steel);font-weight:600;cursor:pointer">Create an account</a>`;
+  // When switching to signup, clear the prefilled demo creds so the broker types their own.
+  if(su){ const em=document.getElementById('loginEmail'), pw=document.getElementById('loginPass');
+    if(em && em.value==='broker@debtiq.com') em.value=''; if(pw && pw.value==='demo1234') pw.value=''; }
+}
+function doAuth(){ return (state.authMode==='signup') ? doSignUp() : doLogin(); }
+function ssoLogin(provider){
+  const label = provider==='azure' ? 'Microsoft' : 'Google';
+  if(state.backend && sbClient){
+    sbClient.auth.signInWithOAuth({ provider: provider==='azure'?'azure':'google', options:{ redirectTo: location.origin } });
+    return;
+  }
+  toast(label+' sign-in connects when the backend is live — opening the demo workspace.', 'info');
+  state.role = 'broker';
+  showLoader('Signing in with '+label+'…');
+  setTimeout(()=>{ hideLoader(); enterApp(); }, 800);
+}
+function doForgotPassword(){
+  const email = (document.getElementById('loginEmail')?.value||'').trim();
+  if(!/.+@.+\..+/.test(email)){ toast('Enter your email above first, then tap “Forgot password”.', 'err'); return; }
+  if(state.backend && sbClient){
+    sbClient.auth.resetPasswordForEmail(email, { redirectTo: location.origin });
+    toast('Password reset link sent to '+email, 'ok'); return;
+  }
+  toast('Demo: a reset link would be emailed to '+email+' once the backend is connected.', 'info');
+}
 async function doSignUp(){
-  if(!(state.backend && sbClient)) return toast('Connect Supabase (Settings) to create accounts', 'info');
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPass').value;
-  showLoader('Creating account…');
-  const { data, error } = await sbClient.auth.signUp({ email, password });
-  hideLoader();
-  if(error){ toast(error.message, 'err'); return; }
-  if(data.session){ state.user = data.user; syncAi(); enterApp(); }
-  else toast('Account created — check your email to confirm, then sign in.', 'ok');
+  const name = (document.getElementById('suName')?.value||'').trim();
+  const firm = (document.getElementById('suFirm')?.value||'').trim();
+  const acl  = (document.getElementById('suAcl')?.value||'').trim();   // optional
+  const email = (document.getElementById('loginEmail')?.value||'').trim();
+  const password = document.getElementById('loginPass')?.value||'';
+  if(!name){ toast('Enter your name', 'err'); return; }
+  if(!/.+@.+\..+/.test(email)){ toast('Enter a valid email', 'err'); return; }
+  if((password||'').length<6){ toast('Password must be at least 6 characters', 'err'); return; }
+  if(!document.getElementById('suTerms')?.checked){ toast('Please accept the Terms of Service & Privacy Policy to continue', 'err'); return; }
+  if(state.backend && sbClient){
+    showLoader('Creating account…');
+    const { data, error } = await sbClient.auth.signUp({ email, password, options:{ data:{ full_name:name, brokerage:firm, acl } } });
+    hideLoader();
+    if(error){ toast(error.message, 'err'); return; }
+    if(data.session){ state.user=data.user; state.role='broker'; state.userName=name; state.org=firm; syncAi(); enterApp(); }
+    else toast('Account created — check your email to confirm, then sign in.', 'ok');
+    return;
+  }
+  // Demo mode — start a local session so the free-trial flow is end-to-end (no real account; keep state.user null so we never overstate persistence).
+  state.role='broker'; state.org=firm; state.userName=name;
+  showLoader('Setting up your workspace…');
+  setTimeout(()=>{ hideLoader(); toast('Welcome to DebtIQ, '+(name.split(' ')[0]||'broker')+'! (demo trial)', 'ok');
+    enterApp(); const nm=document.getElementById('cmdUserName'); if(nm) nm.textContent=name; }, 900);
 }
 async function doMagicLink(){
   if(!(state.backend && sbClient)) return toast('Connect Supabase for magic links', 'info');
@@ -12012,12 +12718,16 @@ function init(){
    PHASE 1 PRIMITIVES — render helpers
    Use these in Phase 3 screens. They produce HTML strings.
    ============================================================ */
+let __lastVerdictWord = null;
 function verdictHero(verdict, note, featuredLabel, featuredValue){
   const cls = verdict==='PASS'?'pass':verdict==='BORDERLINE'?'borderline':'fail';
   const statement = verdict==='PASS'?'Serviceable.':verdict==='BORDERLINE'?'Borderline.':'Does not service.';
-  return `<div class="verdict-hero">
+  // Pulse the verdict word only when the verdict actually changes value — not on every recompute.
+  const changed = __lastVerdictWord !== null && __lastVerdictWord !== verdict;
+  __lastVerdictWord = verdict;
+  return `<div class="verdict-hero ${cls}">
     <div class="vh-cap">Serviceability verdict</div>
-    <div class="vh-statement ${cls}">${escHtml(statement)}</div>
+    <div class="vh-statement ${cls}${changed?' pulse':''}">${escHtml(statement)}</div>
     ${note?`<div class="vh-note">${escHtml(note)}</div>`:''}
     ${featuredValue?`<div class="vh-feature"><span class="vh-label">${escHtml(featuredLabel||'')}</span><span class="vh-value">${escHtml(featuredValue)}</span></div>`:''}
   </div>`;
@@ -12205,6 +12915,31 @@ function showDesignPreview(){
     showDesignPreview(); return;
   }
   if(aiLive()) enterApp();   // already signed in → skip the login screen
+})();
+</script>
+
+<!-- PWA: install affordance + service-worker registration -->
+<button id="installPill" type="button" aria-label="Install DebtIQ app">⬇ Install DebtIQ</button>
+<script>
+(function(){
+  // Register the service worker (served origins only; no-op on file://).
+  if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('/sw.js').catch(function(){});
+    });
+  }
+  // Android/Chrome install prompt → reveal the pill, then trigger native prompt.
+  var deferred = null;
+  var pill = document.getElementById('installPill');
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault(); deferred = e; if(pill) pill.classList.add('show');
+  });
+  if(pill) pill.addEventListener('click', function(){
+    if(!deferred) return;
+    deferred.prompt();
+    deferred.userChoice.finally(function(){ deferred = null; pill.classList.remove('show'); });
+  });
+  window.addEventListener('appinstalled', function(){ if(pill) pill.classList.remove('show'); });
 })();
 </script>
 </body>

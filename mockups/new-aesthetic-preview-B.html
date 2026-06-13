@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DebtIQ — NEW aesthetic preview B (Precision Light)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F6F8; --bg2:#EEF0F4; --card:#FFFFFF; --line:#E6E8EE; --line2:#D9DCE4;
+    --t1:#0C0E14; --t2:#585F70; --t3:#929AAB;
+    --ind:#4F46E5; --ind-2:#7C6DF5; --ind-bg:#EEF0FE;
+    --green:#0E9F6E; --green-d:#0A7A54; --amber:#C2820B; --red:#D8463A;
+    --disp:'Space Grotesk',system-ui,sans-serif;
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+    --sh:0 1px 2px rgba(12,14,20,.05), 0 10px 26px -18px rgba(12,14,20,.28);
+    --sh-lift:0 1px 0 rgba(255,255,255,.9) inset, 0 14px 34px -16px rgba(79,70,229,.32);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);color:var(--t1);background:var(--bg);min-height:100vh;
+    background-image:radial-gradient(800px 460px at 92% -6%, rgba(79,70,229,.07), transparent 60%),
+                     radial-gradient(680px 460px at -4% 108%, rgba(124,109,245,.05), transparent 60%);
+    -webkit-font-smoothing:antialiased;padding-bottom:60px}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  h1,h2,h3{font-family:var(--disp);letter-spacing:-.02em}
+  /* banner */
+  .pbanner{max-width:1240px;margin:0 auto;padding:20px 30px 6px}
+  .pbanner h1{font-size:15px;font-weight:700}
+  .pbanner p{color:var(--t2);font-size:12.5px;margin-top:2px;font-family:var(--sans)}
+  .seclabel{max-width:1240px;margin:34px auto 0;padding:0 30px;font-size:11px;font-weight:700;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--ind)}
+  /* top bar */
+  .top{display:flex;align-items:center;gap:14px;padding:13px 24px;border-bottom:1px solid var(--line);
+    background:rgba(255,255,255,.82);backdrop-filter:blur(12px);box-shadow:0 1px 0 rgba(12,14,20,.03)}
+  .logo{font-family:var(--disp);font-weight:700;letter-spacing:-.03em;font-size:18px}
+  .logo b{color:var(--ind)}
+  .pill{font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
+    padding:4px 10px;border-radius:999px;border:1px solid var(--line2);color:var(--t2)}
+  .pill.tier{background:linear-gradient(135deg,var(--ind),#3F37C9);color:#fff;border:none}
+  .live{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--t2)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ind);animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(79,70,229,.45)}70%{box-shadow:0 0 0 8px rgba(79,70,229,0)}100%{box-shadow:0 0 0 0 rgba(79,70,229,0)}}
+  .spacer{flex:1}
+  .who{font-size:13px;color:var(--t2)} .who b{color:var(--t1)}
+  .ava{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--ind),#3F37C9);display:grid;place-items:center;font-weight:800;color:#fff;font-size:12px}
+  /* shell */
+  .shell{display:grid;grid-template-columns:208px 1fr;max-width:1240px;margin:0 auto}
+  .nav{padding:22px 14px;border-right:1px solid var(--line)}
+  .nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:11px;color:var(--t2);
+    text-decoration:none;font-size:14px;font-weight:600;margin-bottom:2px}
+  .nav a .i{width:7px;height:7px;border-radius:2px;background:var(--line2)}
+  .nav a.active{background:var(--ind-bg);color:var(--ind)}
+  .nav a.active .i{background:var(--ind)}
+  .nav .sect{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin:18px 12px 8px}
+  .main{padding:26px 30px 30px}
+  .phead{margin-bottom:18px}
+  .phead .eyebrow{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ind)}
+  .phead h2{font-size:25px;font-weight:700;margin-top:6px}
+  .phead .sub{color:var(--t2);font-size:13.5px;margin-top:4px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--sh)}
+  /* KPI row */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;position:relative;overflow:hidden;box-shadow:var(--sh)}
+  .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--ind),transparent)}
+  .kpi .k{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+  .kpi .v{font-family:var(--mono);font-size:26px;font-weight:700;margin-top:8px}
+  .kpi .d{font-size:11.5px;color:var(--t2);margin-top:3px}
+  /* deal cards */
+  .deals{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .deal{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;transition:.18s;box-shadow:var(--sh)}
+  .deal:hover{transform:translateY(-3px);box-shadow:var(--sh-lift)}
+  .deal .top2{display:flex;justify-content:space-between;align-items:start}
+  .deal .nm{font-weight:700;font-size:14.5px}
+  .deal .id{font-family:var(--mono);font-size:11px;color:var(--t3);margin-top:1px}
+  .deal .amt{font-family:var(--mono);font-size:18px;font-weight:700;margin-top:12px}
+  .deal .meta{font-size:12px;color:var(--t2);margin-top:3px}
+  .tag{font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:3px 8px;border-radius:7px}
+  .tag.pass{background:rgba(14,159,110,.12);color:var(--green-d);border:1px solid rgba(14,159,110,.3)}
+  .tag.bord{background:rgba(194,130,11,.12);color:var(--amber);border:1px solid rgba(194,130,11,.3)}
+  .tag.fail{background:rgba(216,70,58,.1);color:var(--red);border:1px solid rgba(216,70,58,.3)}
+  /* serviceability */
+  .svc{display:grid;grid-template-columns:300px 1fr;gap:16px}
+  .field{margin-bottom:13px}
+  .field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);margin-bottom:6px}
+  .field .inp{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line2);border-radius:11px;padding:10px 12px}
+  .field .inp .num{font-size:15px;font-weight:700}
+  .field .inp:focus-within{border-color:var(--ind);box-shadow:0 0 0 3px rgba(79,70,229,.18)}
+  .slider{height:6px;border-radius:999px;background:var(--bg2);position:relative;margin:14px 2px}
+  .slider::after{content:'';position:absolute;left:0;top:0;height:100%;width:62%;background:linear-gradient(90deg,var(--ind),var(--ind-2));border-radius:999px}
+  .slider .knob{position:absolute;left:62%;top:50%;width:18px;height:18px;border-radius:50%;background:var(--ind);transform:translate(-50%,-50%);box-shadow:0 0 0 4px rgba(79,70,229,.2)}
+  /* VERDICT HERO (light page, vivid green panel) */
+  .verdict{position:relative;overflow:hidden;border-radius:18px;padding:22px 24px;
+    background:linear-gradient(135deg,#10A972,#0A6E4C);border:1px solid rgba(14,159,110,.4);
+    box-shadow:0 20px 46px -22px rgba(14,159,110,.6)}
+  .verdict::after{content:'';position:absolute;top:-40%;right:-10%;width:55%;height:120%;
+    background:radial-gradient(circle at 70% 30%,rgba(255,255,255,.28),transparent 60%);pointer-events:none}
+  .verdict .cap{position:relative;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.7);padding-bottom:9px;border-bottom:1px solid rgba(255,255,255,.22);margin-bottom:14px}
+  .verdict .row{position:relative;display:flex;align-items:center;gap:14px}
+  .verdict .big{font-family:var(--disp);font-size:32px;font-weight:700;color:#fff}
+  .verdict .badge{font-family:var(--mono);font-size:12px;font-weight:700;padding:6px 12px;border-radius:9px;background:rgba(255,255,255,.18);color:#fff}
+  .verdict .note{position:relative;color:rgba(255,255,255,.9);font-size:14px;margin-top:8px}
+  .verdict .feat{position:relative;display:flex;gap:26px;margin-top:16px;padding-top:15px;border-top:1px solid rgba(255,255,255,.22)}
+  .verdict .feat .k{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.72)}
+  .verdict .feat .n{font-family:var(--mono);font-size:20px;font-weight:700;color:#fff;margin-top:3px}
+  /* gauges */
+  .gauges{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+  .gauge{background:#fff;border:1px solid var(--line);border-radius:13px;padding:14px;box-shadow:var(--sh)}
+  .gauge .h{display:flex;justify-content:space-between;align-items:baseline}
+  .gauge .k{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3)}
+  .gauge .v{font-family:var(--mono);font-size:16px;font-weight:700}
+  .gauge .track{height:6px;background:var(--bg2);border-radius:999px;margin-top:10px;position:relative}
+  .gauge .fill{position:absolute;left:0;top:0;height:100%;border-radius:999px}
+  /* table */
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t3);padding:10px 14px;border-bottom:1px solid var(--line)}
+  td{padding:12px 14px;border-bottom:1px solid var(--line);color:var(--t2)}
+  td .num{color:var(--t1)}
+  tr.best td{background:var(--ind-bg)}
+  tr:last-child td{border-bottom:none}
+  .mk{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--ind),#3F37C9);display:inline-grid;place-items:center;font-weight:800;color:#fff;font-size:12px;vertical-align:middle;margin-right:9px}
+  .lname{color:var(--t1);font-weight:700}
+  /* AI pilot */
+  .pipe{display:flex;gap:0;flex-wrap:wrap;margin:6px 0 16px}
+  .step{display:flex;align-items:center;gap:10px;padding:0 14px 0 0}
+  .step .b{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-weight:800;font-size:13px;background:var(--ind-bg);color:var(--ind);border:1px solid rgba(79,70,229,.3)}
+  .step .l{font-size:12.5px;font-weight:600;color:var(--t1)}
+  .step .arrow{color:var(--line2);margin:0 2px}
+  .draft{font-size:13.5px;color:var(--t2);line-height:1.7;margin-top:6px}
+  .draft b{color:var(--t1)}
+  .cta{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  .btn{font-family:var(--sans);font-size:13px;font-weight:700;padding:10px 16px;border-radius:11px;border:1px solid var(--line2);background:#fff;color:var(--t1);cursor:pointer}
+  .btn.primary{background:linear-gradient(135deg,var(--ind),#3F37C9);color:#fff;border:none;box-shadow:0 8px 22px -6px rgba(79,70,229,.45)}
+  .grid2{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+  @media(max-width:980px){.shell{grid-template-columns:1fr}.nav{display:none}.kpis{grid-template-columns:1fr 1fr}.deals{grid-template-columns:1fr}.svc,.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+  <div class="pbanner">
+    <h1>DebtIQ — proposed NEW aesthetic, OPTION B "Precision Light" (preview, not applied)</h1>
+    <p>Light high-contrast fintech · indigo accent · Space Grotesk + Inter + JetBrains Mono. Compare against Option A (dark charcoal + teal). Nothing below is live yet.</p>
+  </div>
+
+  <div class="seclabel">Shell · top bar · navigation</div>
+  <div class="top">
+    <div class="logo">Debt<b>IQ</b></div>
+    <span class="pill tier">Complete</span>
+    <span class="live"><span class="dot"></span> AI live</span>
+    <div class="spacer"></div>
+    <span class="who">D-892 · <b>Sarah &amp; Tom Mitchell</b></span>
+    <div class="ava">SM</div>
+  </div>
+
+  <div class="shell">
+    <nav class="nav">
+      <a class="active"><span class="i"></span> Pipeline</a>
+      <a><span class="i"></span> Calculate</a>
+      <a><span class="i"></span> Lenders</a>
+      <a><span class="i"></span> Commercial</a>
+      <div class="sect">Complete</div>
+      <a><span class="i"></span> AI Pilot</a>
+      <a><span class="i"></span> Documents</a>
+      <a><span class="i"></span> Compliance</a>
+      <div class="sect">Account</div>
+      <a><span class="i"></span> Plans &amp; Usage</a>
+      <a><span class="i"></span> Settings</a>
+    </nav>
+
+    <main class="main">
+      <div class="phead">
+        <div class="eyebrow">Workspace</div>
+        <h2>Pipeline</h2>
+        <div class="sub">12 active deals · 5 serviceable · 3 awaiting docs</div>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="k">Active deals</div><div class="v">12</div><div class="d">+3 this week</div></div>
+        <div class="kpi"><div class="k">Pipeline value</div><div class="v">$4.2M</div><div class="d">across 12 files</div></div>
+        <div class="kpi"><div class="k">Serviceable</div><div class="v">5</div><div class="d">pass on current figures</div></div>
+        <div class="kpi"><div class="k">Avg time saved</div><div class="v">2.4h</div><div class="d">per file vs manual</div></div>
+      </div>
+      <div class="deals">
+        <div class="deal"><div class="top2"><div><div class="nm">Sarah &amp; Tom Mitchell</div><div class="id">D-892</div></div><span class="tag pass">Pass</span></div><div class="amt">$680,000</div><div class="meta">CBA · OO P&amp;I · 88% LVR</div></div>
+        <div class="deal"><div class="top2"><div><div class="nm">Aisha Khan</div><div class="id">D-901</div></div><span class="tag bord">Borderline</span></div><div class="amt">$1,150,000</div><div class="meta">Macquarie · INV IO · 80% LVR</div></div>
+        <div class="deal"><div class="top2"><div><div class="nm">Nguyen Logistics Pty</div><div class="id">D-877</div></div><span class="tag fail">Fail</span></div><div class="amt">$2,400,000</div><div class="meta">Commercial · DSCR 1.18×</div></div>
+      </div>
+
+      <div class="phead" style="margin-top:34px">
+        <div class="eyebrow">Assessment</div>
+        <h2>Serviceability Calculator</h2>
+        <div class="sub">Live — updates on every keystroke · 🇦🇺 Australia</div>
+      </div>
+      <div class="svc">
+        <div class="card">
+          <div class="field"><label>Loan amount</label><div class="inp"><span class="num">$680,000</span></div></div>
+          <div class="field"><label>Assessment rate</label><div class="inp"><span class="num">8.55%</span></div>
+            <div class="slider"><div class="knob"></div></div></div>
+          <div class="field"><label>Annual income (gross)</label><div class="inp"><span class="num">$184,000</span></div></div>
+          <div class="field"><label>Existing commitments</label><div class="inp"><span class="num">$1,240 / mo</span></div></div>
+          <button class="btn primary" style="width:100%">Recalculate</button>
+        </div>
+        <div>
+          <div class="verdict">
+            <div class="cap">Serviceability verdict</div>
+            <div class="row"><div class="big">Serviceable.</div><span class="badge">NDI $2,480/mo</span></div>
+            <div class="note">Comfortably within CBA appetite on the entered figures.</div>
+            <div class="feat">
+              <div><div class="k">DSR</div><div class="n">38.2%</div></div>
+              <div><div class="k">DTI</div><div class="n">4.1×</div></div>
+              <div><div class="k">LVR</div><div class="n">88%</div></div>
+              <div><div class="k">Assessed rate</div><div class="n">8.55%</div></div>
+            </div>
+          </div>
+          <div class="gauges">
+            <div class="gauge"><div class="h"><span class="k">DSR (max 45%)</span><span class="v" style="color:var(--green-d)">38.2%</span></div><div class="track"><div class="fill" style="width:62%;background:var(--green)"></div></div></div>
+            <div class="gauge"><div class="h"><span class="k">DTI (max 6×)</span><span class="v" style="color:var(--green-d)">4.1×</span></div><div class="track"><div class="fill" style="width:68%;background:var(--green)"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phead" style="margin-top:34px">
+        <div class="eyebrow">Lenders</div>
+        <h2>Will-they-approve, ranked</h2>
+        <div class="sub">26 lenders scored against THIS deal — policy + price</div>
+      </div>
+      <div class="card" style="padding:4px 0">
+        <table>
+          <thead><tr><th>Lender</th><th>Verdict</th><th>Rate</th><th>Max loan</th><th>Monthly</th></tr></thead>
+          <tbody>
+            <tr class="best"><td><span class="mk">CB</span><span class="lname">CommBank</span></td><td><span class="tag pass">Pass</span></td><td><span class="num" style="color:var(--ind)">6.14%</span></td><td><span class="num">$712,000</span></td><td><span class="num">$4,140</span></td></tr>
+            <tr><td><span class="mk">MQ</span><span class="lname">Macquarie</span></td><td><span class="tag pass">Pass</span></td><td><span class="num">6.19%</span></td><td><span class="num">$698,000</span></td><td><span class="num">$4,170</span></td></tr>
+            <tr><td><span class="mk">NA</span><span class="lname">NAB</span></td><td><span class="tag bord">Borderline</span></td><td><span class="num">6.24%</span></td><td><span class="num">$671,000</span></td><td><span class="num">$4,190</span></td></tr>
+            <tr><td><span class="mk">BW</span><span class="lname">Bankwest</span></td><td><span class="tag fail">Fail</span></td><td><span class="num">6.29%</span></td><td><span class="num">$0</span></td><td><span class="num">—</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="phead" style="margin-top:34px">
+        <div class="eyebrow">Complete · Autopilot</div>
+        <h2>The whole prelim assessment, in one pass</h2>
+        <div class="sub">Extract → assess → match → draft — you review, not re-key</div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="pipe">
+            <div class="step"><div class="b">1</div><div class="l">Extract</div></div><span class="arrow">→</span>
+            <div class="step"><div class="b">2</div><div class="l">Assess</div></div><span class="arrow">→</span>
+            <div class="step"><div class="b">3</div><div class="l">Match</div></div><span class="arrow">→</span>
+            <div class="step"><div class="b">4</div><div class="l">Draft</div></div>
+          </div>
+          <div class="draft">
+            <b>3 payslips, 2 bank statements, 1 contract</b> read in 11s. Income verified at <b>$184k</b>, two undisclosed BNPL facilities flagged, serviceability run across <b>26 lenders</b>, and a <b>CBA submission note</b> drafted — ready for your review.
+          </div>
+          <div class="cta"><button class="btn primary">Review draft</button><button class="btn">Open file</button></div>
+        </div>
+        <div class="card">
+          <div class="kpi" style="border:none;padding:0;background:none;box-shadow:none"><div class="k">Forensics</div></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:10px"><span class="tag pass">Clear</span><span style="color:var(--t2);font-size:13px">No tampering signals across 6 documents</span></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:12px"><span class="tag bord">Review</span><span style="color:var(--t2);font-size:13px">2 undisclosed liabilities vs application</span></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:12px"><span class="tag pass">Compliant</span><span style="color:var(--t2);font-size:13px">BID checklist satisfied · audit logged</span></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</body>
+</html>
