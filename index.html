@@ -2,8 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>DebtIQ v6 — Mortgage Broker Platform</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="DebtIQ">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23FBFAF6' stroke='%23E7E2D6'/%3E%3Cpath d='M9 5 L9 27 L17 27 C22.5 27 26 22.5 26 16 C26 9.5 22.5 5 17 5 Z' stroke='%231E2A44' stroke-width='1.6' fill='none' stroke-linejoin='miter'/%3E%3Cline x1='5.5' y1='5' x2='12.5' y2='5' stroke='%231E2A44' stroke-width='.8'/%3E%3Cline x1='5.5' y1='27' x2='12.5' y2='27' stroke='%231E2A44' stroke-width='.8'/%3E%3Cline x1='4' y1='29' x2='28' y2='29' stroke='%231E2A44' stroke-width='.6' opacity='.45'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2142,6 +2149,54 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
   .panel{transition:none !important}
   .login-hero,.login-card,.workspace-page{animation:none !important}
 }
+
+/* ============================================================
+   MOBILE / PWA — phone layout (installable app on iOS + Android)
+   ============================================================ */
+@media (max-width: 680px){
+  /* Single-column app: hide the side dock, go full-width. */
+  #rightDock{ display:none !important; }
+  #canvas{ display:block; }
+  #workspace{ width:100%; }
+  /* Command bar: compact, notch-safe, no overflow. */
+  #cmdBar{ height:auto; min-height:52px; padding:8px 12px; gap:8px;
+    padding-top:calc(8px + env(safe-area-inset-top)); }
+  .cmd-left{ gap:6px; }
+  .cmd-centre{ min-width:0; }
+  .wordmark{ display:none; }                 /* keep the logo mark, drop the wordmark */
+  .cmd-sep{ display:none; }
+  #cmdUserName{ display:none; }
+  .btn.btn-sm{ padding:8px 11px; }
+  /* Tabs + deal strip scroll horizontally instead of wrapping. */
+  #tabStrip{ padding:0 8px; }
+  #dealStrip{ overflow-x:auto; -webkit-overflow-scrolling:touch; white-space:nowrap; }
+  .ds-metrics{ flex-wrap:nowrap; }
+  /* Comfortable workspace padding + bottom safe-area. */
+  .main, .page-head, .workspace-page{ padding-left:14px; padding-right:14px; }
+  #workspace{ padding-bottom:env(safe-area-inset-bottom); }
+  /* Forms/grids collapse to one column on phones. */
+  .form-grid{ grid-template-columns:1fr !important; }
+  .kpi-grid{ grid-template-columns:1fr 1fr; }
+  /* Roomier tap targets. */
+  .os-tab{ padding:10px 14px; }
+  .btn{ min-height:40px; }
+  input, select, textarea{ font-size:16px; }   /* iOS: avoid zoom-on-focus */
+  /* Login: stack + fit the card; shrink the hero so nothing overflows width. */
+  #login{ overflow-x:hidden; }
+  .login-hero{ padding:24px 20px; }
+  .login-hero .lh-positioning{ font-size:23px; max-width:100%; }
+  .login-hero .lh-proof{ grid-template-columns:1fr 1fr; }
+  .login-hero .lh-motif, .login-hero .lh-foot{ display:none; }
+  .login-form-col{ padding:16px; }
+  .login-card{ width:100%; padding:24px 20px; }
+}
+/* Install pill (Android/Chrome — appears only when installable). */
+#installPill{ position:fixed; left:50%; transform:translateX(-50%);
+  bottom:calc(16px + env(safe-area-inset-bottom)); z-index:1200; display:none;
+  align-items:center; gap:8px; padding:10px 16px; border-radius:999px;
+  background:linear-gradient(145deg,#2a50c8,#13265e); color:#fff; font-weight:600;
+  font-size:13px; border:none; cursor:pointer; box-shadow:0 10px 26px -8px rgba(30,58,138,.6); }
+#installPill.show{ display:inline-flex; }
 
 </style>
 </head>
@@ -12860,6 +12915,31 @@ function showDesignPreview(){
     showDesignPreview(); return;
   }
   if(aiLive()) enterApp();   // already signed in → skip the login screen
+})();
+</script>
+
+<!-- PWA: install affordance + service-worker registration -->
+<button id="installPill" type="button" aria-label="Install DebtIQ app">⬇ Install DebtIQ</button>
+<script>
+(function(){
+  // Register the service worker (served origins only; no-op on file://).
+  if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('/sw.js').catch(function(){});
+    });
+  }
+  // Android/Chrome install prompt → reveal the pill, then trigger native prompt.
+  var deferred = null;
+  var pill = document.getElementById('installPill');
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault(); deferred = e; if(pill) pill.classList.add('show');
+  });
+  if(pill) pill.addEventListener('click', function(){
+    if(!deferred) return;
+    deferred.prompt();
+    deferred.userChoice.finally(function(){ deferred = null; pill.classList.remove('show'); });
+  });
+  window.addEventListener('appinstalled', function(){ if(pill) pill.classList.remove('show'); });
 })();
 </script>
 </body>
