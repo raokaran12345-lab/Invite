@@ -2189,6 +2189,9 @@ body.role-assessor #app{--cmdbar-h:52px} /* placeholder hook for tighter density
   .login-hero .lh-motif, .login-hero .lh-foot{ display:none; }
   .login-form-col{ padding:16px; }
   .login-card{ width:100%; padding:24px 20px; }
+  /* Wide data tables scroll horizontally instead of breaking the layout. */
+  .acc-table{ display:block; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .kpi-grid{ grid-template-columns:1fr 1fr; }
 }
 /* Install pill (Android/Chrome — appears only when installable). */
 #installPill{ position:fixed; left:50%; transform:translateX(-50%);
@@ -4321,7 +4324,7 @@ function renderRetention(el){
       <div><h1>Retention radar</h1><p>Protect your trail book — reprice and review before clients refinance.</p></div>
       ${pipelineViewToggleHTML('retention')}
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:16px">
       ${kpi(money(sum.trailBook),'Trail book p.a.','var(--green)')}
       ${kpi(sum.inClawCount,'In clawback window · '+money(sum.clawExposure)+' at risk','var(--red)')}
       ${kpi(sum.repriceCount,'Reprice now · '+money(sum.clientSavingsAnnual)+'/yr client savings','var(--steel)')}
