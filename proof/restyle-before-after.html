@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DebtIQ restyle — before / after (real CSS from both versions)</title>
+<!-- BEFORE fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<!-- AFTER fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;font-family:system-ui,sans-serif;color:#191917;background:#dcd8cd;padding:28px}
+  h1{font-size:20px;margin:0 0 4px}
+  .lead{color:#555;font-size:13px;margin:0 0 24px;max-width:760px;line-height:1.5}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+  .col h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#666;margin:0 0 10px}
+  .stage{border-radius:16px;padding:22px;min-height:100%}
+  /* ===== BEFORE stage tokens ===== */
+  .before{background:#EEEAE1}
+  .before{--paper:#FBFAF6;--line:#E2DCCF;--t1:#1A1A22;--t2:#494C55;--t3:#8A8270;
+          --serif:'Newsreader',serif;--mono:'DM Mono',monospace;--ui:'Plus Jakarta Sans',sans-serif;
+          --green:#0B6B4F;--amber:#9A5A00;--red:#A92626;--steel:#3B6FB5;--ink:#1E2A44}
+  /* ===== AFTER stage tokens ===== */
+  .after{background:#F1EDE3}
+  .after{--paper:#FCFBF8;--line:#E7E1D3;--t1:#191917;--t2:#6E6A60;--t3:#6E6A60;
+         --serif:'Jost',sans-serif;--mono:'Jost',monospace;--ui:'Hanken Grotesk',sans-serif;
+         --green:#157A52;--amber:#B5791F;--red:#B0402F;--steel:#4B57D6;--ink:#191917}
+
+  .stage h3{font-family:var(--ui);font-size:13px;margin:0 0 14px;color:var(--t2)}
+
+  /* Verdict panel — BEFORE (flat) */
+  .v-before{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:18px}
+  .v-before .cap{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:14px;font-family:var(--ui)}
+  .v-before .big{font-family:var(--serif);font-weight:400;font-size:32px;line-height:1.1;color:var(--green)}
+  .v-before .note{font-family:var(--serif);font-style:italic;font-size:15px;color:var(--t2);margin-top:6px}
+  .v-before .feat{display:flex;gap:10px;align-items:baseline;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+  .v-before .feat .l{font-family:var(--ui);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t3)}
+  .v-before .feat .n{font-family:var(--mono);font-size:28px;font-weight:500;color:var(--t1)}
+
+  /* Verdict panel — AFTER (gradient hero) */
+  .v-after{position:relative;overflow:hidden;border-radius:20px;padding:22px 24px;margin-bottom:18px;color:#fff;
+           background:linear-gradient(135deg,#1C8A5E,#0E5538);box-shadow:0 18px 48px -22px rgba(14,85,56,.85)}
+  .v-after::after{content:"";position:absolute;top:-45%;right:-12%;width:62%;height:130%;background:radial-gradient(circle at 70% 30%,rgba(255,255,255,.20),transparent 62%);pointer-events:none}
+  .v-after .cap{position:relative;font-family:var(--ui);font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.72);padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.22);margin-bottom:14px}
+  .v-after .big{position:relative;font-family:var(--serif);font-weight:400;font-size:32px;line-height:1.1;color:#fff}
+  .v-after .note{position:relative;font-family:var(--serif);font-style:italic;font-size:15px;color:rgba(255,255,255,.86);margin-top:6px}
+  .v-after .feat{position:relative;display:flex;gap:10px;align-items:baseline;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.22)}
+  .v-after .feat .l{font-family:var(--ui);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.72)}
+  .v-after .feat .n{font-family:var(--mono);font-size:28px;font-weight:500;color:#fff}
+
+  /* KPI mini */
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .kpi{background:var(--paper);border:1px solid var(--line);border-top:3px solid var(--ink);border-radius:16px;padding:16px}
+  .kpi .n{font-family:var(--mono);font-size:27px;font-weight:700;letter-spacing:-.01em;color:var(--t1)}
+  .kpi .c{font-family:var(--ui);font-size:12px;font-weight:600;color:var(--t3);margin-top:2px}
+
+  /* accent + font swatches */
+  .swatches{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+  .sw{width:34px;height:34px;border-radius:8px;border:1px solid rgba(0,0,0,.1)}
+  .heading-sample{font-family:var(--serif);font-size:24px;margin:14px 0 2px;color:var(--t1)}
+  .ui-sample{font-family:var(--ui);font-size:13px;color:var(--t2)}
+  .ring{display:inline-block;margin-top:12px;font-family:var(--ui);font-size:13px;font-weight:600;color:#fff;background:var(--steel);padding:8px 16px;border-radius:999px}
+</style>
+</head>
+<body>
+  <h1>DebtIQ restyle — before vs after</h1>
+  <p class="lead">Rendered from the <b>actual CSS of both versions</b> (left = <code>origin/main</code>, right = the PR branch). The app was already a warm cream design, so the page background barely changes — the real differences are the <b>verdict panel (flat → gradient hero)</b>, <b>headings (serif → geometric Jost)</b>, and the <b>accent (navy → periwinkle)</b>.</p>
+
+  <div class="grid">
+    <div class="col">
+      <h2>Before — origin/main</h2>
+      <div class="stage before">
+        <h3>Serviceability verdict</h3>
+        <div class="v-before">
+          <div class="cap">Serviceability verdict</div>
+          <div class="big">Serviceable.</div>
+          <div class="note">Within lender appetite.</div>
+          <div class="feat"><span class="l">NDI</span><span class="n">$2,480/mo</span></div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="n">12</div><div class="c">Active deals</div></div>
+          <div class="kpi"><div class="n">$4.2M</div><div class="c">Pipeline</div></div>
+        </div>
+        <div class="heading-sample">Heading in Newsreader</div>
+        <div class="ui-sample">Body text in Plus Jakarta Sans · numbers in DM Mono</div>
+        <span class="ring">Accent / focus (navy #3B6FB5)</span>
+        <div class="swatches">
+          <div class="sw" style="background:#0B6B4F" title="green"></div>
+          <div class="sw" style="background:#9A5A00" title="amber"></div>
+          <div class="sw" style="background:#A92626" title="red"></div>
+          <div class="sw" style="background:#3B6FB5" title="steel"></div>
+          <div class="sw" style="background:#1E2A44" title="ink"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col">
+      <h2>After — PR branch (restyle)</h2>
+      <div class="stage after">
+        <h3>Serviceability verdict</h3>
+        <div class="v-after">
+          <div class="cap">Serviceability verdict</div>
+          <div class="big">Serviceable.</div>
+          <div class="note">Within lender appetite.</div>
+          <div class="feat"><span class="l">NDI</span><span class="n">$2,480/mo</span></div>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="n">12</div><div class="c">Active deals</div></div>
+          <div class="kpi"><div class="n">$4.2M</div><div class="c">Pipeline</div></div>
+        </div>
+        <div class="heading-sample">Heading in Jost</div>
+        <div class="ui-sample">Body text in Hanken Grotesk · numbers in Jost</div>
+        <span class="ring">Accent / focus (periwinkle #4B57D6)</span>
+        <div class="swatches">
+          <div class="sw" style="background:#157A52" title="green"></div>
+          <div class="sw" style="background:#B5791F" title="amber"></div>
+          <div class="sw" style="background:#B0402F" title="red"></div>
+          <div class="sw" style="background:#4B57D6" title="steel"></div>
+          <div class="sw" style="background:#191917" title="ink"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="lead" style="margin-top:24px">The most dramatic change — the verdict panel becoming a gradient hero with a coloured glow — only appears <b>after you log in</b> (demo creds are pre-filled) and open the Serviceability page in the live preview.</p>
+</body>
+</html>

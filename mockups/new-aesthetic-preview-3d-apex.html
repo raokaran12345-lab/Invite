@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DebtIQ — Sovereign 3D · APEX (2026)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3F5FB; --card:#FFFFFF; --line:#E5E7F0; --line2:#D5D8E6;
+    --t1:#141C32; --t2:#5A6178; --t3:#969BAC;
+    --blue:#1E3A8A; --blue-deep:#13265E; --blue-bright:#2A50C8; --blue-tint:#EEF1FB;
+    --red:#B22230; --red-deep:#8E1A26; --red-tint:#FBEEEF;
+    --green:#1C7A4D; --green-deep:#0F4C30; --green-tint:#EAF4EE;
+    --serif:'Playfair Display',Georgia,serif;
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --glass:rgba(255,255,255,.6);
+    --elev:0 1px 1px rgba(20,28,50,.04),0 8px 18px -8px rgba(20,28,50,.16),0 30px 60px -30px rgba(20,28,50,.28);
+    --elev-hi:0 2px 2px rgba(20,28,50,.05),0 16px 30px -10px rgba(30,58,138,.26),0 50px 90px -34px rgba(30,58,138,.46);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--sans);color:var(--t1);background:var(--bg);min-height:100vh;-webkit-font-smoothing:antialiased;padding-bottom:80px;overflow-x:hidden}
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+  .aurora{position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none}
+  .blob{position:absolute;border-radius:50%;filter:blur(110px);opacity:.3;mix-blend-mode:multiply}
+  .b1{width:600px;height:600px;background:radial-gradient(circle,#2A50C8,transparent 65%);top:-200px;right:-140px;animation:f1 24s ease-in-out infinite}
+  .b2{width:540px;height:540px;background:radial-gradient(circle,#1C7A4D,transparent 65%);bottom:-220px;left:-160px;animation:f2 30s ease-in-out infinite}
+  @keyframes f1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-50px,40px) scale(1.1)}}
+  @keyframes f2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(60px,-30px) scale(1.08)}}
+  .pbanner{max-width:1240px;margin:0 auto;padding:22px 30px 4px}
+  .pbanner h1{font-family:var(--serif);font-size:21px;font-weight:600}
+  .pbanner p{color:var(--t2);font-size:12.5px;margin-top:3px}
+  .top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;padding:13px 26px;background:var(--glass);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);border-bottom:1px solid rgba(255,255,255,.6);box-shadow:0 8px 30px -18px rgba(20,28,50,.4)}
+  .crest3d{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;color:#fff;font-family:var(--serif);font-weight:700;font-size:17px;background:linear-gradient(145deg,#3358d6,#13265E);box-shadow:inset 0 1px 1px rgba(255,255,255,.5),inset 0 -3px 6px rgba(0,0,0,.35),0 8px 18px -6px rgba(30,58,138,.6)}
+  .logo{font-family:var(--serif);font-weight:600;font-size:21px}.logo b{color:var(--blue)}
+  .pill{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:5px 12px;border-radius:999px;border:1px solid var(--line2);color:var(--t2)}
+  .pill.tier{color:#fff;border:none;background:linear-gradient(135deg,#3358d6,#13265E);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 16px -6px rgba(30,58,138,.6)}
+  .live{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--t2)}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(28,122,77,.5)}70%{box-shadow:0 0 0 9px rgba(28,122,77,0)}100%{box-shadow:0 0 0 0 rgba(28,122,77,0)}}
+  .spacer{flex:1}.who{font-size:13px;color:var(--t2)}.who b{color:var(--t1);font-weight:600}
+  .ava{width:36px;height:36px;border-radius:11px;background:linear-gradient(145deg,#3358d6,#13265E);display:grid;place-items:center;font-weight:700;color:#fff;font-size:12px;box-shadow:inset 0 1px 1px rgba(255,255,255,.4),0 8px 16px -6px rgba(30,58,138,.5)}
+  .shell{display:grid;grid-template-columns:214px 1fr;max-width:1240px;margin:0 auto}
+  .nav{padding:24px 14px}
+  .nav a{display:flex;align-items:center;gap:12px;padding:11px 13px;border-radius:12px;color:var(--t2);text-decoration:none;font-size:14px;font-weight:500;margin-bottom:3px;transition:.18s}
+  .nav a .i{width:6px;height:6px;border-radius:50%;background:var(--line2)}
+  .nav a:hover{background:rgba(255,255,255,.6)}
+  .nav a.active{color:var(--blue);font-weight:600;background:linear-gradient(120deg,rgba(255,255,255,.9),rgba(238,241,251,.7));box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 8px 20px -10px rgba(30,58,138,.4);border:1px solid rgba(255,255,255,.7)}
+  .nav a.active .i{background:var(--blue);box-shadow:0 0 8px var(--blue)}
+  .nav .sect{font-size:9px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--t3);margin:20px 13px 9px}
+  .main{padding:24px 32px 30px}
+  /* HERO */
+  .hero{position:relative;border-radius:26px;margin-bottom:28px;overflow:hidden;min-height:380px;background:#0b1430;box-shadow:var(--elev-hi);cursor:grab}
+  .hero:active{cursor:grabbing}
+  #gl{position:absolute;inset:0;z-index:1;display:block;width:100%;height:100%}
+  .heroveil{position:absolute;z-index:2;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(8,16,40,.92) 0%,rgba(8,16,40,.6) 32%,transparent 56%)}
+  .hero .copy{position:absolute;z-index:3;left:40px;top:50%;transform:translateY(-50%);max-width:440px}
+  .hero .eyebrow{font-size:10px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:rgba(255,255,255,.62)}
+  .hero h1{font-family:var(--serif);font-size:38px;font-weight:600;color:#fff;margin:12px 0 10px;line-height:1.08;text-shadow:0 2px 20px rgba(0,0,0,.4)}
+  .hero p{color:rgba(255,255,255,.8);font-size:14px;line-height:1.6}
+  .hbtns{display:flex;gap:11px;margin-top:20px}
+  .hbtn{font-size:13px;font-weight:600;padding:12px 20px;border-radius:12px;border:1px solid rgba(255,255,255,.26);background:rgba(255,255,255,.08);color:#fff;cursor:pointer;backdrop-filter:blur(6px);transition:.2s}
+  .hbtn:hover{background:rgba(255,255,255,.16);transform:translateY(-2px)}
+  .hbtn.solid{background:#fff;color:var(--blue);border:none;box-shadow:0 12px 26px -8px rgba(0,0,0,.45)}
+  .hint{position:absolute;z-index:3;right:18px;bottom:14px;font-size:11px;letter-spacing:.08em;color:rgba(255,255,255,.45)}
+  .loading{position:absolute;z-index:2;right:22%;top:50%;transform:translate(50%,-50%);color:rgba(255,255,255,.5);font-size:12px;letter-spacing:.1em}
+  /* reveal */
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+  .phead{margin-bottom:18px;padding-bottom:13px;border-bottom:2px solid var(--blue);position:relative}
+  .phead::after{content:'';position:absolute;left:0;bottom:-5px;width:100%;height:1px;background:var(--line)}
+  .phead .eyebrow{font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--blue)}
+  .phead h2{font-family:var(--serif);font-size:30px;font-weight:600;margin-top:7px}
+  .phead .sub{color:var(--t2);font-size:13.5px;margin-top:5px}
+  .tilt{will-change:transform;transform-style:preserve-3d}
+  .glass{background:var(--glass);backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);border:1px solid rgba(255,255,255,.7);box-shadow:var(--elev)}
+  .shine{position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .25s;background:radial-gradient(200px 200px at var(--mx,50%) var(--my,0%),rgba(255,255,255,.55),transparent 60%)}
+  .tilt:hover .shine{opacity:1}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:var(--elev);position:relative}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;perspective:1100px}
+  .kpi{position:relative;padding:18px;border-radius:16px;overflow:hidden}
+  .kpi:hover{box-shadow:var(--elev-hi)}
+  .kpi .cap{position:absolute;top:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,var(--blue),var(--blue-bright),var(--green))}
+  .kpi .k{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.14em;font-weight:700}
+  .kpi .v{font-family:var(--serif);font-size:34px;font-weight:600;margin-top:8px;line-height:1;transform:translateZ(34px)}
+  .kpi .d{font-size:11.5px;color:var(--t2);margin-top:6px}
+  .deals{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;perspective:1100px}
+  .deal{position:relative;padding:18px;border-radius:16px;overflow:hidden}
+  .deal:hover{box-shadow:var(--elev-hi)}
+  .deal .top2{display:flex;justify-content:space-between;align-items:start}
+  .deal .nm{font-weight:600;font-size:15px;transform:translateZ(26px)}
+  .deal .id{font-size:11px;color:var(--t3);margin-top:2px;letter-spacing:.04em}
+  .deal .amt{font-family:var(--serif);font-size:25px;font-weight:600;margin-top:14px;transform:translateZ(40px)}
+  .deal .meta{font-size:12px;color:var(--t2);margin-top:4px}
+  .tag{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:4px 9px;border-radius:7px;display:inline-block;transform:translateZ(22px)}
+  .tag.pass{background:var(--green-tint);color:var(--green-deep);border:1px solid rgba(28,122,77,.3)}
+  .tag.bord{background:var(--blue-tint);color:var(--blue);border:1px solid rgba(30,58,138,.28)}
+  .tag.fail{background:var(--red-tint);color:var(--red-deep);border:1px solid rgba(178,34,48,.28)}
+  .svc{display:grid;grid-template-columns:300px 1fr;gap:16px;margin-top:18px}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--t3);margin-bottom:7px}
+  .field .inp{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line2);border-radius:11px;padding:11px 13px;box-shadow:inset 0 1px 3px rgba(20,28,50,.05)}
+  .field .inp .num{font-size:15px;font-weight:600}
+  .field .inp:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(30,58,138,.14)}
+  .slider{height:6px;border-radius:999px;background:#E7E9F2;position:relative;margin:16px 2px;box-shadow:inset 0 1px 2px rgba(20,28,50,.12)}
+  .slider::after{content:'';position:absolute;left:0;top:0;height:100%;width:62%;background:linear-gradient(90deg,var(--blue),var(--blue-bright));border-radius:999px}
+  .slider .knob{position:absolute;left:62%;top:50%;width:18px;height:18px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 2px 6px rgba(30,58,138,.5),inset 0 0 0 4px var(--blue)}
+  .verdict{position:relative;overflow:hidden;border-radius:18px;padding:26px;transform-style:preserve-3d;background:linear-gradient(150deg,#1E8A57,#0C3F27);box-shadow:0 30px 60px -28px rgba(15,76,48,.9),inset 0 1px 0 rgba(255,255,255,.2)}
+  .verdict::after{content:'';position:absolute;top:-40%;right:-10%;width:60%;height:130%;background:radial-gradient(circle at 70% 30%,rgba(255,255,255,.28),transparent 60%);pointer-events:none}
+  .verdict .cap{position:relative;font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.66);padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.24);margin-bottom:15px}
+  .verdict .rowx{position:relative;display:flex;align-items:center;gap:15px;transform:translateZ(44px)}
+  .verdict .big{font-family:var(--serif);font-size:40px;font-weight:600;color:#fff}
+  .verdict .badge{font-size:11px;font-weight:700;letter-spacing:.05em;padding:7px 14px;border-radius:9px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.32);backdrop-filter:blur(6px)}
+  .verdict .note{position:relative;font-family:var(--serif);font-style:italic;font-size:17px;color:rgba(255,255,255,.9);margin-top:8px}
+  .verdict .feat{position:relative;display:flex;gap:30px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.24);transform:translateZ(26px)}
+  .verdict .feat .k{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.66)}
+  .verdict .feat .n{font-family:var(--serif);font-size:24px;font-weight:600;color:#fff;margin-top:4px}
+  .gauges{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+  .gauge{background:#fff;border:1px solid var(--line);border-radius:13px;padding:15px;box-shadow:var(--elev)}
+  .gauge .h{display:flex;justify-content:space-between;align-items:baseline}
+  .gauge .k{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
+  .gauge .v{font-family:var(--serif);font-size:19px;font-weight:600}
+  .gauge .track{height:6px;background:#E7E9F2;border-radius:999px;margin-top:11px;position:relative;box-shadow:inset 0 1px 2px rgba(20,28,50,.1)}
+  .gauge .fill{position:absolute;left:0;top:0;height:100%;border-radius:999px;transition:width 1.1s cubic-bezier(.2,.7,.2,1)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);padding:12px 16px;border-bottom:2px solid var(--blue)}
+  td{padding:14px 16px;border-bottom:1px solid var(--line);color:var(--t2)}
+  td .num{color:var(--t1)}
+  tr.best td{background:linear-gradient(90deg,var(--blue-tint),transparent)}
+  tr:last-child td{border-bottom:none}
+  .mk{width:32px;height:32px;border-radius:9px;background:linear-gradient(145deg,#3358d6,#13265E);display:inline-grid;place-items:center;font-weight:700;color:#fff;font-size:12px;vertical-align:middle;margin-right:10px;box-shadow:inset 0 1px 1px rgba(255,255,255,.4),0 6px 12px -4px rgba(30,58,138,.5)}
+  .lname{color:var(--t1);font-weight:600}
+  .pipe{display:flex;gap:0;flex-wrap:wrap;margin:6px 0 18px}
+  .step{display:flex;align-items:center;gap:11px;padding:0 16px 0 0}
+  .step .b{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-family:var(--serif);font-weight:600;font-size:16px;color:#fff;background:linear-gradient(145deg,#3358d6,#13265E);box-shadow:inset 0 1px 1px rgba(255,255,255,.4),0 8px 16px -6px rgba(30,58,138,.55)}
+  .step .l{font-size:12.5px;font-weight:500}
+  .step .arrow{color:var(--line2);margin:0 3px}
+  .draft{font-family:var(--serif);font-size:16px;color:var(--t2);line-height:1.65;margin-top:6px}
+  .draft b{color:var(--t1);font-weight:600}
+  .cta{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+  .btn{font-size:13px;font-weight:600;padding:11px 18px;border-radius:11px;border:1px solid var(--line2);background:#fff;color:var(--t1);cursor:pointer}
+  .btn.primary{color:#fff;border:none;background:linear-gradient(145deg,#3358d6,#13265E);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 10px 24px -8px rgba(30,58,138,.55)}
+  .grid2{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+  @media(max-width:980px){.shell{grid-template-columns:1fr}.nav{display:none}.kpis{grid-template-columns:1fr 1fr}.deals{grid-template-columns:1fr}.svc,.grid2{grid-template-columns:1fr}.hero .copy{position:relative;top:0;transform:none;padding:30px 26px 0;max-width:none}.heroveil{background:linear-gradient(180deg,rgba(8,16,40,.9),transparent 60%)}.hero{min-height:600px}#gl{top:auto;height:280px}}
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+</head>
+<body>
+  <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div></div>
+
+  <div class="pbanner">
+    <h1>DebtIQ — "Sovereign 3D" · APEX</h1>
+    <p>Refractive glass crystal · UnrealBloom glow · blooming particle constellation · drag-to-rotate the jewel · scroll-reveal · count-up KPIs · magnetic buttons. Needs internet (loads Three.js). Preview only.</p>
+  </div>
+
+  <div class="top">
+    <div class="crest3d">D</div><div class="logo">Debt<b>IQ</b></div>
+    <span class="pill tier">Complete</span><span class="live"><span class="dot"></span> AI live</span>
+    <div class="spacer"></div><span class="who">D-892 · <b>Sarah &amp; Tom Mitchell</b></span><div class="ava">SM</div>
+  </div>
+
+  <div class="shell">
+    <nav class="nav">
+      <a class="active"><span class="i"></span> Pipeline</a><a><span class="i"></span> Calculate</a><a><span class="i"></span> Lenders</a><a><span class="i"></span> Commercial</a>
+      <div class="sect">Complete</div><a><span class="i"></span> AI Pilot</a><a><span class="i"></span> Documents</a><a><span class="i"></span> Compliance</a>
+      <div class="sect">Account</div><a><span class="i"></span> Plans &amp; Usage</a><a><span class="i"></span> Settings</a>
+    </nav>
+
+    <main class="main">
+      <section class="hero" id="hero">
+        <canvas id="gl"></canvas>
+        <div class="heroveil"></div>
+        <div class="loading" id="loading">rendering 3D…</div>
+        <div class="copy">
+          <div class="eyebrow">Welcome back, Sarah</div>
+          <h1>Twelve files in motion.<br>Five ready to submit.</h1>
+          <p>Your pipeline, assessed live and ranked across 26 lenders — the AI co-pilot drafts the paperwork while you review.</p>
+          <div class="hbtns"><button class="hbtn solid" data-mag>Open pipeline</button><button class="hbtn" data-mag>Run AI Pilot</button></div>
+        </div>
+        <div class="hint" id="hint">drag the jewel ✦</div>
+      </section>
+
+      <div class="phead reveal"><div class="eyebrow">Workspace</div><h2>Pipeline</h2><div class="sub">12 active deals · 5 serviceable · 3 awaiting documents</div></div>
+      <div class="kpis">
+        <div class="kpi glass tilt reveal" data-tilt><span class="cap"></span><div class="shine"></div><div class="k">Active deals</div><div class="v" data-count="12">0</div><div class="d">+3 this week</div></div>
+        <div class="kpi glass tilt reveal" data-tilt style="transition-delay:.06s"><span class="cap"></span><div class="shine"></div><div class="k">Pipeline value</div><div class="v" data-count="4.2" data-prefix="$" data-suffix="M" data-dec="1">$0M</div><div class="d">across 12 files</div></div>
+        <div class="kpi glass tilt reveal" data-tilt style="transition-delay:.12s"><span class="cap"></span><div class="shine"></div><div class="k">Serviceable</div><div class="v" data-count="5">0</div><div class="d">pass on current figures</div></div>
+        <div class="kpi glass tilt reveal" data-tilt style="transition-delay:.18s"><span class="cap"></span><div class="shine"></div><div class="k">Time saved</div><div class="v" data-count="2.4" data-suffix="h" data-dec="1">0h</div><div class="d">per file vs manual</div></div>
+      </div>
+      <div class="deals">
+        <div class="deal glass tilt reveal" data-tilt><div class="shine"></div><div class="top2"><div><div class="nm">Sarah &amp; Tom Mitchell</div><div class="id">D-892</div></div><span class="tag pass">Pass</span></div><div class="amt">$680,000</div><div class="meta">CBA · OO P&amp;I · 88% LVR</div></div>
+        <div class="deal glass tilt reveal" data-tilt style="transition-delay:.08s"><div class="shine"></div><div class="top2"><div><div class="nm">Aisha Khan</div><div class="id">D-901</div></div><span class="tag bord">Borderline</span></div><div class="amt">$1,150,000</div><div class="meta">Macquarie · INV IO · 80% LVR</div></div>
+        <div class="deal glass tilt reveal" data-tilt style="transition-delay:.16s"><div class="shine"></div><div class="top2"><div><div class="nm">Nguyen Logistics Pty</div><div class="id">D-877</div></div><span class="tag fail">Fail</span></div><div class="amt">$2,400,000</div><div class="meta">Commercial · DSCR 1.18×</div></div>
+      </div>
+
+      <div class="phead reveal" style="margin-top:34px"><div class="eyebrow">Assessment</div><h2>Serviceability</h2><div class="sub">Live — updates on every keystroke · 🇦🇺 Australia</div></div>
+      <div class="svc">
+        <div class="card reveal">
+          <div class="field"><label>Loan amount</label><div class="inp"><span class="num">$680,000</span></div></div>
+          <div class="field"><label>Assessment rate</label><div class="inp"><span class="num">8.55%</span></div><div class="slider"><div class="knob"></div></div></div>
+          <div class="field"><label>Annual income (gross)</label><div class="inp"><span class="num">$184,000</span></div></div>
+          <div class="field"><label>Existing commitments</label><div class="inp"><span class="num">$1,240 / mo</span></div></div>
+          <button class="btn primary" style="width:100%" data-mag>Recalculate</button>
+        </div>
+        <div style="perspective:1100px">
+          <div class="verdict tilt reveal" data-tilt data-depth="5">
+            <div class="cap">Serviceability verdict</div>
+            <div class="rowx"><div class="big">Serviceable.</div><span class="badge">NDI $2,480 / mo</span></div>
+            <div class="note">Comfortably within CBA appetite on the entered figures.</div>
+            <div class="feat"><div><div class="k">DSR</div><div class="n">38.2%</div></div><div><div class="k">DTI</div><div class="n">4.1×</div></div><div><div class="k">LVR</div><div class="n">88%</div></div><div><div class="k">Assessed</div><div class="n">8.55%</div></div></div>
+          </div>
+          <div class="gauges">
+            <div class="gauge reveal"><div class="h"><span class="k">DSR · max 45%</span><span class="v" style="color:var(--green)">38.2%</span></div><div class="track"><div class="fill" data-w="62" style="width:0;background:var(--green)"></div></div></div>
+            <div class="gauge reveal" style="transition-delay:.08s"><div class="h"><span class="k">DTI · max 6×</span><span class="v" style="color:var(--green)">4.1×</span></div><div class="track"><div class="fill" data-w="68" style="width:0;background:var(--green)"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phead reveal" style="margin-top:34px"><div class="eyebrow">Lenders</div><h2>Will they approve — ranked</h2><div class="sub">26 lenders scored against this deal · policy + price</div></div>
+      <div class="card reveal" style="padding:4px 0">
+        <table>
+          <thead><tr><th>Lender</th><th>Verdict</th><th>Rate</th><th>Max loan</th><th>Monthly</th></tr></thead>
+          <tbody>
+            <tr class="best"><td><span class="mk">CB</span><span class="lname">CommBank</span></td><td><span class="tag pass">Pass</span></td><td><span class="num" style="color:var(--blue)">6.14%</span></td><td><span class="num">$712,000</span></td><td><span class="num">$4,140</span></td></tr>
+            <tr><td><span class="mk">MQ</span><span class="lname">Macquarie</span></td><td><span class="tag pass">Pass</span></td><td><span class="num">6.19%</span></td><td><span class="num">$698,000</span></td><td><span class="num">$4,170</span></td></tr>
+            <tr><td><span class="mk">NA</span><span class="lname">NAB</span></td><td><span class="tag bord">Borderline</span></td><td><span class="num">6.24%</span></td><td><span class="num">$671,000</span></td><td><span class="num">$4,190</span></td></tr>
+            <tr><td><span class="mk">BW</span><span class="lname">Bankwest</span></td><td><span class="tag fail">Fail</span></td><td><span class="num">6.29%</span></td><td><span class="num">$0</span></td><td><span class="num">—</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="phead reveal" style="margin-top:34px"><div class="eyebrow">Complete · Autopilot</div><h2>The whole prelim assessment, in one pass</h2><div class="sub">Extract → assess → match → draft — you review, not re-key</div></div>
+      <div class="grid2">
+        <div class="card reveal">
+          <div class="pipe"><div class="step"><div class="b">I</div><div class="l">Extract</div></div><span class="arrow">→</span><div class="step"><div class="b">II</div><div class="l">Assess</div></div><span class="arrow">→</span><div class="step"><div class="b">III</div><div class="l">Match</div></div><span class="arrow">→</span><div class="step"><div class="b">IV</div><div class="l">Draft</div></div></div>
+          <div class="draft"><b>3 payslips, 2 bank statements, 1 contract</b> read in 11 seconds. Income verified at <b>$184k</b>, two undisclosed BNPL facilities flagged, serviceability run across <b>26 lenders</b>, and a <b>CBA submission note</b> drafted — ready for your review.</div>
+          <div class="cta"><button class="btn primary" data-mag>Review draft</button><button class="btn">Open file</button></div>
+        </div>
+        <div class="card glass tilt reveal" data-tilt style="background:var(--glass);transition-delay:.08s"><div class="shine"></div>
+          <div class="k" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);font-weight:700">Forensics</div>
+          <div style="display:flex;align-items:center;gap:11px;margin-top:13px"><span class="tag pass">Clear</span><span style="color:var(--t2);font-size:13px">No tampering signals across 6 documents</span></div>
+          <div style="display:flex;align-items:center;gap:11px;margin-top:13px"><span class="tag fail">Review</span><span style="color:var(--t2);font-size:13px">2 undisclosed liabilities vs application</span></div>
+          <div style="display:flex;align-items:center;gap:11px;margin-top:13px"><span class="tag pass">Compliant</span><span style="color:var(--t2);font-size:13px">BID checklist satisfied · audit logged</span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+<script type="module">
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* smooth lerped card tilt + shine */
+  const tiltEls=[...document.querySelectorAll('[data-tilt]')].map(el=>({el,depth:parseFloat(el.dataset.depth||'10'),tx:0,ty:0,cx:0,cy:0,act:false}));
+  tiltEls.forEach(o=>{
+    o.el.addEventListener('pointermove',e=>{const r=o.el.getBoundingClientRect();const px=(e.clientX-r.left)/r.width,py=(e.clientY-r.top)/r.height;o.tx=(0.5-py)*o.depth;o.ty=(px-0.5)*o.depth;o.act=true;o.el.style.setProperty('--mx',(px*100)+'%');o.el.style.setProperty('--my',(py*100)+'%');});
+    o.el.addEventListener('pointerleave',()=>{o.tx=0;o.ty=0;o.act=false;});
+  });
+  (function tl(){tiltEls.forEach(o=>{o.cx+=(o.tx-o.cx)*0.12;o.cy+=(o.ty-o.cy)*0.12;o.el.style.transform=`perspective(1100px) rotateX(${o.cx.toFixed(2)}deg) rotateY(${o.cy.toFixed(2)}deg) translateY(${o.act?-5:0}px)`;});requestAnimationFrame(tl);})();
+
+  /* magnetic buttons */
+  document.querySelectorAll('[data-mag]').forEach(b=>{
+    b.addEventListener('pointermove',e=>{const r=b.getBoundingClientRect();b.style.transform=`translate(${(e.clientX-r.left-r.width/2)*0.25}px,${(e.clientY-r.top-r.height/2)*0.35}px)`;});
+    b.addEventListener('pointerleave',()=>{b.style.transform='';});
+  });
+
+  /* scroll reveal + count-up + gauges */
+  function countUp(el){
+    const to=parseFloat(el.dataset.count),dec=parseInt(el.dataset.dec||'0'),pre=el.dataset.prefix||'',suf=el.dataset.suffix||'';
+    const t0=performance.now(),dur=1100;
+    (function step(t){const k=Math.min((t-t0)/dur,1);const e=1-Math.pow(1-k,3);el.textContent=pre+(to*e).toFixed(dec)+suf;if(k<1)requestAnimationFrame(step);})(t0);
+  }
+  const io=new IntersectionObserver((es)=>{es.forEach(en=>{if(en.isIntersecting){en.target.classList.add('in');
+    en.target.querySelectorAll('[data-count]').forEach(countUp);
+    if(en.target.matches('.gauge'))en.target.querySelectorAll('.fill').forEach(f=>f.style.width=f.dataset.w+'%');
+    io.unobserve(en.target);}});},{threshold:.18});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+  /* ===== APEX WebGL hero ===== */
+  try{
+    const THREE=await import('three');
+    const {RoomEnvironment}=await import('three/addons/environments/RoomEnvironment.js');
+    const {RoundedBoxGeometry}=await import('three/addons/geometries/RoundedBoxGeometry.js');
+    const {OrbitControls}=await import('three/addons/controls/OrbitControls.js');
+    const {EffectComposer}=await import('three/addons/postprocessing/EffectComposer.js');
+    const {RenderPass}=await import('three/addons/postprocessing/RenderPass.js');
+    const {UnrealBloomPass}=await import('three/addons/postprocessing/UnrealBloomPass.js');
+    const {OutputPass}=await import('three/addons/postprocessing/OutputPass.js');
+
+    const hero=document.getElementById('hero'), canvas=document.getElementById('gl');
+    const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+    renderer.outputColorSpace=THREE.SRGBColorSpace;
+
+    const scene=new THREE.Scene();
+    // in-scene gradient background (so bloom has something to glow over)
+    (function(){const c=document.createElement('canvas');c.width=8;c.height=256;const x=c.getContext('2d');
+      const g=x.createLinearGradient(0,0,0,256);g.addColorStop(0,'#16306e');g.addColorStop(.55,'#0a1736');g.addColorStop(1,'#0d2e24');
+      x.fillStyle=g;x.fillRect(0,0,8,256);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;scene.background=t;})();
+
+    const camera=new THREE.PerspectiveCamera(42,2,0.1,100);camera.position.set(0,0,6.4);
+    const pmrem=new THREE.PMREMGenerator(renderer);
+    scene.environment=pmrem.fromScene(new RoomEnvironment(),0.04).texture;
+
+    const root=new THREE.Group();scene.add(root);
+
+    // rim lights
+    root.add(Object.assign(new THREE.PointLight(0x2a50c8,80,40),{position:new THREE.Vector3(-5,3,5)}));
+    root.add(Object.assign(new THREE.PointLight(0x1c7a4d,60,40),{position:new THREE.Vector3(6,-2,3)}));
+    root.add(Object.assign(new THREE.PointLight(0xffffff,30,40),{position:new THREE.Vector3(2,6,6)}));
+
+    // refractive crystal
+    const gem=new THREE.Mesh(new THREE.IcosahedronGeometry(1.4,0),
+      new THREE.MeshPhysicalMaterial({color:0xffffff,metalness:0,roughness:0.015,transmission:1,thickness:2.4,ior:1.75,
+        clearcoat:1,clearcoatRoughness:0.04,attenuationColor:new THREE.Color(0x214ec8),attenuationDistance:1.3,
+        envMapIntensity:1.8,transparent:true,iridescence:1,iridescenceIOR:1.3}));
+    root.add(gem);
+    // faceted halo shell (additive) for extra sparkle
+    const halo=new THREE.Mesh(new THREE.IcosahedronGeometry(1.62,0),
+      new THREE.MeshBasicMaterial({color:0x6f8bff,transparent:true,opacity:0.06,blending:THREE.AdditiveBlending,wireframe:true}));
+    root.add(halo);
+    // glowing emerald core (blooms)
+    const core=new THREE.Mesh(new THREE.IcosahedronGeometry(0.5,1),
+      new THREE.MeshStandardMaterial({color:0x37e29a,emissive:0x1cff9a,emissiveIntensity:2.4,roughness:0.35}));
+    root.add(core);
+
+    // floating spatial chips
+    const chips=[],cols=[0x2a50c8,0x1c7a4d,0xffffff,0xb22230];
+    for(let i=0;i<4;i++){const m=new THREE.Mesh(new RoundedBoxGeometry(0.92,0.6,0.1,6,0.14),
+      new THREE.MeshPhysicalMaterial({color:cols[i],metalness:0.7,roughness:0.16,clearcoat:1,envMapIntensity:1.4,emissive:cols[i],emissiveIntensity:i===2?0:0.12}));
+      m.userData={a:(i/4)*Math.PI*2,r:2.75,y:(i%2?0.9:-0.8),spin:0.0035+i*0.0007};root.add(m);chips.push(m);}
+
+    // blooming particle constellation
+    const N=700,pos=new Float32Array(N*3),col=new Float32Array(N*3);
+    const cA=new THREE.Color(0x9fb4ff),cB=new THREE.Color(0x57f0b2),cC=new THREE.Color(0xffffff);
+    for(let i=0;i<N;i++){const rr=2.3+Math.random()*3.2,th=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);
+      pos[i*3]=rr*Math.sin(ph)*Math.cos(th);pos[i*3+1]=(rr*Math.cos(ph))*0.6;pos[i*3+2]=rr*Math.sin(ph)*Math.sin(th)*0.7;
+      const c=Math.random()<0.4?cA:(Math.random()<0.6?cB:cC);col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b;}
+    const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(pos,3));pg.setAttribute('color',new THREE.BufferAttribute(col,3));
+    const sprite=(function(){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');
+      const g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.3,'rgba(255,255,255,.7)');g.addColorStop(1,'rgba(255,255,255,0)');
+      x.fillStyle=g;x.fillRect(0,0,64,64);return new THREE.CanvasTexture(c);})();
+    const stars=new THREE.Points(pg,new THREE.PointsMaterial({size:0.07,map:sprite,vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending}));
+    scene.add(stars);
+
+    // controls
+    const controls=new OrbitControls(camera,canvas);
+    controls.enableZoom=false;controls.enablePan=false;controls.enableDamping=true;controls.dampingFactor=0.06;
+    controls.autoRotate=!reduce;controls.autoRotateSpeed=0.9;controls.rotateSpeed=0.6;
+    controls.minPolarAngle=Math.PI*0.32;controls.maxPolarAngle=Math.PI*0.68;
+    canvas.addEventListener('pointerdown',()=>{const h=document.getElementById('hint');if(h)h.style.opacity='0';});
+
+    // composer + bloom
+    function size(){const w=hero.clientWidth,h=hero.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();composer.setSize(w,h);bloom.setSize(w,h);}
+    const composer=new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene,camera));
+    const bloom=new UnrealBloomPass(new THREE.Vector2(1,1),0.85,0.55,0.82);// strength,radius,threshold
+    composer.addPass(bloom);composer.addPass(new OutputPass());
+    new ResizeObserver(size).observe(hero);size();
+
+    document.getElementById('loading').style.display='none';
+    const clock=new THREE.Clock();
+    (function loop(){const t=clock.getElapsedTime();
+      if(!reduce){
+        gem.rotation.y=t*0.18;gem.rotation.z=Math.sin(t*0.3)*0.12;halo.rotation.copy(gem.rotation);halo.rotation.y*=-0.6;
+        core.rotation.y=-t*0.5;core.material.emissiveIntensity=2+Math.sin(t*2.2)*0.7;
+        stars.rotation.y=t*0.04;
+        chips.forEach(c=>{c.userData.a+=c.userData.spin;c.position.set(Math.cos(c.userData.a)*c.userData.r,c.userData.y+Math.sin(t+c.userData.a)*0.2,Math.sin(c.userData.a)*c.userData.r*0.55);c.rotation.y=c.userData.a+t*0.2;c.rotation.x=Math.sin(t*0.5+c.userData.a)*0.35;});
+      }
+      controls.update();composer.render();requestAnimationFrame(loop);})();
+  }catch(err){
+    console.warn('3D hero failed:',err);
+    const l=document.getElementById('loading');if(l)l.textContent='(3D needs internet — luxury gradient shown)';
+    const h=document.getElementById('hint');if(h)h.style.display='none';
+  }
+</script>
+</body>
+</html>
